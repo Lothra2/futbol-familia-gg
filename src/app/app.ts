@@ -36,8 +36,8 @@ export class App {
   private test: Partial<MatchConfig> | null = null;
 
   constructor(private game: Phaser.Game, private router: InputRouter, private touch: TouchUI, private kb: KeyboardInput, private pad: GamepadInput, private store: SaveStore) {
-    services.app = { again: () => this.again(), menu: () => this.showMenu(), finish: (m) => this.finish(m), trainingDone: () => this.trainingDone(), coach: (sc) => this.coach(sc) };
-    this.screens = new Screens({ game, store, touch, cfg: () => this.cfg, setCfg: (c) => { this.cfg = c; }, play: (c) => this.startMatch(c, true), train: (n) => this.startTraining(n), credits: () => this.credits() });
+    services.app = { again: () => this.again(), menu: () => this.showMenu(), finish: (m) => this.finish(m), trainingDone: () => this.trainingDone(), touchLook: () => this.lookName(), cycleTouchLook: () => this.cycleLook(), coach: (sc) => this.coach(sc) };
+    this.screens = new Screens({ game, store, touch, cfg: () => this.cfg, setCfg: (c) => { this.cfg = c; }, play: (c) => this.startMatch(c, true), train: (n, d) => this.startTraining(n, d), credits: () => this.credits() });
   }
   setShell(s: Shell): void { this.shell = s; }
 
@@ -74,6 +74,7 @@ export class App {
 
   /** Matches that start from the menu show the tour of the controls the first time. */
   private coachNext = false;
+  private menuCfg: MatchConfig | null = null;
 
   startMatch(cfg0: MatchConfig, fromMenu = false): void {
     this.coachNext = fromMenu;
@@ -100,6 +101,7 @@ export class App {
   again(): void { this.startMatch({ ...this.cfg, seed: (this.cfg.seed * 1103515245 + 12345) % 65535 + 1 }); }
 
   showMenu(first: 'title' | 'main' = 'main'): void {
+    if (this.cfg.training && this.menuCfg) { this.cfg = { ...this.menuCfg, drill: this.cfg.drill }; this.menuCfg = null; }
     this.game.scene.stop('Match');
     document.getElementById('result')?.remove();
     document.getElementById('pause-menu')?.remove();
@@ -142,9 +144,17 @@ export class App {
   credits(): void { showCredits(() => undefined); }
 
   /** The practice session with Thor (M12). */
-  startTraining(players: 1 | 2): void {
+  startTraining(players: 1 | 2, drill: 'todo' | 'libre' | 'penal' = 'todo'): void {
     const c = this.cfg;
-    this.startMatch({ ...c, players, versus: false, training: true, cup: false, knockout: false, rival: 'tiburon', stadium: 'arrecife', time: 'day', difficulty: 'tranquilos', seed: (Date.now() & 0xffff) + 1, ff: 1, autoplay: null });
+    this.menuCfg = { ...c, training: false };   // the practice changes the rival, the stadium and the difficulty: the menus get their own settings back afterwards
+    this.startMatch({ ...c, drill, players, versus: false, training: true, cup: false, knockout: false, rival: 'tiburon', stadium: 'arrecife', time: 'day', difficulty: 'tranquilos', seed: (Date.now() & 0xffff) + 1, ff: 1, autoplay: null });
+  }
+
+  private lookName(): string { return ({ suave: 'Transparentes', minimo: 'Casi invisibles', normal: 'Sólidos' } as Record<string, string>)[this.store.data.settings.touchLook] ?? 'Transparentes'; }
+  private cycleLook(): string {
+    const st = this.store.data.settings, order = ['suave', 'minimo', 'normal'] as const;
+    st.touchLook = order[(order.indexOf(st.touchLook) + 1) % order.length]; this.store.save(); this.touch.setLook(st.touchLook);
+    return this.lookName();
   }
 
   trainingDone(): void {

@@ -287,3 +287,23 @@ input[type=range] { width: 100%; height: 28px; accent-color: #5DDB43; }
 .rpanel .mvp { display: flex; align-items: center; justify-content: center; gap: 8px; } .faceb { display: none; width: 80px; height: 80px; flex: none; image-rendering: pixelated; background-repeat: no-repeat; background-size: 320px 80px; }
 @media (min-height: 600px) { .faceb { display: inline-block; } }
 .cupfoot .how { color: #6a5a80; font-weight: 700; font-size: clamp(12px, 2.4vh, 15px); margin-top: 2px; }
+
+/* ---------- buttons that cover less of the game (iPhone): glass look, a ghost after a moment without touching, smaller on short screens ---------- */
+#touch[data-look="suave"] { --ga: .16; --gb: .42; }
+#touch[data-look="minimo"] { --ga: .1; --gb: .36; }
+#touch[data-look="suave"] .tbtn, #touch[data-look="minimo"] .tbtn { background: rgba(255,244,222,var(--ga)); border: 3px solid rgba(42,27,61,var(--gb)); box-shadow: none; transition: opacity .4s, background .12s; -webkit-backdrop-filter: blur(1.5px); backdrop-filter: blur(1.5px); }
+#touch[data-look="suave"] .tbtn span svg, #touch[data-look="minimo"] .tbtn span svg { filter: drop-shadow(0 0 1.5px rgba(255,255,255,.95)) drop-shadow(0 0 1px rgba(255,255,255,.8)); }
+#touch[data-look="suave"] .tbtn em { font-size: 10px; color: var(--ink); text-shadow: 0 0 3px #fff, 0 0 3px #fff, 0 0 2px #fff; }
+#touch[data-look="minimo"] .tbtn em { display: none; }
+#touch[data-look="suave"].fade .tbtn:not(.held) { opacity: .38; }
+#touch[data-look="minimo"].fade .tbtn:not(.held) { opacity: .45; }
+#touch[data-look="suave"] .tbtn.held, #touch[data-look="minimo"] .tbtn.held { background: var(--c, #FFD447); opacity: 1; transform: none; border-color: var(--ink); }
+#touch[data-look="suave"] .tbase, #touch[data-look="minimo"] .tbase { border-width: 3px; border-color: rgba(255,255,255,.55); background: rgba(42,27,61,.16); }
+@media (max-height: 430px) {
+  #touch[data-look="suave"] .tslot:not(.two) .tbtn.shoot, #touch[data-look="minimo"] .tslot:not(.two) .tbtn.shoot { width: 74px; height: 74px; right: calc(20px + var(--sr)); bottom: calc(18px + var(--sb)); }
+  #touch[data-look="suave"] .tslot:not(.two) .tbtn.pass, #touch[data-look="minimo"] .tslot:not(.two) .tbtn.pass { width: 60px; height: 60px; right: calc(106px + var(--sr)); bottom: calc(24px + var(--sb)); }
+  #touch[data-look="suave"] .tslot:not(.two) .tbtn.special, #touch[data-look="minimo"] .tslot:not(.two) .tbtn.special { width: 60px; height: 60px; right: calc(30px + var(--sr)); bottom: calc(104px + var(--sb)); }
+  #touch[data-look="suave"] .tslot:not(.two) .tbtn.sprint, #touch[data-look="minimo"] .tslot:not(.two) .tbtn.sprint { width: 54px; height: 54px; right: calc(118px + var(--sr)); bottom: calc(96px + var(--sb)); }
+  #touch[data-look="suave"] .tslot.easy:not(.two) .tbtn.shoot, #touch[data-look="minimo"] .tslot.easy:not(.two) .tbtn.shoot { width: 88px; height: 88px; }
+  #touch[data-look="suave"] .tslot.easy:not(.two) .tbtn.special, #touch[data-look="minimo"] .tslot.easy:not(.two) .tbtn.special { width: 66px; height: 66px; right: calc(34px + var(--sr)); bottom: calc(118px + var(--sb)); }
+}

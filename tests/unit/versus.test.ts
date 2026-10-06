@@ -9,7 +9,7 @@ function play(seed: number): { m: ReturnType<typeof createMatch>; stuck: number 
   const m = createMatch({ seed, halfLength: 60, humans: [{ team: 0, slot: 3, humanSlot: 0, controls: 'full' }, { team: 1, slot: 3, humanSlot: 1, controls: 'full' }] });
   const b0 = newBot('sophie'), b1 = newBot('sophie');
   let n = 0, nan = 0;
-  while (m.phase !== 'over' && n * DT < 400) {
+  while (m.phase !== 'over' && n * DT < 1200) {   // a tie goes to penalties
     setHumanInput(m, 0, botFrame(m, m.humans[0], b0)); setHumanInput(m, 1, botFrame(m, m.humans[1], b1));
     step(m); n++; m.events = [];
     if (![m.ball.x, m.ball.y].every(Number.isFinite)) nan++;

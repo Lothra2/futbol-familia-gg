@@ -115,7 +115,7 @@ describe('reloj', () => {
     expect(m.half).toBe(2); expect(m.phase).toBe('kickoff'); expect(m.restart!.team).toBe(1); expect(m.clock).toBe(0);
     m.players.forEach((p) => { p.control = 'ai'; });
     until(m, () => m.phase === 'play', 4); ball(m, 480, 80, 0, 0, 0, 0); clear(m);
-    secs(m, 10.2); expect(m.phase).toBe('over');
+    secs(m, 10.2); expect(m.phase).toBe('penalties');   // 0-0: a tie goes to the shootout
   });
   it('B8: espera un tiro que llega al arco en menos de 1 s, y no espera uno que no es peligroso', () => {
     const m = mk({ halfLength: 5 }); clear(m); ball(m, 600, 80, 5, 0, 0, 0);

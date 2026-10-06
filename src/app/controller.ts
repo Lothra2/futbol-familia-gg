@@ -25,6 +25,8 @@ export interface MatchConfig {
   mirror: boolean;
   /** A Cup match: no draws (golden goal, then penalties) and the result moves the Cup forward. */
   cup?: boolean; knockout?: boolean; training?: boolean;
+  /** What the practice with Thor works on: everything in order, only free kicks or only penalties (it repeats until the person leaves). */
+  drill?: 'todo' | 'libre' | 'penal';
   /** The date of the Cup (0 to 3), see tuning.ts ARC. */
   arc?: number;
   /** Two players against each other: player 2 plays the rival team. */

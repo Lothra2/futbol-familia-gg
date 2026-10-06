@@ -41,6 +41,9 @@ export const T = Object.freeze({
   restart: { position: 0.8, aiMin: 0.8, aiMax: 1.2, humanAuto: 3.0, easyAuto: 1.2, kickoffAuto: 2.0, easyKickoffAuto: 1.2, wipe: 0.3, teleport: 40 },
   goalT: 2.8, goalSkip: 1.0, goldenT: 60, halftimeT: 3.5, endGrace: 1.0, cinemaT: { full: 3.5, short: 2.0, off: 0.6 },
   throwMax: 120, throwInset: 26, cornerBox: 48,
+  // free kick (tiro libre): a slide that hits the leg of the rival who carries the ball in the last `zone` px before the goal of the one who slides. The spot is never nearer than `minDist` to the goal line,
+  // the wall of `wall` players stands `wallDist` px in front of the ball. The aim moves `aimV` px/s with the stick, the effect `curveV` per second, the meter swings `meterHz` times a second (sweet over `sweet`)
+  free: { zone: 300, minDist: 120, maxDist: 230, ballNear: 40, wall: 2, wallDist: 40, wallGap: 10, zWall: 20, wallReach: 12, zGoal: [14, 22] as readonly number[], zBlock: 8, vMin: 220, vMax: 460, err: 5, spin: 0.9, aimV: 70, curveV: 1.4, meterHz: 0.55, sweet: 0.88, ok: 0.55, aiMin: 1.2, aiMax: 2.0, aiErrK: 0.7, aiErrMin: 7, aiSweet: 0.25, aiBad: 0.25, auto: 6, easyAuto: 8, q: [0.2, 0.4, 0.6] as readonly number[], aiQ: 0.6, cd: 35 },
   // ---- easy controls: a bit of help that is not shown to the children (GAME_DESIGN section 4)
   easy: { stolen: 0.6, helpAt: 0.7, passAhead: 50, passFree: 30, autoStick: 0.85, autoAfter: 0.3, autoDrain: 0.5, magnetR: 30, magnetA: 60, magnetSpeed: 200 },
   // ---- Barra Estrella and specials (7)

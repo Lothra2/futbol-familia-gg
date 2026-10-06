@@ -11,6 +11,7 @@ const tone = (w: Wave, midi: number, at: number, d: number, v = 0.5, extra: Part
 const arp = (w: Wave, midis: number[], step: number, d: number, v = 0.45): Seg[] => midis.map((m, i) => tone(w, m, i * step, d, v));
 
 export const SFX: Record<string, SfxDef> = {
+  heart: { segs: [{ w: 'sin', f: [78, 46], d: 0.13, v: 0.75 }, { w: 'sin', f: [70, 42], d: 0.16, v: 0.65, at: 0.17 }] },
   click: { segs: [tone('sq', 84, 0, 0.05, 0.35, { duty: 0.25 })] },
   whistle: { segs: [{ w: 'sin', f: [2300, 2300], d: 0.5, v: 0.4, vib: [32, 0.05], atk: 0.02 }, { w: 'sin', f: [3100, 3100], d: 0.5, v: 0.12, vib: [32, 0.05], atk: 0.02 }] },
   count: { segs: [tone('sq', 69, 0, 0.18, 0.4, { duty: 0.5 })] },

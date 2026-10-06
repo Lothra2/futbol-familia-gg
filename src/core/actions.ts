@@ -1,5 +1,5 @@
 import { T } from './tuning';
-import { ESCAPE, GOAL, PITCH, attackDir, goalX } from './field';
+import { ESCAPE, GOAL, PITCH, attackDir, goalX, ownGoalX } from './field';
 import { lobLaunch, speedToReach } from './ball';
 import { emit } from './events';
 import { addBar } from './specials';
@@ -51,7 +51,7 @@ export function releaseBall(m: Match, p: Player, vx: number, vy: number, vz: num
 }
 
 /** Lateral drift of a ball with effect, so the aim can be corrected and the ball curves INTO the aimed point. */
-const curveDrift = (spin: number, dist: number, speed: number): number => {
+export const curveDrift = (spin: number, dist: number, speed: number): number => {
   const t = dist / Math.max(60, speed * 0.85), k = T.spinDecay;
   return ((spin * T.spinAccel * Math.min(1, (speed * 0.85) / 300)) / k) * (t - (1 - Math.exp(-k * t)) / k);
 };
@@ -255,6 +255,8 @@ function slideContacts(m: Match, p: Player, a: Act): void {
       if (within(o.x, o.y, T.slide.reach + 4, T.slide.half + 3)) {
         startTumble(m, o, T.slide.tumble);
         emit(m, 'slidehit', o.x, o.y, 0, o.id);
+        // a foul: the rival who carried the ball is brought down close to the goal of the one who slides (rules.ts gives the free kick when the step ends)
+        if (!m.training && m.t - ((m.data.fkAt as number) ?? -99) > T.free.cd && Math.abs(o.x - ownGoalX(p.team)) < T.free.zone && (m.ball.owner === o.id || Math.hypot(m.ball.x - o.x, m.ball.y - o.y) < T.free.ballNear)) m.data.foul = { team: o.team, x: o.x, y: o.y, who: o.id };
         startDizzy(p, T.slide.dizzy);
         return;
       }
@@ -431,6 +433,15 @@ function resolveKick(m: Match, p: Player, plan: KickPlan): void {
   if (!ok && plan.kind === 'restart' && b.state === 'dead') ok = true;
   if (!ok) { emit(m, 'whiff', p.x, p.y, p.z, p.id); return; }
   launch(m, p, plan);
+}
+
+/** The free kick: a shot from a dead ball with the aim and the effect that the taker chose. `q` is the quality of the chance the keeper sees (the wall takes the rest). */
+export function freeKickShot(m: Match, p: Player, a: { ty: number; speed: number; vz: number; err: number; spin: number; q: number }): void {
+  const plan: KickPlan = { kind: 'shot', speed: a.speed, vz: a.vz, tx: goalX(p.team), ty: a.ty, err: a.err, spin: a.spin };
+  p.facing = attackDir(p.team); p.dirX = p.facing; p.dirY = 0;
+  launch(m, p, plan);
+  const sq = m.data.shotQ as { q: number } | undefined; if (sq) sq.q = Math.max(sq.q, a.q);
+  m.ball.state = 'free';
 }
 
 /** Kicks the ball for a restart (kickoff, throw-in, goal kick, corner) as the taker. `target` is a point, `lob` makes it fly. */

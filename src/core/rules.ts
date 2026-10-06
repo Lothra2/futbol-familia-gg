@@ -3,6 +3,7 @@ import { CENTER, ESCAPE, GOAL, PITCH, attackDir, goalX, ownGoalX, slotPos } from
 import { emit } from './events';
 import { addBar, stepCinematic } from './specials';
 import { startPenalties } from './penalties';
+import { startFreeKick, stepFreeKick, takeFreeKick } from './freekick';
 import { choosePass, playerById, restartKick } from './actions';
 import { emptyInput } from './types';
 import type { Match, Player, Restart, RestartKind, Team } from './state';
@@ -97,9 +98,9 @@ function endHalf(m: Match): void {
   const b = m.ball;
   Object.assign(b, { state: 'dead', owner: null, vx: 0, vy: 0, vz: 0 });
   if (m.half === 1) { m.phase = 'halftime'; m.phaseT = 0; emit(m, 'whistle', b.x, b.y, 0, undefined, 2); }
-  else if (m.knockout && m.score[0] === m.score[1]) {
-    // a tie in the Cup: 60 s of golden goal and, if nobody scores, penalties
-    if (m.golden) startPenalties(m);
+  else if (!m.training && m.score[0] === m.score[1]) {
+    // a tie goes to penalties. The Cup plays 60 s of golden goal first and, if nobody scores, penalties; every other match goes straight to the shootout
+    if (!m.knockout || m.golden) startPenalties(m);
     else { m.golden = true; m.halfLength = T.goldenT; m.clock = 0; m.graceT = 0; emit(m, 'golden', b.x, b.y); setupKickoff(m, other(m.firstKick)); }
   } else { m.phase = 'over'; m.phaseT = 0; emit(m, 'whistle', b.x, b.y, 0, undefined, 3); emit(m, 'final', b.x, b.y); }
 }
@@ -113,6 +114,7 @@ function goalScored(m: Match, team: Team): void {
   const pt = b.prevTouch;
   if (last && last.team === team && pt.team === team && pt.player !== null && pt.player !== last.id && m.t - pt.t < 4) assist = pt.player;
   m.lastGoal = { team, scorer: last && last.team === team ? scorer : null, assist };
+  if (m.data.fkTeam === team && m.t - ((m.data.fkAt as number) ?? -99) < 6) m.data.fkGoals = ((m.data.fkGoals as number) ?? 0) + 1;   // a goal from a free kick (practice reads it)
   if (last && last.team === team) last.stats2.goals++;
   const a = playerById(m, assist); if (a) a.stats2.assists++;
   addBar(m, other(team), T.bar.conceded);
@@ -145,6 +147,9 @@ function doRestartKick(m: Match, r: Restart): void {
     const c = choosePass(m, t, inp.mx, inp.my, T.lobMaxD);
     if (c) { m.lastPass = { from: t.id, to: c.id, t: m.t, team: t.team }; restartKick(m, t, c.x, c.y, true); }
     else restartKick(m, t, b.x + dir * 200, clamp(m.rng.range(40, 120), 8, PITCH.d - 8), true);
+  } else if (r.kind === 'freekick') {
+    takeFreeKick(m, r, t);
+    t.input = { ...t.input, shoot: false, pass: false, shootPressed: false, passPressed: false };   // the press that took the kick must not also start a slide in the same step
   } else {
     const gx = goalX(r.team);
     restartKick(m, t, gx - dir * T.cornerBox, 80 + m.rng.range(-14, 14), true);
@@ -161,17 +166,18 @@ function stepRestart(m: Match, dt: number): void {
   if (r.t <= dt && r.kind !== 'kickoff') {
     const d = Math.hypot(t.x - r.x, t.y - r.y);
     if (d > T.restart.teleport) emit(m, 'zas', r.x, r.y, 0, t.id);
-    t.x = r.x; t.y = r.kind === 'throwin' ? r.y : r.y; t.vx = t.vy = 0;
+    t.x = r.kind === 'freekick' ? r.x - attackDir(r.team) * 9 : r.x; t.y = r.y; t.vx = t.vy = 0;
     t.facing = attackDir(r.team); t.dirX = t.facing; t.dirY = 0;
   }
   t.vx = 0; t.vy = 0;
+  if (r.kind === 'freekick') stepFreeKick(m, r, dt);
   if (r.t < T.restart.position && r.kind !== 'kickoff') return;
   if (r.kind === 'kickoff' && r.t < T.restart.wipe) return;
   let go = false;
   const easy = isHuman(t) && t.controls === 'easy';
   if (isHuman(t)) {
-    go = t.input.shootPressed || t.input.passPressed;
-    const auto = r.kind === 'kickoff' ? (easy ? T.restart.easyKickoffAuto : T.restart.kickoffAuto) : (easy ? T.restart.easyAuto : T.restart.humanAuto);
+    go = t.input.shootPressed || (r.kind !== 'freekick' && t.input.passPressed);
+    const auto = r.kind === 'freekick' ? (easy ? T.free.easyAuto : T.free.auto) : r.kind === 'kickoff' ? (easy ? T.restart.easyKickoffAuto : T.restart.kickoffAuto) : (easy ? T.restart.easyAuto : T.restart.humanAuto);
     if (r.t >= auto) go = true;
   } else go = r.t >= r.aiAt + (r.kind === 'kickoff' ? T.restart.wipe : 0);
   if (go) doRestartKick(m, r);
@@ -192,8 +198,10 @@ export function preStep(m: Match, dt: number): void {
 /** Goals, the ball leaving the pitch and the clock. Called every step after the ball moved. */
 export function postStep(m: Match, dt: number, prevX: number, prevY: number): void {
   const b = m.ball;
-  if (m.phase !== 'play') return;
+  if (m.phase !== 'play') { m.data.foul = undefined; return; }
   if (b.inNet && b.scored !== null) { const team = b.scored; b.scored = null; goalScored(m, team); return; }
+  const foul = m.data.foul as { team: Team; x: number; y: number; who: number } | undefined;
+  if (foul) { m.data.foul = undefined; if (m.clock < m.halfLength) { startFreeKick(m, foul.team, foul.x, foul.y, foul.who); return; } }
   if (!b.inNet && b.state !== 'dead' && b.state !== 'scripted' && (b.x < 0 || b.x > PITCH.w || b.y < 0 || b.y > PITCH.d)) {
     if (m.clock >= m.halfLength) { endHalf(m); return; }
     ballOut(m, prevX, prevY); return;

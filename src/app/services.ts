@@ -15,7 +15,7 @@ export interface AudioApi {
   ui(name: string): void;
   pause(on: boolean): void;
 }
-export interface AppApi { again(): void; menu(): void; finish(m: import('../core/state').Match): void; trainingDone(): void; coach(sc: import('../view/scenes/MatchScene').MatchScene): void }
+export interface AppApi { again(): void; menu(): void; finish(m: import('../core/state').Match): void; trainingDone(): void; /** The look of the touch buttons: the name of the one in use, and the next one (saved). */ touchLook(): string; cycleTouchLook(): string; coach(sc: import('../view/scenes/MatchScene').MatchScene): void }
 export interface Services { router: InputRouter | null; audio: AudioApi | null; app: AppApi | null }
 /** Shared singletons wired in main.ts. Scenes read them, nothing here talks to the network. */
 export const services: Services = { router: null, audio: null, app: null };

@@ -99,7 +99,8 @@ export function step(m: Match, dt: number = DT): void {
     stepFlight(m, dt);
     const live = movesIn(m);
     const takerId = m.restart && (m.phase === 'restart' || m.phase === 'kickoff') ? m.restart.taker : -1;
-    for (const p of m.players) updatePlayer(m, p, dt, live && p.id !== takerId);
+    const wall = m.restart?.kind === 'freekick' && m.restart.fk && takerId >= 0 ? m.restart.fk.wall : [];
+    for (const p of m.players) updatePlayer(m, p, dt, live && p.id !== takerId && !wall.includes(p.id));
     separate(m, dt);
     const px = m.ball.x, py = m.ball.y;
     stepBall(m.ball, dt, {

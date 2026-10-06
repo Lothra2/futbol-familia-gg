@@ -19,7 +19,7 @@ export interface ScreenDeps {
   cfg: () => MatchConfig; setCfg: (c: MatchConfig) => void;
   play: (cfg: MatchConfig) => void;
   /** Starts the training session with Thor (M12). */
-  train: (players: 1 | 2) => void;
+  train: (players: 1 | 2, drill: 'todo' | 'libre' | 'penal') => void;
   credits: () => void;
 }
 
@@ -192,7 +192,8 @@ export class Screens {
       <div class="qcol"><div class="grp"><div class="lbl">Narrador</div>${this.chips('narr', [{ v: true, label: 'Con voz' }, { v: false, label: 'Sin voz' }], st.narrator)}</div>
       <div class="grp"><div class="lbl">Repetición del gol</div>${this.chips('replay', [{ v: true, label: 'Sí' }, { v: false, label: 'No' }], st.replay)}</div>
       <div class="grp"><div class="lbl">Cinemáticas</div>${this.chips('cine', [{ v: 'full', label: 'Completas' }, { v: 'short', label: 'Cortas' }, { v: 'off', label: 'Sin ellas' }], st.cinematics)}</div>
-      <div class="grp"><div class="lbl">Botones en pantalla</div>${this.chips('touch', [{ v: 'auto', label: 'Automático' }, { v: 'on', label: 'Siempre' }, { v: 'off', label: 'Nunca' }], st.touchControls)}</div>
+      <div class="grp"><div class="lbl">Botones en pantalla</div>${this.chips('touchmode', [{ v: 'auto', label: 'Automático' }, { v: 'on', label: 'Siempre' }, { v: 'off', label: 'Nunca' }], st.touchControls)}</div>
+      <div class="grp"><div class="lbl">Qué tanto tapan los botones</div>${this.chips('look', [{ v: 'suave', label: 'Transparentes' }, { v: 'minimo', label: 'Casi invisibles' }, { v: 'normal', label: 'Sólidos' }], st.touchLook)}</div>
       <div class="grp"><div class="lbl">Jugador 2 en pantalla</div>${this.chips('mirror', [{ v: false, label: 'Normal' }, { v: true, label: 'Espejo' }], st.mirrorP2)}</div>
       <div class="grp"><div class="lbl">Ayuda</div><button class="chip-o" data-act="guide">Cómo se juega</button> <button class="chip-o" data-act="credits">Créditos</button></div><div class="grp"><div class="lbl">Tu progreso</div><button class="chip-o danger" data-act="wipe">Borrar todo</button></div></div></div>`;
   }
@@ -201,7 +202,8 @@ export class Screens {
     return `${this.head('Entrenamiento', 'Practica pases, tiros y poderes con Thor')}
       <div class="qgrid"><div class="qcol"><div class="lbl">Jugadores</div>${this.chips('tplayers', [{ v: 1, label: '1 jugador' }, { v: 2, label: '2 juntos' }], this.d.cfg().players)}
       <div class="lbl">Tu equipo</div>${this.squadHtml(this.d.cfg())}</div>
-      <div class="qcol opts"><div class="lbl">Retos con Thor</div><p class="note">Pases, tiros a la portería, el poder y regates con Thor de portero. Sin tiempo, sin presión.</p></div></div><div class="mfoot"><button class="btn primary go" data-act="trainGo" data-focus>¡A entrenar!</button></div>`;
+      <div class="qcol opts"><div class="lbl">Qué practicar</div>${this.chips('tdrill', [{ v: 'todo', label: 'Todos los retos' }, { v: 'libre', label: 'Tiros libres' }, { v: 'penal', label: 'Penales' }], this.d.cfg().drill ?? 'todo')}
+      <p class="note">${({ todo: 'Pases, tiros, el poder, un tiro libre y penales con Thor. Sin tiempo, sin presión.', libre: 'Tiros libres contra la barrera, uno tras otro. Mira con el stick y toca Tiro en ¡AHORA!', penal: 'Penales uno tras otro, vistos desde atrás del pateador. Mira con el stick y toca Tiro.' } as Record<string, string>)[this.d.cfg().drill ?? 'todo']}</p></div></div><div class="mfoot"><button class="btn primary go" data-act="trainGo" data-focus>¡A entrenar!</button></div>`;
   }
 
   // ------------------------------------------------------------------ behaviour
@@ -219,8 +221,8 @@ export class Screens {
         case 'quick': case 'cup': case 'vitrina': case 'settings': case 'training': case 'daily': case 'guide': this.show(act as Name); break;
         case 'fs': void onFullscreenButton(); break;
         case 'credits': this.d.credits(); break;
-        case 'play': services.audio?.unlock(); services.audio?.play('go'); this.d.play({ ...c, seed: (Date.now() & 0xffff) + 1, ff: 1, autoplay: null, cup: false, knockout: false, arc: 0 }); break;
-        case 'trainGo': this.d.train(c.players); break;
+        case 'play': services.audio?.unlock(); services.audio?.play('go'); this.d.play({ ...c, seed: (Date.now() & 0xffff) + 1, ff: 1, autoplay: null, cup: false, knockout: false, training: false, drill: undefined, arc: 0 }); break;
+        case 'trainGo': this.d.train(c.players, c.drill ?? 'todo'); break;
         case 'cupnew': startCup(store.data, store.data.cup.difficulty); store.save(); this.cupMatch(); break;
         case 'cupgo': this.cupMatch(); break;
         case 'wipe': if (confirm('¿Borrar todo el progreso? No se puede deshacer.')) { Object.assign(store.data, defaultSave()); store.save(); redraw(); } break;
@@ -230,6 +232,7 @@ export class Screens {
     el.querySelectorAll('[data-outfit]').forEach((b) => b.addEventListener('click', () => { const [id, o] = (b as HTMLElement).dataset.outfit!.split(':'); store.data.characters[id as CharId].outfit = o as 'base'; store.save(); redraw(); }));
     chips('players', (i) => { c.players = i === 0 ? 1 : 2; c.versus = i === 2; set(); });
     chips('tplayers', (i) => { c.players = i === 0 ? 1 : 2; set(); });
+    chips('tdrill', (i) => { c.drill = (['todo', 'libre', 'penal'] as const)[i]; set(); });
     chips('c0', (i) => { c.controls[0] = i === 0 ? 'easy' : 'full'; set(); this.persist(); });
     chips('c1', (i) => { c.controls[1] = i === 0 ? 'easy' : 'full'; set(); this.persist(); });
     chips('diff', (i) => { c.difficulty = (['tranquilos', 'normales', 'campeones'] as const)[i]; set(); this.persist(); });
@@ -248,7 +251,8 @@ export class Screens {
     chips('narr', (i) => { s.narrator = i === 0; c.narrator = s.narrator; set(); store.save(); });
     chips('replay', (i) => { s.replay = i === 0; c.replay = s.replay; set(); store.save(); });
     chips('cine', (i) => { s.cinematics = (['full', 'short', 'off'] as const)[i]; c.cine = s.cinematics; set(); store.save(); });
-    chips('touch', (i) => { s.touchControls = (['auto', 'on', 'off'] as const)[i]; this.d.touch.setMode(s.touchControls); store.save(); });
+    chips('look', (i) => { s.touchLook = (['suave', 'minimo', 'normal'] as const)[i]; this.d.touch.setLook(s.touchLook); store.save(); });
+    chips('touchmode', (i) => { s.touchControls = (['auto', 'on', 'off'] as const)[i]; this.d.touch.setMode(s.touchControls); store.save(); });
     chips('mirror', (i) => { s.mirrorP2 = i === 1; c.mirror = s.mirrorP2; set(); store.save(); });
   }
 
@@ -256,7 +260,7 @@ export class Screens {
   cupMatch(): void {
     const c = this.d.cfg(), s = this.d.store.data, k: Kingdom = cupKingdom(s);
     services.audio?.unlock();
-    this.d.play({ ...c, rival: k.species, stadium: k.stadium, time: undefined, difficulty: s.cup.difficulty, seed: (Date.now() & 0xffff) + 1, ff: 1, autoplay: null, cup: true, knockout: true, versus: false, arc: Math.min(3, s.cup.stage) });
+    this.d.play({ ...c, rival: k.species, stadium: k.stadium, time: undefined, difficulty: s.cup.difficulty, seed: (Date.now() & 0xffff) + 1, ff: 1, autoplay: null, cup: true, knockout: true, training: false, drill: undefined, versus: false, arc: Math.min(3, s.cup.stage) });
   }
 
   private persist(): void {

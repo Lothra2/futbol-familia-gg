@@ -21,7 +21,7 @@ function healthy(rs: SimResult[]): void {
     expect(r.maxPhase.kickoff ?? 0, 'saque del medio').toBeLessThanOrEqual(3.0);
     expect(r.maxPhase.cinematic ?? 0, 'cinemática').toBeLessThanOrEqual(3.5 + 0.02);
     expect(r.maxPhase.goal ?? 0).toBeLessThanOrEqual(2.9);
-    expect(r.seconds, 'duración').toBeGreaterThan(2 * 90); expect(r.seconds).toBeLessThan(2 * 90 + 100);
+    expect(r.seconds, 'duración').toBeGreaterThan(2 * 90); expect(r.seconds).toBeLessThan(2 * 90 + (r.m.pen ? 600 : 100));   // a tie goes to penalties now (about 6 s per kick)
   }
 }
 

@@ -65,7 +65,7 @@ let shell: Shell;
 game.events.once('assets-ready', () => {
   document.getElementById('loading')?.remove();
   kb.active = true;
-  touch.setMode(store.data.settings.touchControls);
+  touch.setMode(store.data.settings.touchControls); touch.setLook(store.data.settings.touchLook);
   const app = new App(game, router, touch, kb, pad, store);
   shell = new Shell(game, router, touch, kb);
   app.setShell(shell);

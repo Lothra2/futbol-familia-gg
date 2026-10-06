@@ -23,9 +23,12 @@ export class TouchUI {
   private bases: HTMLElement[] = [];
   private knobs: HTMLElement[] = [];
   private radius = 52;
+  private look: 'normal' | 'suave' | 'minimo' = 'suave';
+  private fadeT = 0;
 
   constructor(private router: InputRouter) {
     const r = this.root;
+    r.dataset.look = this.look;
     r.addEventListener('pointerdown', (e) => this.down(e));
     r.addEventListener('pointermove', (e) => this.move(e));
     for (const t of ['pointerup', 'pointercancel', 'lostpointercapture']) r.addEventListener(t, (e) => this.up(e as PointerEvent));
@@ -35,12 +38,21 @@ export class TouchUI {
 
   get coarse(): boolean { return this.seenTouch || (typeof matchMedia === 'function' && matchMedia('(pointer: coarse)').matches); }
   setMode(m: 'auto' | 'on' | 'off'): void { this.mode = m; this.refresh(); }
+  /** How much of the game the buttons cover: normal (the old look), suave (glass buttons that fade after a moment without touching) or minimo (almost invisible). */
+  setLook(l: 'normal' | 'suave' | 'minimo'): void { this.look = l; this.root.dataset.look = l; this.wake(); }
+  /** A touch on a button wakes the buttons up; after a few seconds without one they fade to a ghost (not in the normal look). */
+  private wake(): void {
+    this.root.classList.remove('fade');
+    if (this.fadeT) window.clearTimeout(this.fadeT);
+    this.fadeT = this.look === 'normal' ? 0 : window.setTimeout(() => this.root.classList.add('fade'), 2000);
+  }
   /** Rebuilds the layout for the number of players and their control mode. Call when a match starts. */
   configure(players: 1 | 2, mirrorP2: boolean, modes: ControlMode[] = ['full', 'full']): void { this.players = players; this.mirror = mirrorP2; this.modes = modes; this.build(); this.refresh(); }
   show(on: boolean): void { this.enabled = on; this.refresh(); }
   private refresh(): void {
     const visible = this.enabled && (this.mode === 'on' || (this.mode === 'auto' && this.coarse));
     this.root.classList.toggle('on', visible);
+    if (visible) this.wake();
     if (!visible) this.releaseAll();
   }
 
@@ -87,6 +99,7 @@ export class TouchUI {
     if (!this.enabled) return;
     e.preventDefault();
     const target = (e.target as HTMLElement).closest('.tbtn') as HTMLElement | null;
+    this.wake();
     if (target) {
       const slot = Number((target.closest('.tslot') as HTMLElement).dataset.slot);
       const b = target.dataset.b as Btn;

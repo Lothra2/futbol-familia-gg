@@ -1,6 +1,8 @@
 import type { Match } from '../core/state';
+import { startTrainingFreeKick } from '../core/freekick';
+import { endPenaltyPractice, startPenaltyPractice } from '../core/penalties';
 
-export interface Challenge { id: string; title: string; hint: string; need: number; read: (m: Match) => number; needsFull?: boolean }
+export interface Challenge { id: string; title: string; hint: string; need: number; read: (m: Match) => number; needsFull?: boolean; /** Called at every update while this challenge is the one on (the free kick puts the ball in place). */ tick?: (m: Match) => void }
 const fam = (m: Match) => m.players.filter((p) => p.team === 0 && p.role !== 'gk');
 const sum = (m: Match, f: (s: Match['players'][number]['stats2']) => number): number => fam(m).reduce((a, p) => a + f(p.stats2), 0);
 
@@ -10,7 +12,17 @@ export const CHALLENGES: Challenge[] = [
   { id: 'alto', title: 'Haz 2 pases altos', hint: 'Mantén Pase un momento y suéltalo: el balón vuela por arriba', need: 2, read: (m) => sum(m, (s) => s.chips), needsFull: true },
   { id: 'goles', title: 'Marca 3 goles', hint: 'Mantén Tiro para más potencia y suéltalo cerca del arco', need: 3, read: (m) => sum(m, (s) => s.goals) },
   { id: 'poder', title: 'Marca un gol con tu poder', hint: 'Acércate al arco con el balón y toca Especial', need: 1, read: (m) => sum(m, (s) => s.spGoals) },
+  { id: 'libre', title: 'Mete un tiro libre', hint: 'Sube y baja la mira, empuja hacia el arco para dar efecto y toca Tiro cuando diga ¡AHORA!', need: 1, read: (m) => (m.data.fkGoals as number) ?? 0,
+    tick: (m) => { if (((m.phase === 'play' && !m.restart) || m.phase === 'kickoff') && m.t - ((m.data.fkAt as number) ?? -99) > 4) startTrainingFreeKick(m); } },
+  { id: 'penales', title: 'Mete 2 penales', hint: 'Mueve el stick a los lados para apuntar y arriba o abajo para la altura. Toca Tiro para patear', need: 2, read: (m) => (m.data.penGoals as number) ?? 0,
+    tick: (m) => { if (((m.phase === 'play' && !m.restart) || m.phase === 'kickoff') && !m.pen) startPenaltyPractice(m); } },
 ];
+
+/** The drills of the menu: only free kicks or only penalties, repeated until the person leaves (a set of 3 is a "reto superado" and the next set starts). */
+const DRILLS: Record<string, Challenge[]> = {
+  libre: [{ ...CHALLENGES.find((c) => c.id === 'libre')!, title: 'Mete 3 tiros libres', need: 3 }],
+  penal: [{ ...CHALLENGES.find((c) => c.id === 'penales')!, title: 'Mete 3 penales', need: 3 }],
+};
 
 export interface TrainingView { index: number; total: number; title: string; hint: string; have: number; need: number; justDone: boolean; allDone: boolean }
 
@@ -18,17 +30,21 @@ export interface TrainingView { index: number; total: number; title: string; hin
 export class Training {
   private list: Challenge[];
   index = 0; private base = 0; done = false;
-  constructor(m: Match, private easy = false) {
-    this.list = CHALLENGES.filter((c) => !(easy && c.needsFull));
+  private loop: boolean;
+  constructor(m: Match, private easy = false, drill: 'todo' | 'libre' | 'penal' = 'todo') {
+    this.loop = drill !== 'todo';
+    this.list = (DRILLS[drill] ?? CHALLENGES).filter((c) => !(easy && c.needsFull));
     this.base = this.list[0].read(m);
   }
   get total(): number { return this.list.length; }
   update(m: Match): TrainingView {
     const c = this.list[Math.min(this.index, this.list.length - 1)];
+    if (!this.done) c.tick?.(m);
     let have = this.done ? c.need : Math.min(c.need, c.read(m) - this.base), justDone = false;
     if (!this.done && have >= c.need) {
       justDone = true; this.index++;
-      if (this.index >= this.list.length) this.done = true; else this.base = this.list[this.index].read(m);
+      if (m.pen?.practice) endPenaltyPractice(m);
+      if (this.index >= this.list.length) { if (this.loop) { this.index = 0; this.base = this.list[0].read(m); } else this.done = true; } else this.base = this.list[this.index].read(m);
     }
     const cur = this.list[Math.min(this.index, this.list.length - 1)];
     if (justDone && !this.done) have = 0;

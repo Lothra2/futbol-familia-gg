@@ -1,14 +1,12 @@
 import Phaser from 'phaser';
 import type { Match } from '../core/state';
-import { goalX, GOAL } from '../core/field';
 
 const font = (px: number, color = '#ffffff'): Phaser.Types.GameObjects.Text.TextStyle => ({ fontFamily: 'Pixelify, sans-serif', fontSize: `${px}px`, fontStyle: 'bold', color, stroke: '#2A1B3D', strokeThickness: Math.max(3, Math.round(px / 6)) });
 const TXT: Record<string, [string, string]> = { goal: ['¡GOOOOL!', '#ffe45c'], saved: ['¡ATAJADA!', '#7be3ff'], miss: ['¡AFUERA!', '#ffb4b4'], post: ['¡POSTE!', '#ffe9a8'] };
 
-/** The shootout on top of the pitch: the dots of every kick, the reticle of the one who aims, and the word of each result (reads `m.pen`, never changes it). */
+/** The shootout on top of the pitch: the dots of every kick, and the word of each result (reads `m.pen`, never changes it). */
 export class PenView {
   private g: Phaser.GameObjects.Graphics;
-  private wg: Phaser.GameObjects.Graphics;
   private title: Phaser.GameObjects.Text;
   private word: Phaser.GameObjects.Text;
   private who: Phaser.GameObjects.Text;
@@ -16,22 +14,21 @@ export class PenView {
 
   constructor(scene: Phaser.Scene, private teams: [string, string]) {
     this.g = scene.add.graphics().setDepth(5000).setScrollFactor(0);
-    this.wg = scene.add.graphics().setDepth(880);          // world space: the reticle on the goal
     this.title = scene.add.text(0, 0, '', font(48, '#ffe45c')).setOrigin(0.5).setDepth(5001).setScrollFactor(0).setResolution(1).setVisible(false);
     this.word = scene.add.text(0, 0, '', font(44)).setOrigin(0.5).setDepth(5001).setScrollFactor(0).setResolution(1).setVisible(false);
     this.who = scene.add.text(0, 0, '', font(16, '#ffffff')).setOrigin(0.5).setDepth(5001).setScrollFactor(0).setResolution(1).setVisible(false);
     this.names = [scene.add.text(0, 0, '', font(11)).setOrigin(1, 0.5).setDepth(5001).setScrollFactor(0).setResolution(1).setVisible(false), scene.add.text(0, 0, '', font(11)).setOrigin(1, 0.5).setDepth(5001).setScrollFactor(0).setResolution(1).setVisible(false)];
   }
 
-  destroy(): void { for (const o of [this.g, this.wg, this.title, this.word, this.who, ...this.names]) o.destroy(); }
+  destroy(): void { for (const o of [this.g, this.title, this.word, this.who, ...this.names]) o.destroy(); }
 
   update(m: Match, top: number, W: number, H: number, time: number): void {
-    const g = this.g, wg = this.wg; g.clear(); wg.clear();
+    const g = this.g; g.clear();
     const pen = m.pen, on = m.phase === 'penalties' && !!pen;
     for (const o of [this.title, this.word, this.who, ...this.names]) o.setVisible(false);
     if (!on || !pen) return;
     // the dots: one row per team, the first five kicks and more in sudden death
-    const n = Math.max(5, pen.kicks[0].length + 1, pen.kicks[1].length + 1), r = 6, gap = 17, pw = 104 + n * gap + 6, px = Math.round(W / 2 - pw / 2), x0 = px + 104 + Math.round(gap / 2), y0 = 66;
+    const n = Math.max(5, pen.kicks[0].length + 1, pen.kicks[1].length + 1), r = 6, gap = 17, pw = 104 + n * gap + 6, px = 8, x0 = px + 104 + Math.round(gap / 2), y0 = 40;   // top left, over the stands, so it never covers the goal
     g.fillStyle(0x2a1b3d, 0.82).fillRoundedRect(px, y0 - 12, pw, 46, 8);
     for (const t of [0, 1] as const) {
       const y = y0 + t * 20;
@@ -52,14 +49,6 @@ export class PenView {
         this.title.setVisible(true).setText('¡PENALES!').setPosition(W / 2, H * 0.5).setFontSize(Math.round(48 + (1 - k) * 40)).setAlpha(Math.min(1, pen.t * 6));
       }
       this.who.setVisible(true).setText(`${shooter?.name ?? ''} patea`).setPosition(W / 2, H * 0.58);
-    }
-    // the reticle on the goal while somebody aims (a human sees it, the AI only shows a small mark)
-    if (pen.step === 'aim') {
-      const gx = goalX(pen.turn), by = top + pen.aimY - 6, a = human ? 1 : 0.35, k = 0.5 + 0.5 * Math.sin(time * 9);
-      wg.lineStyle(2, 0xffffff, a).strokeCircle(gx, by, 7 + k * 2);
-      wg.lineStyle(2, 0xffe45c, a).lineBetween(gx - 12, by, gx - 4, by).lineBetween(gx + 4, by, gx + 12, by).lineBetween(gx, by - 12, gx, by - 4).lineBetween(gx, by + 4, gx, by + 12);
-      wg.lineStyle(1, 0xffffff, 0.35 * a).lineBetween(gx, top + GOAL.y0 - 8, gx, top + GOAL.y1 - 4);
-      if (human) this.who.setVisible(true).setText('Apunta y patea').setPosition(W / 2, H * 0.58);
     }
     // the word of the result
     if (pen.step === 'result' && pen.outcome) {

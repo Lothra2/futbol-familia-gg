@@ -71,7 +71,10 @@ export interface Flight {
 }
 /** The state of a penalty shootout (GAME_DESIGN section 11): who kicks, the step of the kick and the result already rolled. */
 export interface Pen {
-  turn: Team; first: Team; kicks: [(0 | 1)[], (0 | 1)[]]; round: number; step: 'ready' | 'aim' | 'fly' | 'result'; t: number; aimY: number; aim: { zone: number; y: number };
+  turn: Team; first: Team; kicks: [(0 | 1)[], (0 | 1)[]]; round: number; step: 'ready' | 'aim' | 'fly' | 'result'; t: number; aimY: number;
+  /** Height of the aim, 0 the grass and 1 the crossbar, and the height the shot really got. `decisive`: this kick wins it if it goes in ('win') or loses it if it fails ('last'). */
+  aimZ: number; shotZ: number; decisive: 'win' | 'last' | null; aiZ?: number; aim: { zone: number; y: number };
+  /** Practice with Thor: only the family kicks, kick after kick, nobody wins (the goals are counted in `m.data.penGoals`). */ practice?: boolean;
   shooter: number; keeper: number; outcome: 'goal' | 'saved' | 'miss' | 'post' | null; shotY: number; diveY: number; winner: Team | null; seed: number; aiAt?: number; aiY?: number;
 }
 export type BallState = 'owned' | 'free' | 'held' | 'dead' | 'scripted';
@@ -84,8 +87,10 @@ export interface Ball {
 }
 
 export type Phase = 'kickoff' | 'play' | 'restart' | 'goal' | 'halftime' | 'cinematic' | 'penalties' | 'over';
-export type RestartKind = 'kickoff' | 'throwin' | 'goalkick' | 'corner';
-export interface Restart { kind: RestartKind; team: Team; x: number; y: number; taker: number; t: number; kicked: boolean; aiAt: number }
+export type RestartKind = 'kickoff' | 'throwin' | 'goalkick' | 'corner' | 'freekick';
+/** The aim of a free kick: where in the goal (y), how much effect (0 flat to 1 full, the bend goes around the wall), the players of the wall and the one who was fouled. */
+export interface FreeKick { aimY: number; curve: number; wall: number[]; fouled: number }
+export interface Restart { kind: RestartKind; team: Team; x: number; y: number; taker: number; t: number; kicked: boolean; aiAt: number; fk?: FreeKick }
 
 export interface Match {
   t: number; tick: number; rng: Rng;

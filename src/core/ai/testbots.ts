@@ -1,14 +1,15 @@
 import { DT } from '../step';
 import { aiInput } from './brain';
-import { goalX } from '../field';
+import { attackDir, goalX } from '../field';
+import { fkMeter } from '../freekick';
 import { emptyInput, type InputFrame } from '../types';
 import { T } from '../tuning';
 import { stealTarget } from '../actions';
 import type { HumanCtl, Match } from '../state';
 
 export type BotKind = 'nina5' | 'sophie' | 'quieto';
-interface BotState { kind: BotKind; nextAim: number; aim: number; still: number; shootAt: number; specialAt: number; mx: number; my: number; ringFor?: object; ringErr: number; ringDone: boolean }
-export const newBot = (kind: BotKind): BotState => ({ kind, nextAim: 0, aim: 0, still: 0, shootAt: 0, specialAt: 0, mx: 0, my: 0, ringErr: 0, ringDone: false });
+interface BotState { kind: BotKind; nextAim: number; aim: number; still: number; shootAt: number; specialAt: number; mx: number; my: number; ringFor?: object; ringErr: number; ringDone: boolean; penKey?: string; penAim: number }
+export const newBot = (kind: BotKind): BotState => ({ kind, nextAim: 0, aim: 0, still: 0, shootAt: 0, specialAt: 0, mx: 0, my: 0, ringErr: 0, ringDone: false, penAim: 0 });
 
 /** Test stand-ins for a human (TECH section 8). They only read the match, like a person looking at the screen.
  *  nina5: aims at the ball with 40 degrees of error, stands still a fifth of the time, presses the kick button late and the special when it glows.
@@ -17,6 +18,25 @@ export const newBot = (kind: BotKind): BotState => ({ kind, nextAim: 0, aim: 0, 
 export function botFrame(m: Match, h: HumanCtl, s: BotState): InputFrame {
   const p = m.players.find((q) => q.id === h.id)!;
   if (s.kind === 'quieto') return emptyInput();
+  // a penalty kick: aim somewhere in the goal (not past the posts) and shoot after a second, like a person would
+  if (m.phase === 'penalties' && m.pen) {
+    const f = emptyInput(), pen = m.pen;
+    if (pen.step === 'aim') {
+      const key = `${pen.round}:${pen.turn}:${pen.kicks[0].length + pen.kicks[1].length}`;
+      if (s.penKey !== key) { s.penKey = key; s.penAim = m.rng.range(-0.7, 0.7); }
+      f.mx = s.penAim; f.my = -0.15;
+      if (pen.t > 1.1) f.shootPressed = true;
+    }
+    return f;
+  }
+  // a free kick: aim at a corner of the goal, a bit of effect, and press when the meter is at the top (sophie) or after a second and a half (nina5)
+  const rs = m.restart;
+  if (m.phase === 'restart' && rs?.kind === 'freekick' && rs.taker === p.id && rs.fk) {
+    const f = emptyInput(), want = 80 + (m.tick % 2 ? -17 : 17), dir = attackDir(p.team);
+    f.my = Math.max(-1, Math.min(1, (want - rs.fk.aimY) / 8)); f.mx = rs.fk.curve < 0.8 ? 0.4 * dir : 0;
+    if (s.kind === 'sophie' ? fkMeter(rs.t) >= T.free.sweet : rs.t > 1.7) f.shootPressed = true;
+    return f;
+  }
   if (s.kind === 'sophie') {
     const saved = { ...p.ai };
     const f = aiInput(m, Object.assign(p, { control: 'ai' as const }), true);

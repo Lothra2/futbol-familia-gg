@@ -46,9 +46,10 @@ export class Shell {
     this.scene()?.setPaused(true); services.audio?.pause(true);
     const m = document.createElement('div');
     m.className = 'screen dim'; m.id = 'pause-menu';
-    m.innerHTML = `<div class="panel"><h2>${T_ES.pause.title}</h2><div class="col"><button class="btn big primary" id="resume">${T_ES.pause.resume}</button><button class="btn big" id="guide">Cómo se juega</button><button class="btn big fs-btn" id="fs">${T_ES.pause.fullscreen}</button><button class="btn big" id="quit">${T_ES.pause.quit}</button></div></div>`;
+    m.innerHTML = `<div class="panel"><h2>${T_ES.pause.title}</h2><div class="col"><button class="btn big primary" id="resume">${T_ES.pause.resume}</button><button class="btn big" id="guide">Cómo se juega</button><button class="btn big fs-btn" id="fs">${T_ES.pause.fullscreen}</button>${this.touch.coarse ? `<button class="btn big" id="look">Botones: ${services.app?.touchLook() ?? ''}</button>` : ''}<button class="btn big" id="quit">${T_ES.pause.quit}</button></div></div>`;
     m.querySelector('#resume')!.addEventListener('click', () => this.resume());
     m.querySelector('#quit')!.addEventListener('click', () => { this.menu?.remove(); this.menu = null; services.audio?.pause(false); services.app?.menu(); });
+    m.querySelector('#look')?.addEventListener('click', (e) => { (e.currentTarget as HTMLElement).textContent = `Botones: ${services.app?.cycleTouchLook() ?? ''}`; });
     m.querySelector('#guide')!.addEventListener('click', () => { showGuideWindow(); });
     m.querySelector('#fs')!.addEventListener('click', () => { void onFullscreenButton(); });
     this.ui.appendChild(m);

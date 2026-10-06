@@ -11,7 +11,7 @@ export interface SaveV1 {
   version: 1;
   settings: {
     music: number; sfx: number; crowd: number; muted: boolean; halfLength: 60 | 90 | 120; cinematics: 'full' | 'short' | 'off';
-    reducedMotion: boolean; narrator: boolean; replay: boolean; mirrorP2: boolean; touchControls: 'auto' | 'on' | 'off'; controls: [ControlsPref, ControlsPref]; difficulty: Difficulty;
+    reducedMotion: boolean; narrator: boolean; replay: boolean; mirrorP2: boolean; touchControls: 'auto' | 'on' | 'off'; touchLook: 'normal' | 'suave' | 'minimo'; controls: [ControlsPref, ControlsPref]; difficulty: Difficulty;
   };
   characters: Record<CharId, CharSave>;
   cup: { active: boolean; stage: 0 | 1 | 2 | 3 | 4; difficulty: Difficulty };
@@ -24,7 +24,7 @@ export interface SaveV1 {
 
 export const defaultSave = (): SaveV1 => ({
   version: 1,
-  settings: { music: 0.7, sfx: 0.8, crowd: 0.7, muted: false, halfLength: 90, cinematics: 'full', reducedMotion: false, narrator: true, replay: true, mirrorP2: false, touchControls: 'auto', controls: ['full', 'full'], difficulty: 'normales' },
+  settings: { music: 0.7, sfx: 0.8, crowd: 0.7, muted: false, halfLength: 90, cinematics: 'full', reducedMotion: false, narrator: true, replay: true, mirrorP2: false, touchControls: 'auto', touchLook: 'suave', controls: ['full', 'full'], difficulty: 'normales' },
   characters: Object.fromEntries(CHAR_IDS.map((c) => [c, { xp: 0, level: 1, outfit: 'base' as Outfit }])) as Record<CharId, CharSave>,
   cup: { active: false, stage: 0, difficulty: 'normales' },
   trophies: { bosque: false, arrecife: false, nubes: false, volcan: false, copa: 0 },
@@ -54,7 +54,7 @@ export function sanitize(raw: any): SaveV1 {
   d.settings = {
     music: num(s.music, d.settings.music, 0, 1), sfx: num(s.sfx, d.settings.sfx, 0, 1), crowd: num(s.crowd, d.settings.crowd, 0, 1), muted: s.muted === true,
     halfLength: oneOf(s.halfLength, [60, 90, 120] as const, 90), cinematics: oneOf(s.cinematics, ['full', 'short', 'off'] as const, 'full'),
-    reducedMotion: s.reducedMotion === true, narrator: s.narrator !== false, replay: s.replay !== false, mirrorP2: s.mirrorP2 === true, touchControls: oneOf(s.touchControls, ['auto', 'on', 'off'] as const, 'auto'),
+    reducedMotion: s.reducedMotion === true, narrator: s.narrator !== false, replay: s.replay !== false, mirrorP2: s.mirrorP2 === true, touchControls: oneOf(s.touchControls, ['auto', 'on', 'off'] as const, 'auto'), touchLook: oneOf(s.touchLook, ['normal', 'suave', 'minimo'] as const, 'suave'),
     controls: [oneOf(ctl[0], ['easy', 'full'] as const, 'full'), oneOf(ctl[1], ['easy', 'full'] as const, 'full')],
     difficulty: oneOf(s.difficulty, DIFFS, 'normales'),
   };
