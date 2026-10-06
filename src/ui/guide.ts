@@ -62,9 +62,9 @@ type Btn = keyof typeof ICONS & ('shoot' | 'pass' | 'sprint' | 'special' | 'kick
 const TIPS: [string, string, string][] = [
   ['Pase alto', 'Toca <b>Pase</b> para un pase raso. <b>Mantenlo</b> un momento y suéltalo: el balón vuela por arriba y pasa a los rivales.', 'pass'],
   ['Más potencia', 'Mantén <b>Tiro</b> y suéltalo cuando la barra se llene. Si te pasas, dispara solo.', 'shoot'],
-  ['Tu poder', 'Cada pase, robo y jugada llena la barra <b>★</b>. Con la barra llena y cerca del arco, toca <b>Especial</b> y sale una película.', 'special'],
-  ['Quién eres', 'Siempre controlas al más cercano al balón. El anillo del color de tu jugador te dice quién eres.', 'move'],
-  ['Quitar el balón', 'Sin balón, toca <b>Tiro</b> cerca del rival: robas o te tiras en barrida.', 'shoot'],
+  ['Tu poder', 'Pases, robos y paredes llenan la barra <b>★</b>. Con la barra llena y cerca del arco, toca <b>Especial</b>. En la película, toca <b>Tiro</b> cuando el anillo se cierre: más puntería, más gol.', 'special'],
+  ['Quién eres', 'Controlas al más cercano al balón. El anillo de color te dice quién eres. Sin balón, un toque rápido de <b>Pase</b> cambia de jugador.', 'move'],
+  ['Quitar el balón', 'Cerca del rival, <b>Tiro</b> le roba de frente. Lejos, te tiras en barrida. <b>Mantén Pase</b> para marcarlo: te pones entre él y tu arco.', 'shoot'],
   ['Saltar escenas', 'Toca la pantalla o cualquier botón para saltar las cinemáticas, el gol y la repetición.', ''],
 ];
 

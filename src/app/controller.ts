@@ -25,6 +25,8 @@ export interface MatchConfig {
   mirror: boolean;
   /** A Cup match: no draws (golden goal, then penalties) and the result moves the Cup forward. */
   cup?: boolean; knockout?: boolean; training?: boolean;
+  /** The date of the Cup (0 to 3), see tuning.ts ARC. */
+  arc?: number;
   /** Two players against each other: player 2 plays the rival team. */
   versus?: boolean;
   /** From the settings: no freeze frames. */
@@ -68,7 +70,7 @@ export class MatchController {
       const c = (squad as string[]).includes(wanted) && !humans.some((h) => h.slot === seats[wanted as FieldChar]) ? (wanted as FieldChar) : free[0];
       humans.push({ team: 0, slot: seats[c]!, humanSlot: i, controls: cfg.controls[i] ?? 'full' });
     }
-    this.m = createMatch({ seed: cfg.seed, halfLength: cfg.half, humans, squad, ai: 'brain', difficulty: cfg.difficulty, away: cfg.rival, cine: cfg.cine, knockout: cfg.knockout, training: cfg.training });
+    this.m = createMatch({ seed: cfg.seed, halfLength: cfg.half, humans, squad, ai: 'brain', difficulty: cfg.difficulty, away: cfg.rival, cine: cfg.cine, knockout: cfg.knockout, training: cfg.training, arc: cfg.arc });
     if (cfg.autoplay) this.bots = humans.map(() => newBot(cfg.autoplay!));
     if (cfg.forceSpecial) this.force(cfg.forceSpecial);
   }

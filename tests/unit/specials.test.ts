@@ -27,7 +27,7 @@ describe('Barra Estrella', () => {
     addBar(m, 1, T.bar.conceded); expect(m.bar[1]).toBeCloseTo(8 * 0.75, 5);   // rivals at Normales charge x0.75
     addBar(m, 0, 500); expect(m.bar[0]).toBe(100);
     ball(m, 700, 80); const before = m.bar[0], b1 = m.bar[1]; m.bar[0] = 0;
-    secs(m, 2); expect(m.bar[0]).toBeGreaterThan(2.5); expect(m.bar[0]).toBeLessThan(3.5);   // 1.5 per second in the half it attacks
+    secs(m, 2); expect(m.bar[0]).toBeGreaterThan(T.bar.half * 2 - 0.4); expect(m.bar[0]).toBeLessThan(T.bar.half * 2 + 0.4);   // T.bar.half (0.5 since the jugabilidad work) per second in the half it attacks
     expect(m.bar[1]).toBe(b1); void before;
   });
   it('los controles fáciles cargan x1,4 y los rivales según la dificultad', () => {
@@ -122,6 +122,9 @@ describe('la cinemática es una fase de tiempo fijo', () => {
     expect(m.phase).toBe('cinematic');   // 0.03 s: too early to skip
     secs(m, 0.3);
     setHumanInput(m, 0, inp({ passPressed: true })); step(m); setHumanInput(m, 0, null);
+    expect(m.phase).toBe('cinematic');   // the AHORA ring (1.47 s to 1.77 s) is open: a person shooting cannot skip it until it ends (mejora 4)
+    secs(m, 1.6);
+    setHumanInput(m, 0, inp({ passPressed: true })); step(m); setHumanInput(m, 0, null);
     expect(m.phase).not.toBe('cinematic');
   });
   it('durante la cinemática nada se mueve ni corre el reloj', () => {
@@ -165,7 +168,7 @@ describe('la cinemática es una fase de tiempo fijo', () => {
     const m = createMatch({ ai: 'brain', skipKickoff: true, seed: 3, humans: [seat(3)] });
     m.bar[0] = 100; m.bar[1] = 100;
     let family = 0, rivals = 0;
-    for (let i = 0; i < 60 * 40; i++) { step(m); for (const e of m.events) if (e.k === 'special') { if (m.special) { if (m.special.team === 0) family++; else rivals++; } } m.events = []; if (m.bar[1] < 100 && rivals) break; }
+    for (let i = 0; i < 60 * 100; i++) { step(m); for (const e of m.events) if (e.k === 'special') { if (m.special) { if (m.special.team === 0) family++; else rivals++; } } m.events = []; if (m.bar[1] < 100 && rivals) break; }
     expect(family).toBe(0); expect(rivals).toBeGreaterThan(0);
   });
 });

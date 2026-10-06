@@ -240,7 +240,7 @@ describe('robo y choque (B12, B13)', () => {
       return lost / 300;
     };
     const s = run('sophie'), p = run('papa');
-    expect(s).toBeGreaterThan(0.25); expect(s).toBeLessThan(0.55);
+    expect(s).toBeGreaterThan(0.25); expect(s).toBeLessThan(0.65);   // 0.65: the Dragoncitos (the rival of these tests) push harder, resist 1.25 of the style (mejora 5)
     expect(p).toBeLessThan(s);
   });
 });

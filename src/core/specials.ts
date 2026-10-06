@@ -1,4 +1,4 @@
-import { DIFFICULTY, SPECIAL_BASE, T } from './tuning';
+import { DIFFICULTY, SPECIAL_BASE, STYLE, T } from './tuning';
 import { PITCH, attackDir, goalX, ownGoalX, slotPos } from './field';
 import { emit } from './events';
 import { playerById, setTouch, startDive, startStagger, startTumble } from './actions';
@@ -34,7 +34,7 @@ export function updateBar(m: Match, dt: number): void {
 /** Chance that the special is a goal (GAME_DESIGN section 7). */
 export function specialChance(m: Match, shooter: Player, from: { x: number }): number {
   const kind = specialKind(shooter);
-  let p = shooter.team === 1 && !humanTeam(m, 1) ? DIFFICULTY[m.difficulty].special : kind in SPECIAL_BASE ? SPECIAL_BASE[kind as keyof typeof SPECIAL_BASE] : 0.7;
+  let p = shooter.team === 1 && !humanTeam(m, 1) ? DIFFICULTY[m.difficulty].special * (shooter.species ? STYLE[shooter.species].special : 1) : kind in SPECIAL_BASE ? SPECIAL_BASE[kind as keyof typeof SPECIAL_BASE] : 0.7;
   if (Math.abs(goalX(shooter.team) - from.x) > PITCH.w / 2 && kind !== 'arcoiris') p *= T.special.own;
   if (shooter.team === 0 || humanTeam(m, 1)) p *= T.special.keeperMult[m.difficulty];
   if (shooter.control === 'human' && shooter.controls === 'easy') p += T.special.ayuda;
@@ -68,8 +68,16 @@ export function launchSpecial(m: Match, s: Player): void {
   const keeper = m.players.find((q) => q.team !== team && q.role === 'gk') ?? null;
   const first = m.specialsUsed[team] === 0;
   const dur = m.cine === 'off' ? T.cinemaT.off : m.cine === 'short' ? T.cinemaT.short : first ? T.cinemaT.full : T.cinemaT.short;
-  const kind = specialKind(s), outcome = m.rng.chance(specialChance(m, s, s)) ? 'goal' : 'save';
-  m.special = { kind, team, shooter: s.id, keeper: keeper ? keeper.id : null, outcome, t: 0, dur, x: s.x, y: s.y, full: dur >= T.cinemaT.full };
+  const kind = specialKind(s), base = specialChance(m, s, s);
+  m.special = { kind, team, shooter: s.id, keeper: keeper ? keeper.id : null, outcome: m.rng.chance(base) ? 'goal' : 'save', t: 0, dur, x: s.x, y: s.y, full: dur >= T.cinemaT.full };
+  // the ring: a person who shoots, or who defends against the AI, decides part of the result. Not in "sin cinemáticas" (nothing is shown) and not AI against AI.
+  const defHuman = m.players.find((q) => q.team !== team && q.control === 'human');
+  const who = m.cine === 'off' ? null : s.control === 'human' ? 'atk' : defHuman ? 'def' : null;
+  if (who) {
+    const h = who === 'atk' ? s : defHuman!, easy = h.controls === 'easy', R = T.ring;
+    const center = dur * (dur >= T.cinemaT.full ? R.centerFull : R.centerShort), k = easy ? R.easyMult : 1;
+    m.special.ring = { who, slot: h.humanSlot ?? 0, center, perfect: R.wPerfect * k, good: R.wGood * k, end: center + R.wGood * k, press: null, hit: null, p: who === 'atk' ? Math.min(T.special.cap, base * R.mult) : base, easy };
+  }
   m.phase = 'cinematic'; m.phaseT = 0;
   m.bar[team] = 0; m.specialsUsed[team]++; m.stats.specials[team]++; s.stats2.specials++;
   if (b.state === 'owned') { b.state = 'scripted'; }
@@ -84,7 +92,21 @@ export function stepCinematic(m: Match, dt: number): void {
   const sp = m.special;
   if (!sp) { m.phase = 'play'; return; }
   sp.t += dt;
-  const skip = sp.t >= T.special.skipAfter && m.hin.some((f) => !!f && (f.shootPressed || f.passPressed || f.specialPressed));
+  const rg = sp.ring;
+  if (rg && !rg.hit) {
+    const f = m.hin[rg.slot];
+    // only the first press counts, so pressing over and over does not beat the ring
+    if (rg.press === null && f && (f.shootPressed || f.specialPressed) && sp.t >= 0.1) rg.press = sp.t;
+    if (sp.t >= rg.end) {
+      const off = rg.press === null ? Infinity : Math.abs(rg.press - rg.center);
+      rg.hit = off <= rg.perfect ? 'perfect' : off <= rg.good ? 'good' : rg.easy && rg.who === 'atk' && rg.press === null ? 'good' : 'miss';   // a child who does not press loses nothing
+      const R = T.ring, bonus = rg.who === 'atk' ? (rg.hit === 'perfect' ? R.perfect : rg.hit === 'good' ? R.good : 0) : -(rg.hit === 'perfect' ? R.defPerfect : rg.hit === 'good' ? R.defGood : 0);
+      sp.outcome = m.rng.chance(Math.max(0.02, Math.min(T.special.cap, rg.p + bonus))) ? 'goal' : 'save';
+      emit(m, 'ringhit', sp.x, sp.y, 0, sp.shooter, rg.hit === 'perfect' ? 2 : rg.hit === 'good' ? 1 : 0);
+    }
+  }
+  // while the ring is open nothing skips the cinematic: the press is the answer to the ring
+  const skip = sp.t >= T.special.skipAfter && (!rg || !!rg.hit) && m.hin.some((f) => !!f && (f.shootPressed || f.passPressed || f.specialPressed));
   if (sp.t >= sp.dur || skip) resolveSpecial(m);
 }
 

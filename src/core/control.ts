@@ -1,6 +1,8 @@
 import { emptyInput, type InputFrame } from './types';
 import { etaTo } from './ai/predict';
 import { DIFFICULTY, MATES, T } from './tuning';
+import { DT } from './step';
+import { aerialZone } from './actions';
 import type { HumanCtl, Match, Player } from './state';
 
 export const setHumanInput = (m: Match, slot: number, frame: InputFrame | null): void => { m.hin[slot] = frame; };
@@ -9,7 +11,7 @@ const field = (m: Match, team: number): Player[] => m.players.filter((p) => p.te
 const byId = (m: Match, id: number): Player | undefined => m.players.find((p) => p.id === id);
 
 /** The player each human should be moving now (GAME_DESIGN section 4, change to the nearest). Null means keep the current one. */
-function wanted(m: Match, h: HumanCtl, taken: Set<number>): Player | null {
+function wanted(m: Match, h: HumanCtl, taken: Set<number>, tap = false): Player | null {
   const cur = byId(m, h.id)!, b = m.ball, mates = field(m, h.team).filter((p) => !taken.has(p.id));
   // a restart: the human takes the taker (the keeper is always the AI)
   if ((m.phase === 'restart' || m.phase === 'kickoff') && m.restart && m.restart.team === h.team) {
@@ -27,6 +29,13 @@ function wanted(m: Match, h: HumanCtl, taken: Set<number>): Player | null {
   const owner = byId(m, b.owner ?? -1);
   if (owner && owner.team === h.team && owner.role !== 'gk' && !taken.has(owner.id)) return owner;
   if (owner && owner.team === h.team) return null;
+  // a tap of Pass without the ball (full controls): switch at once to the one who arrives first, or to the second if that is the one I already drive
+  if (tap) {
+    const order = mates.map((p) => ({ p, e: etaTo(m, p) })).sort((a, c) => a.e - c.e);
+    const pick = order[0]?.p.id === cur.id ? order[1]?.p : order[0]?.p;
+    if (pick && pick.id !== cur.id) return pick;
+    return null;
+  }
   // loose ball or a rival with it: whoever arrives first, with hysteresis so the control does not jump about
   const easy = h.controls === 'easy';
   const wait = easy ? 0.8 : 0.5;
@@ -61,7 +70,18 @@ export function updateControl(m: Match): void {
   });
   for (const h of order) {
     taken.delete(h.id);
-    const w = wanted(m, h, taken);
+    // a tap of Pass (released in under tapMax) asks for a switch; a long press is "contain" (see actions.ts) and never switches
+    const f = m.hin[h.slot];
+    let tap = false;
+    if (f && h.controls === 'full') {
+      if (f.pass) h.passT = (h.passT ?? 0) + DT;
+      else { if (h.passWas && (h.passT ?? 0) < T.contain.tapMax) tap = true; h.passT = 0; }
+      h.passWas = f.pass;
+      const cur = byId(m, h.id);
+      if (tap && cur && (aerialZone(m, cur) || m.ball.owner === cur.id)) tap = false;
+    } else { h.passT = 0; h.passWas = false; }
+    // while he contains a carrier the control does not wander to another player (a tap of Pass is a different gesture and cannot happen mid hold)
+    const w = (byId(m, h.id)?.containT ?? 0) > 0 ? null : wanted(m, h, taken, tap);
     if (w && w.id !== h.id) assign(m, h, w);
     taken.add(h.id);
   }

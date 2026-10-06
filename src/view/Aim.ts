@@ -2,7 +2,7 @@ import Phaser from 'phaser';
 import type { Match, Player } from '../core/state';
 import { T } from '../core/tuning';
 import { PITCH, goalX } from '../core/field';
-import { choosePass } from '../core/actions';
+import { choosePass, stealTarget } from '../core/actions';
 import { specialKind } from '../core/specials';
 import { J_COLORS } from './PlayerView';
 import { services } from '../app/services';
@@ -39,8 +39,16 @@ export class Aim {
     this.label.setVisible(false); this.star.setVisible(false);
     if (m.phase !== 'play') return;
     for (const p of m.players) {
-      if (p.control !== 'human' || m.ball.owner !== p.id || m.ball.state !== 'owned') continue;
-      this.one(m, p, top, time);
+      if (p.control !== 'human') continue;
+      if (m.ball.owner === p.id && m.ball.state === 'owned') { this.one(m, p, top, time); continue; }
+      // without the ball (full controls): an arc under the rival you can take the ball from at the front (the steal), and a line while you contain him
+      if (p.controls !== 'full') continue;
+      const c = stealTarget(m, p), col = J_COLORS[p.humanSlot ?? 0] ?? 0xffd447;
+      if (c) { const k = 0.5 + 0.5 * Math.sin(time * 14); this.gg.lineStyle(2, col, 0.6 + 0.4 * k); this.gg.strokeEllipse(Math.round(c.x), Math.round(top + c.y), 22, 9); }
+      if ((p.containT ?? 0) > 0) {
+        const o = m.players.find((q) => q.id === m.ball.owner);
+        if (o) { this.gg.lineStyle(2, col, 0.7); this.gg.lineBetween(Math.round(p.x), Math.round(top + p.y), Math.round(o.x), Math.round(top + o.y)); }
+      }
     }
   }
 

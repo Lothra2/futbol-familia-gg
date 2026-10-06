@@ -11,7 +11,7 @@ const isEasy = (p: Player): boolean => p.control === 'human' && p.controls === '
 /** Who gets a free ball, who loses it, and where the ball sits while it is carried (GAME_DESIGN 6.3). */
 export function updatePossession(m: Match, dt: number): void {
   const b = m.ball;
-  if (b.state === 'free' && m.phase === 'play' && !b.inNet) tryControl(m);
+  if (b.state === 'free' && m.phase === 'play' && !b.inNet) { magnet(m, dt); tryControl(m); }
   if (b.state === 'held') {
     const k = playerById(m, b.owner);
     if (!k) { b.state = 'free'; b.owner = null; return; }
@@ -36,6 +36,20 @@ export function updatePossession(m: Match, dt: number): void {
     b.x = Math.max(ESCAPE.x0, Math.min(ESCAPE.x1, o.x + o.dirX * off));
     b.y = Math.max(ESCAPE.y0, Math.min(ESCAPE.y1, o.y + o.dirY * off * T.yFactor));
     b.z = o.z; b.vx = o.vx; b.vy = o.vy; b.vz = 0; b.spin = 0; b.roll += sp * dt;
+  }
+}
+
+/** Easy controls: a slow loose ball near the child curves towards her (60 px/s2 inside 30 px), so it does not slip past a foot that is almost there. */
+function magnet(m: Match, dt: number): void {
+  const b = m.ball;
+  if (b.z >= T.ctrl.z || Math.hypot(b.vx, b.vy) > T.easy.magnetSpeed) return;
+  for (const p of m.players) {
+    if (!isEasy(p) || NO_CONTROL.has(p.state) || p.noControlT > 0) continue;
+    if (b.lastTouch.player === p.id && m.t - b.lastTouch.t < 0.5) continue;   // her own kick is not pulled back
+    const dx = p.x - b.x, dy = p.y - b.y, d = Math.hypot(dx, dy);
+    if (d > T.easy.magnetR || d < 1) continue;
+    b.vx += (dx / d) * T.easy.magnetA * dt; b.vy += (dy / d) * T.easy.magnetA * dt;
+    return;
   }
 }
 

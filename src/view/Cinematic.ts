@@ -65,6 +65,10 @@ export class Cinematic {
   private fxImg: Phaser.GameObjects.Image;
   /** The face of the shooter that reacts at the end: laughing for a goal, shocked for a save. */
   private face: Phaser.GameObjects.Image;
+  /** The AHORA ring (mejora 4) goes above every picture, with its label. */
+  private top: Phaser.GameObjects.Graphics;
+  private ahora: Phaser.GameObjects.Text;
+  private ringSeen: string | null = null;
   private parts: Part[] = [];
   private info: CineInfo | null = null;
   private kind: SpecialKind = 'arcoiris';
@@ -86,9 +90,11 @@ export class Cinematic {
     this.keep = scene.add.image(0, 0, 'ball').setOrigin(0, 0).setVisible(false);
     this.face = scene.add.image(0, 0, 'ball').setOrigin(0.5, 1).setVisible(false);
     this.ball = scene.add.image(0, 0, 'ball', 0).setOrigin(0.5, 0.5).setScale(4).setVisible(false);
+    this.top = scene.add.graphics();
+    this.ahora = scene.add.text(0, 0, '', font(26)).setOrigin(0.5, 0.5).setResolution(1).setVisible(false);
     this.name = scene.add.text(0, 0, '', font(30)).setOrigin(0.5, 0.5).setResolution(1);
     this.res = scene.add.text(0, 0, '', font(34)).setOrigin(0.5, 0.5).setResolution(1).setVisible(false);
-    this.root = scene.add.container(0, 0, [this.g, this.fxImg, this.over, this.img, this.keep, this.ball, this.face, this.name, this.res]).setDepth(5000).setScrollFactor(0).setVisible(false);
+    this.root = scene.add.container(0, 0, [this.g, this.fxImg, this.over, this.img, this.keep, this.ball, this.face, this.top, this.ahora, this.name, this.res]).setDepth(5000).setScrollFactor(0).setVisible(false);
   }
 
   /** Display objects that show a picture, for the test of whole-number scales. */
@@ -102,7 +108,7 @@ export class Cinematic {
   }
 
   stop(): void {
-    this.active = false; this.info = null; this.root.setVisible(false); this.g.clear(); this.over.clear();
+    this.active = false; this.info = null; this.root.setVisible(false); this.g.clear(); this.over.clear(); this.top.clear(); this.ahora.setVisible(false); this.ringSeen = null;
     this.fxImg.setVisible(false); this.face.setVisible(false); this.img.setVisible(false); this.keep.setVisible(false); this.ball.setVisible(false); this.res.setVisible(false); this.parts = [];
   }
 
@@ -123,7 +129,7 @@ export class Cinematic {
     const info = this.info, g = this.g, t = sp.t, dur = sp.dur, u = Math.min(1, t / dur);
     const off = dur < 1;
     const seg = sp.full ? FULL : SHORT;
-    g.clear(); this.over.clear();
+    g.clear(); this.over.clear(); this.top.clear(); this.ahora.setVisible(false);
     const shake = u > seg.ball && u < seg.ball + 0.05 ? (Math.round(t * 60) % 2 ? 2 : -2) : 0;
     this.root.setPosition(shake, 0);
     const col = info.color;
@@ -245,6 +251,7 @@ export class Cinematic {
       }
       this.name.setVisible(false);
     }
+    this.drawRing(sp, W, H);
     // a white diagonal wipe at every cut and a dark vignette over everything
     if (!off) for (const b of [seg.flash, seg.face, seg.eyes, seg.boot, seg.ball, seg.keeper]) {
       const d = (u - b) * dur;
@@ -252,6 +259,26 @@ export class Cinematic {
     }
     for (let i = 0; i < 4; i++) { g.fillStyle(0x000000, 0.16 - i * 0.035); const e = 6 + i * 8; g.fillRect(0, 0, W, e).fillRect(0, H - e, W, e).fillRect(0, 0, e, H).fillRect(W - e, 0, e, H); }
     this.last = t;
+  }
+
+  /** The AHORA ring: a circle that closes on the ball. A person presses Tiro or Especial when it meets the white one (the core rolls the result with the press). */
+  private drawRing(sp: SpecialState, W: number, H: number): void {
+    const rg = sp.ring;
+    if (!rg) return;
+    const k = rg.easy ? 3 : 1, t = sp.t, show = 0.5 * k, cx = Math.round(W / 2), cy = Math.round(H / 2);
+    const col = rg.who === 'atk' ? 0xffe45c : 0x7be3ff, g = this.top;
+    if (t >= rg.center - show && t <= rg.end + 0.1 && !rg.hit) {
+      const u = Math.max(0, Math.min(1, (rg.center - t) / show)), r = Math.round(14 + 86 * u), inWin = Math.abs(t - rg.center) <= rg.perfect;
+      g.lineStyle(5, INK, 1).strokeCircle(cx, cy, 14); g.lineStyle(5, INK, 1).strokeCircle(cx, cy, r + 3);
+      g.lineStyle(3, inWin ? 0xffffff : col, 1).strokeCircle(cx, cy, r); g.lineStyle(2, 0xffffff, 1).strokeCircle(cx, cy, 14);
+      this.ahora.setVisible(true).setText(rg.who === 'atk' ? '¡AHORA!' : '¡ATAJA!').setColor(inWin ? '#ffffff' : rg.who === 'atk' ? '#ffe45c' : '#7be3ff').setPosition(cx - Math.min(W * 0.3, 150), cy).setScale(inWin ? 1.2 : 1);
+    } else if (rg.hit && t <= rg.end + 0.6) {
+      const txt = rg.hit === 'perfect' ? '¡PERFECTO!' : rg.hit === 'good' ? '¡BIEN!' : rg.who === 'atk' ? 'Casi...' : '¡Casi!';
+      this.ahora.setVisible(true).setText(txt).setColor(rg.hit === 'perfect' ? '#ffffff' : rg.hit === 'good' ? '#5ddb43' : '#cfc5e6').setPosition(cx - Math.min(W * 0.3, 150), cy).setScale(1);
+      const u = Math.min(1, (t - rg.end) / 0.3), r = Math.round(14 + 40 * u);
+      if (rg.hit !== 'miss') { g.lineStyle(4, rg.hit === 'perfect' ? 0xffffff : col, 1 - u).strokeCircle(cx, cy, r); }
+    }
+    if (rg.hit && this.ringSeen !== `${sp.shooter}:${rg.hit}`) { this.ringSeen = `${sp.shooter}:${rg.hit}`; services.audio?.play(rg.hit === 'perfect' ? 'impact' : rg.hit === 'good' ? 'tick' : 'whoosh'); }
   }
 
   /** The two extreme close-ups: a band across the eyes at x4, then the boot and the ball at the moment of impact. */

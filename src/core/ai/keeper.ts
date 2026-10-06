@@ -2,6 +2,7 @@ import { DIFFICULTY, T } from '../tuning';
 import { ownGoalX } from '../field';
 import { choosePass, restartKick, setTouch, startDive } from '../actions';
 import { emit } from '../events';
+import { addBar } from '../specials';
 import { emptyInput, type InputFrame } from '../types';
 import { crossing } from './predict';
 import { rubber } from './difficulty';
@@ -27,10 +28,18 @@ export function keeperParams(m: Match, p: Player): KeeperParams {
 }
 
 /** Probability that a keeper stops a shot that reaches him (GAME_DESIGN 6.7). `travel` is how far he had to move from where he stood when the shot left. */
-export function saveChance(k: KeeperParams, speed: number, z: number, travel: number): number {
+export function saveChance(k: KeeperParams, speed: number, z: number, travel: number, quality: number = T.chance.neutral): number {
   const fast = 1 - clamp((speed - T.gk.speedPen) / T.gk.speedPenSpan, 0, 0.5);
   const far = 1 - Math.min(1, Math.max(0, travel - T.gk.farFree) / k.reach);
-  return Math.min(0.95, k.skill * fast * (z > 22 ? T.gk.highPen : 1) * far);
+  // the quality of the chance (chance.ts): a good one is saved less, a poor one more
+  const q = clamp(1 + T.chance.k * (T.chance.neutral - quality), 0.2, 1.5);
+  return Math.min(0.95, k.skill * fast * (z > 22 ? T.gk.highPen : 1) * far * q);
+}
+
+/** The shot that is on its way to this keeper: its quality (chance.ts) and whether it was taken first time. Null when the last touch was not a shot of the other team. */
+function incoming(m: Match, p: Player): { q: number; first: boolean } | null {
+  const s = m.data.shotQ as { q: number; first: boolean; team: number; t: number } | undefined;
+  return s && s.team !== p.team && m.t - s.t < 3 ? s : null;
 }
 
 function catchBall(m: Match, p: Player): void {
@@ -39,6 +48,7 @@ function catchBall(m: Match, p: Player): void {
   p.act = null; p.state = 'hold'; p.immuneT = 99; p.holdT = 0; p.ai.armedAt = 0; p.vx = p.vy = 0;
   setTouch(m, p);
   p.stats2.saves++; m.stats.saves[p.team]++;
+  if (p.team === 0) addBar(m, 0, T.bar.save);   // Thor's saves charge the star bar of the family
   emit(m, 'save', b.x, b.y, b.z, p.id, 1);
 }
 
@@ -48,6 +58,7 @@ function punchBall(m: Match, p: Player, inward: 1 | -1): void {
   b.vx = inward * T.gk.punch.vx; b.vy = m.rng.range(-T.gk.punch.vy, T.gk.punch.vy); b.vz = T.gk.punch.vz; b.spin = 0;
   p.noControlT = 0.3; setTouch(m, p);
   p.stats2.saves++; m.stats.saves[p.team]++;
+  if (p.team === 0) addBar(m, 0, T.bar.save);
   emit(m, 'save', b.x, b.y, b.z, p.id, 0);
 }
 
@@ -74,7 +85,7 @@ function tryRoll(m: Match, p: Player, K: KeeperParams, inward: 1 | -1): void {
   const speed = Math.hypot(b.vx, b.vy);
   m.data.rolls = ((m.data.rolls as number) ?? 0) + 1;
   if (invisibleHelp(m, b.lastTouch.team)) { m.data.helpUsed = true; emit(m, 'help', b.x, b.y, 0, p.id); return; }
-  if (m.rng.chance(saveChance(K, speed, b.z, Math.abs(b.y - A.diveT)))) { if (speed < T.gk.catchV) catchBall(m, p); else punchBall(m, p, inward); }
+  if (m.rng.chance(saveChance(K, speed, b.z, Math.abs(b.y - A.diveT), incoming(m, p)?.q))) { if (speed < T.gk.catchV) catchBall(m, p); else punchBall(m, p, inward); }
 }
 
 /** The whole behaviour of a goalkeeper (always AI): position, read the shot, react, dive, catch or punch, and throw the ball back. */
@@ -99,7 +110,7 @@ export function keeperThink(m: Match, p: Player): InputFrame {
   if (shot) {
     if (!A.threat) { A.threat = true; A.rolled = false; A.armedAtThreat = m.t; A.diveT = p.y; m.data.threats = ((m.data.threats as number) ?? 0) + 1; }
     const ty = clamp(cr!.y, 52, 108);
-    if (m.t - A.armedAtThreat >= K.reaction) {
+    if (m.t - A.armedAtThreat >= K.reaction + (incoming(m, p)?.first ? T.chance.firstReact : 0)) {
       const dy = ty - p.y;
       if (Math.abs(dy) > 10 && cr!.t < 0.7) { startDive(m, p, ty); return f; }
       if (Math.abs(dy) > 2) f.my = Math.sign(dy);

@@ -158,7 +158,7 @@ export class Screens {
     const k = cupKingdom(s);
     return `${this.head('La Copa', 'Gana en los cuatro reinos. Si empatan, gol de oro y penales')}
       <div class="path">${stations}</div>
-      <div class="cupfoot">${prog ? `<div class="lbl">Siguiente: <b>${k.name}</b> contra ${k.team}</div>` : s.trophies.copa > 0 ? `<div class="lbl">★ Campeones de la Copa x${s.trophies.copa}</div>` : `<div class="lbl">Elige la dificultad y arma tu equipo en Partido rápido</div>`}
+      <div class="cupfoot">${prog ? `<div class="lbl">Siguiente: <b>${k.name}</b> contra ${k.team}</div><div class="lbl how">Cómo juegan: ${k.style}</div>` : s.trophies.copa > 0 ? `<div class="lbl">★ Campeones de la Copa x${s.trophies.copa}</div>` : `<div class="lbl">Elige la dificultad y arma tu equipo en Partido rápido</div>`}
       ${prog ? '' : `<div class="grp">${this.chips('cdiff', [{ v: 'tranquilos', label: 'Tranquilos' }, { v: 'normales', label: 'Normales' }, { v: 'campeones', label: 'Campeones' }], diff)}</div>`}
       <div class="row">${prog ? `<button class="btn primary" data-act="cupgo" data-focus>Continuar</button><button class="btn" data-act="cupnew">Nueva Copa</button>` : `<button class="btn primary" data-act="cupnew" data-focus>¡Empezar la Copa!</button>`}</div>
       <div class="lbl sq"><small>Equipo</small></div>${this.squadHtml(this.d.cfg())}</div>`;
@@ -219,7 +219,7 @@ export class Screens {
         case 'quick': case 'cup': case 'vitrina': case 'settings': case 'training': case 'daily': case 'guide': this.show(act as Name); break;
         case 'fs': void onFullscreenButton(); break;
         case 'credits': this.d.credits(); break;
-        case 'play': services.audio?.unlock(); services.audio?.play('go'); this.d.play({ ...c, seed: (Date.now() & 0xffff) + 1, ff: 1, autoplay: null, cup: false, knockout: false }); break;
+        case 'play': services.audio?.unlock(); services.audio?.play('go'); this.d.play({ ...c, seed: (Date.now() & 0xffff) + 1, ff: 1, autoplay: null, cup: false, knockout: false, arc: 0 }); break;
         case 'trainGo': this.d.train(c.players); break;
         case 'cupnew': startCup(store.data, store.data.cup.difficulty); store.save(); this.cupMatch(); break;
         case 'cupgo': this.cupMatch(); break;
@@ -256,7 +256,7 @@ export class Screens {
   cupMatch(): void {
     const c = this.d.cfg(), s = this.d.store.data, k: Kingdom = cupKingdom(s);
     services.audio?.unlock();
-    this.d.play({ ...c, rival: k.species, stadium: k.stadium, time: undefined, difficulty: s.cup.difficulty, seed: (Date.now() & 0xffff) + 1, ff: 1, autoplay: null, cup: true, knockout: true, versus: false });
+    this.d.play({ ...c, rival: k.species, stadium: k.stadium, time: undefined, difficulty: s.cup.difficulty, seed: (Date.now() & 0xffff) + 1, ff: 1, autoplay: null, cup: true, knockout: true, versus: false, arc: Math.min(3, s.cup.stage) });
   }
 
   private persist(): void {

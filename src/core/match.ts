@@ -1,5 +1,5 @@
 import { Rng } from './rng';
-import { DIFFICULTY, MATES, T } from './tuning';
+import { ARC, DIFFICULTY, MATES, STYLE, T } from './tuning';
 import { DT } from './step';
 import { newBall, stepBall } from './ball';
 import { slotPos, attackDir, ESCAPE } from './field';
@@ -27,6 +27,8 @@ export interface MatchOptions {
   knockout?: boolean;
   /** Practice with Thor: no clock, the rival field players stand still like cones, the special is always ready (src/app/training.ts has the challenges). */
   training?: boolean;
+  /** The date of the Cup (0 to 3): the rivals get a little faster and quicker with every kingdom (tuning.ts ARC). */
+  arc?: number;
   /** Tests: start straight in open play with the ball in the middle. */
   skipKickoff?: boolean;
 }
@@ -35,15 +37,17 @@ function makePlayer(m: Match, team: Team, seat: ReturnType<typeof roster>[number
   const pos = slotPos(team, seat.slot);
   const control = human ? 'human' : 'ai';
   const diff = DIFFICULTY[m.difficulty];
+  // the speed of a rival: the difficulty, the style of his kingdom and the date of the Cup
+  const rivalSpeed = diff.speed * (seat.species ? STYLE[seat.species].speed : 1) * (ARC.speed[Math.max(0, Math.min(3, (m.data.arc as number) ?? 0))] ?? 1);
   return {
     id: m.nextId++, team, slot: seat.slot, role: seat.role, stats: seat.stats, charId: seat.charId, species: seat.species, name: seat.stats.name,
     control, humanSlot: human ? human.humanSlot : null, controls: human ? human.controls : 'full',
     x: pos.x, y: pos.y, z: 0, vx: 0, vy: 0, vz: 0, facing: attackDir(team), dirX: attackDir(team), dirY: 0,
     state: 'idle', stateT: 0, act: null, input: emptyInput(), stamina: T.staminaMax, sprintLock: false, noSprintT: 0,
-    speedMult: human ? 1 : team === 1 ? diff.speed : MATES.speed, reactionT: 0,
+    speedMult: human ? 1 : team === 1 ? rivalSpeed : MATES.speed, reactionT: 0,
     cd: { slide: 0, steal: 0, bump: 0 }, immuneT: 0, noControlT: 0, dizzyT: 0, shoot: { down: false, t: 0 }, pass: { down: false, t: 0 },
     stats2: { goals: 0, assists: 0, steals: 0, saves: 0, shots: 0, passes: 0, specials: 0, spGoals: 0, chips: 0 }, holdT: 0,
-    ai: newMind(), baseSpeed: human ? 1 : team === 1 ? diff.speed : MATES.speed,
+    ai: newMind(), baseSpeed: human ? 1 : team === 1 ? rivalSpeed : MATES.speed,
     aiErr: team === 1 ? diff.shotErr : MATES.shotErr, slideRate: team === 1 ? 0.15 : 0,
   };
 }
@@ -54,7 +58,7 @@ export function createMatch(o: MatchOptions = {}): Match {
     score: [0, 0], firstKick: o.firstKick ?? 0, restart: null, players: [], ball: newBall(), events: [], nextId: 1,
     ai: o.ai ?? 'brain', difficulty: o.difficulty ?? 'normales', lastPass: null, lastGoal: null,
     humans: [], hin: [null, null], bar: [0, 0], special: null, flight: null, knockout: o.knockout ?? false, training: o.training ?? false, golden: false, pen: null, penWinner: null, cine: o.cine ?? 'full', specialsUsed: [0, 0],
-    stats: { goals: [0, 0], shots: [0, 0], saves: [0, 0], specials: [0, 0] }, data: {},
+    stats: { goals: [0, 0], shots: [0, 0], saves: [0, 0], specials: [0, 0] }, data: { arc: Math.max(0, Math.min(3, o.arc ?? 0)) },
   };
   for (const [team, kind] of [[0, o.home ?? 'family'], [1, o.away ?? 'dragon']] as [Team, TeamKind][]) {
     for (const seat of roster(kind, o.squad)) m.players.push(makePlayer(m, team, seat, o.humans?.find((h) => h.team === team && h.slot === seat.slot)));

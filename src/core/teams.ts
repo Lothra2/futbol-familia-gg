@@ -1,4 +1,4 @@
-import { FAMILY, FIELD_RIVAL, KEEPERS } from './tuning';
+import { FAMILY, FIELD_RIVAL, KEEPERS, STYLE } from './tuning';
 import type { CharId, Species } from './types';
 import type { PStats, Role } from './state';
 
@@ -25,7 +25,7 @@ export function roster(kind: TeamKind, squad: readonly FieldChar[] = DEFAULT_SQU
   const n = SPECIES_SINGLE[kind];
   return [0, 1, 2, 3, 4].map((slot): Seat => ({
     slot, role: slot === 0 ? 'gk' : slot < 3 ? 'def' : 'fwd', species: kind,
-    stats: { name: slot === 0 ? `${n} portero` : n, ...FIELD_RIVAL, ...(slot === 0 ? { keeper: { ...KEEPERS[kind] } } : {}) },
+    stats: { name: slot === 0 ? `${n} portero` : n, ...FIELD_RIVAL, ...(slot === 0 ? { keeper: { ...KEEPERS[kind] } } : { steal: STYLE[kind].steal, resist: FIELD_RIVAL.resist * STYLE[kind].resist }) },
   }));
 }
 

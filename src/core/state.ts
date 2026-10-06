@@ -11,12 +11,16 @@ export type DifficultyId = 'tranquilos' | 'normales' | 'campeones';
 export interface PStats {
   name: string; run: number; sprint: number; stamina: number; power: number; passAcc: number; control: number; resist: number; stolen: number;
   keeper?: { reaction: number; reach: number; skill: number };
+  /** Multiplies the chance of a front steal by this player (the style of a species, tuning.ts STYLE). */
+  steal?: number;
 }
 
 /** What a kick will do. Planned when the button is pressed or released, resolved at the moment of contact from the ball's real position. */
 export interface KickPlan {
   kind: KickKind; speed: number; vz: number; tx: number; ty: number; err: number; spin: number;
   lob?: boolean; assist?: boolean; target?: number; air?: boolean; hard?: number; throwFrom?: boolean;
+  /** A shot or pass taken first time (the button was pressed before the ball arrived), and a chip over a keeper who is off his line. */
+  first?: boolean; vaselina?: boolean;
 }
 export interface Act {
   kind: 'kick' | 'slide' | 'bump' | 'stagger' | 'tumble' | 'dizzy' | 'getup' | 'steal' | 'dive';
@@ -38,16 +42,27 @@ export interface Player {
   /** AI personality and memory (see ai/brain.ts). Humans do not use it. */
   ai: AIMind;
   baseSpeed: number; aiErr: number; slideRate: number;
+  /** Seconds the stick has been pushed past 85 % (easy controls sprint by themselves after 0.3 s). */
+  autoT?: number;
+  /** How long a human has been containing (holding Pass without the ball) and how long the carrier stays slowed by it. */
+  containT?: number; slowT?: number;
+  /** A button pressed a moment before the ball reaches him, kept until it does (first time shots and passes). */
+  buf?: { kind: 'shoot' | 'pass'; until: number } | null;
 }
 
 export interface AIMind {
   nextThink: number; held: InputFrame; armedAt: number; holdLeft: number; holdBtn: 'shoot' | 'pass' | null;
   lastX: number; lastY: number; lastT: number; sidestepUntil: number; sidestepDx: number; sidestepDy: number;
   threat: boolean; rolled: boolean; armedAtThreat: number; diveT: number; specialAt: number; goalDist: number; wasWanting: boolean; thinkT: number; pathLen: number;
+  /** A run into space behind the last defender (mejora 2): until when, and where to. */
+  runUntil?: number; runX?: number; runY?: number;
 }
-export interface HumanCtl { slot: number; team: Team; id: number; since: number; controls: ControlMode }
+export interface HumanCtl { slot: number; team: Team; id: number; since: number; controls: ControlMode; /** How long Pass has been held and whether it was down in the last step (control.ts: a short tap switches player). */ passT?: number; passWas?: boolean }
 export type SpecialKind = 'arcoiris' | 'burbuja' | 'canonazo' | 'estrellas' | 'carrera' | 'relampago' | 'llamarada' | 'ola' | 'picada' | 'hojas';
-export interface SpecialState { kind: SpecialKind; team: Team; shooter: number; keeper: number | null; outcome: 'goal' | 'save'; t: number; dur: number; x: number; y: number; full: boolean }
+export interface SpecialState { kind: SpecialKind; team: Team; shooter: number; keeper: number | null; outcome: 'goal' | 'save'; t: number; dur: number; x: number; y: number; full: boolean;
+  /** The AHORA ring (mejora 4): a person presses Tiro or Especial when it closes. `atk` is the shooter, `def` the one who defends against a special of the AI. The result is rolled when it ends. */
+  ring?: SpecialRing }
+export interface SpecialRing { who: 'atk' | 'def'; slot: number; center: number; good: number; perfect: number; end: number; press: number | null; hit: 'perfect' | 'good' | 'miss' | null; p: number; easy: boolean }
 
 /** The scripted flight of a special after its cinematic: the ball follows a path chosen by the kind and the result is already decided. */
 export interface Flight {

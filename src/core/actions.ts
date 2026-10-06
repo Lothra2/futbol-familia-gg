@@ -3,9 +3,16 @@ import { ESCAPE, GOAL, PITCH, attackDir, goalX } from './field';
 import { lobLaunch, speedToReach } from './ball';
 import { emit } from './events';
 import { addBar } from './specials';
+import { shotQuality } from './chance';
+import { ballAt } from './ai/predict';
 import type { Act, KickKind, KickPlan, Match, Player } from './state';
 
 const clamp = (v: number, a: number, b: number): number => Math.max(a, Math.min(b, v));
+/** Distance from the point (px, py) to the segment a-b. */
+export function segDist(px: number, py: number, ax: number, ay: number, bx: number, by: number): number {
+  const dx = bx - ax, dy = by - ay, l2 = dx * dx + dy * dy || 1, u = clamp(((px - ax) * dx + (py - ay) * dy) / l2, 0, 1);
+  return Math.hypot(px - (ax + dx * u), py - (ay + dy * u));
+}
 export const playerById = (m: Match, id: number | null): Player | undefined => (id === null ? undefined : m.players.find((q) => q.id === id));
 const mates = (m: Match, p: Player): Player[] => m.players.filter((q) => q.team === p.team && q.id !== p.id);
 const foes = (m: Match, p: Player): Player[] => m.players.filter((q) => q.team !== p.team);
@@ -52,14 +59,14 @@ const curveDrift = (spin: number, dist: number, speed: number): number => {
 /** Resolves a kick at the moment of contact, from the real position of the ball. */
 function launch(m: Match, p: Player, plan: KickPlan): void {
   const b = m.ball;
-  const passLike = plan.kind === 'pass' || plan.kind === 'chip' || (plan.kind === 'header' && plan.target !== undefined);
+  const passLike = (plan.kind === 'pass' || plan.kind === 'chip' || (plan.kind === 'header' && plan.target !== undefined)) && !plan.vaselina;
   const err = plan.err / (passLike ? Math.max(0.5, p.stats.passAcc) : 1);
   let tx = plan.tx, ty = plan.ty + m.rng.range(-err, err);
   // one-two: the receiver of a pass returns it, low, to the one who passed while he runs
   let boost = 1;
   if (plan.kind === 'pass' && m.lastPass && m.lastPass.to === p.id && m.lastPass.team === p.team && m.t - m.lastPass.t <= T.wallWindow && plan.target === m.lastPass.from) {
     const f = playerById(m, m.lastPass.from);
-    if (f) { const sp = Math.hypot(f.vx, f.vy) || 1; tx += (f.vx / sp) * T.wallLead; ty += (f.vy / sp) * T.wallLead; boost = T.wallBoost; emit(m, 'wall', b.x, b.y, 0, p.id); }
+    if (f) { const sp = Math.hypot(f.vx, f.vy) || 1; tx += (f.vx / sp) * T.wallLead; ty += (f.vy / sp) * T.wallLead; boost = T.wallBoost; emit(m, 'wall', b.x, b.y, 0, p.id); addBar(m, p.team, T.bar.wall); }
   }
   let dx = tx - b.x, dy = ty - b.y;
   const d = Math.hypot(dx, dy) || 1;
@@ -72,12 +79,13 @@ function launch(m: Match, p: Player, plan: KickPlan): void {
   else if (plan.kind === 'restart' && plan.lob) { const l = lobLaunch(Math.min(d, T.lobMaxD)); v = l.v; vz = l.vz; }
   else if (plan.kind === 'restart') { v = clamp(speedToReach(d, T.passEnd), T.passMin, T.passMax); vz = 0; }
   else v = Math.min(T.kickCap, plan.speed * (plan.assist ? 1.1 : 1) * p.stats.power);
-  if (plan.kind === 'pass' || plan.kind === 'chip') { m.lastPass = { from: p.id, to: plan.target ?? -1, t: m.t, team: p.team }; p.stats2.passes++; if (plan.kind === 'chip') p.stats2.chips++; }
-  if (plan.kind === 'shot' || plan.kind === 'volley' || plan.kind === 'chilena' || (plan.kind === 'header' && plan.target === undefined)) {
+  if ((plan.kind === 'pass' || plan.kind === 'chip') && !plan.vaselina) { m.lastPass = { from: p.id, to: plan.target ?? -1, t: m.t, team: p.team }; p.stats2.passes++; if (plan.kind === 'chip') p.stats2.chips++; }
+  if (plan.kind === 'shot' || plan.kind === 'volley' || plan.kind === 'chilena' || plan.vaselina || (plan.kind === 'header' && plan.target === undefined)) {
     p.stats2.shots++;
+    m.data.shotQ = { q: shotQuality(m, p, plan.ty, !!plan.first), first: !!plan.first, team: p.team, t: m.t };   // read by the keeper when he rolls the save
     if (Math.abs(goalX(p.team) - b.x) < 320) { m.stats.shots[p.team]++; addBar(m, p.team, plan.ty >= 58 && plan.ty <= 102 ? T.bar.shot : T.bar.shotOff); }
   }
-  releaseBall(m, p, ux * v, uy * v, vz, plan.spin, plan.kind === 'pass' || plan.kind === 'chip' ? 'pass' : 'kick');
+  releaseBall(m, p, ux * v, uy * v, vz, plan.spin, (plan.kind === 'pass' || plan.kind === 'chip') && !plan.vaselina ? 'pass' : 'kick');
 }
 
 // ------------------------------------------------------------------------------------------------ choosing where to pass
@@ -87,25 +95,35 @@ export function choosePass(m: Match, p: Player, sx: number, sy: number, maxD: nu
   const dir = attackDir(p.team), stick = Math.hypot(sx, sy);
   const cands = mates(m, p).filter((q) => q.role !== 'gk').map((q) => ({ q, d: Math.hypot(q.x - p.x, q.y - p.y) })).filter((c) => c.d >= 24 && c.d <= maxD);
   let best: { q: Player; s: number } | null = null;
-  for (const { q, d } of cands) {
-    const ax = (q.x - p.x) / d, ay = (q.y - p.y) / d;
-    let s: number;
-    if (stick > 0.35) {
-      const ang = Math.acos(clamp((ax * sx + ay * sy) / stick, -1, 1));
-      if (ang > T.passCone) continue;
-      s = 1 - ang / T.passCone - d / 1000;
-    } else {
-      const fwd = (q.x - p.x) * dir;
-      if (fwd < -40) continue;
-      let near = 0;
-      for (const o of foes(m, p)) { const od = Math.hypot(o.x - q.x, o.y - q.y); if (od < 30) near += (30 - od) / 30; }
-      s = fwd / 200 - Math.abs(q.y - p.y) / 400 - near - (d < 60 ? 0.3 : 0);
+  // the stick points inside a 30 degree cone; when nobody is there, a wider one (50 degrees) is tried before the pass goes to an empty place,
+  // because a mate who runs moves out of the cone in the time it takes to press the button
+  for (const cone of stick > 0.35 ? [T.passCone, T.passConeWide] : [T.passCone]) {
+    for (const { q, d } of cands) {
+      const ax = (q.x - p.x) / d, ay = (q.y - p.y) / d;
+      let s: number;
+      if (stick > 0.35) {
+        const ang = Math.acos(clamp((ax * sx + ay * sy) / stick, -1, 1));
+        if (ang > cone) continue;
+        s = 1 - ang / cone - d / 1000;
+      } else {
+        const fwd = (q.x - p.x) * dir;
+        if (fwd < -40) continue;
+        let near = 0;
+        for (const o of foes(m, p)) { const od = Math.hypot(o.x - q.x, o.y - q.y); if (od < 30) near += (30 - od) / 30; }
+        // a pass that a rival can cut on its way (a rival close to the line of the pass) is a bad pass, and so is a very long one
+        let cut = 0;
+        for (const o of foes(m, p)) if (segDist(o.x, o.y, p.x, p.y, q.x, q.y) < T.space.cutDist) cut += 0.6;
+        s = fwd / 200 - Math.abs(q.y - p.y) / 400 - near - cut - (d < 60 ? 0.3 : 0) - Math.max(0, d - 160) / 300;
+      }
+      if (!best || s > best.s) best = { q, s };
     }
-    if (!best || s > best.s) best = { q, s };
+    if (best) break;
   }
   if (!best) return null;
   const q = best.q, d = Math.hypot(q.x - p.x, q.y - p.y);
-  const lead = Math.min(0.6, d / 250);
+  // a receiver who runs forward gets the ball into the space he is running to (through pass), not to his feet
+  const deep = q.vx * attackDir(p.team) > T.space.deepV;
+  const lead = deep ? Math.min(T.space.deepLead, d / 180) : Math.min(0.6, d / 250);
   return { id: q.id, x: clamp(q.x + q.vx * lead, ESCAPE.x0 + 8, ESCAPE.x1 - 8), y: clamp(q.y + q.vy * lead, 4, PITCH.d - 4) };
 }
 
@@ -113,15 +131,25 @@ export function choosePass(m: Match, p: Player, sx: number, sy: number, maxD: nu
 const ballNear = (m: Match, p: Player, dx: number, dy: number): boolean => Math.abs(m.ball.x - p.x) < dx && Math.abs(m.ball.y - p.y) < dy;
 
 function shotTarget(m: Match, p: Player, assist: boolean): { ty: number; spin: number } {
-  const sy = p.input.my, side = Math.abs(sy) > 0.3 ? Math.sign(sy) : 0;
+  const sy = p.input.my;
   if (assist) {
     const gk = m.players.find((q) => q.team !== p.team && q.role === 'gk');
     return { ty: gk && gk.y < 80 ? 92 : 68, spin: 0 };
   }
-  return { ty: side < 0 ? 68 : side > 0 ? 92 : 80, spin: 0 };
+  // the aim follows the stick continuously: 80 +- 22 px (the posts are at 56 and 104), a small dead zone keeps the centre
+  return { ty: Math.abs(sy) < 0.15 ? 80 : clamp(80 + clamp(sy, -1, 1) * T.chance.aim, 58, 102), spin: 0 };
+}
+
+/** A tapped shot by a person with the keeper off his line and close: a chip over him (a shot for the stats, the bar and the keeper). */
+function vaselinaPlan(m: Match, p: Player): KickPlan | null {
+  if (p.control !== 'human') return null;
+  const gk = m.players.find((q) => q.team !== p.team && q.role === 'gk'), gx = goalX(p.team), dir = attackDir(p.team);
+  if (!gk || Math.abs(gk.x - gx) <= T.vasel.out || Math.hypot(gk.x - p.x, gk.y - p.y) >= T.vasel.near || Math.abs(gx - m.ball.x) >= T.vasel.range) return null;
+  return { kind: 'chip', speed: 0, vz: 0, tx: gx + dir * 10, ty: clamp(80 + clamp(p.input.my, -1, 1) * T.vasel.up, 60, 100), err: 4, spin: 0, lob: true, vaselina: true };
 }
 
 export function planShot(m: Match, p: Player, hold: number, assist = false): KickPlan {
+  if (!assist && hold < T.tapTime) { const v = vaselinaPlan(m, p); if (v) return v; }
   const { ty } = shotTarget(m, p, assist);
   const sy = p.input.my, eff = !assist && Math.abs(sy) > 0.3 ? Math.sign(sy) : 0;
   const hard = hold >= T.tapTime ? clamp(hold / T.hardTime, 0, 1) : 0;
@@ -131,7 +159,19 @@ export function planShot(m: Match, p: Player, hold: number, assist = false): Kic
   return { kind: 'shot', speed: T.shotNormal.v, vz: T.shotNormal.vz, tx: goalX(p.team), ty, err: assist ? 4 : p.control === 'ai' ? p.aiErr : T.shotNormal.err, spin: eff * T.effect, assist };
 }
 
+/** A cross: a high pass from the wing in the last 220 px goes to the far post (a forward who is there, or the spot). */
+function crossTarget(m: Match, p: Player): PassChoice | null {
+  const gx = goalX(p.team), dir = attackDir(p.team);
+  if (Math.abs(gx - m.ball.x) > T.cross.zone || (p.y > T.cross.wing && p.y < PITCH.d - T.cross.wing)) return null;
+  const spot = { x: gx - dir * T.cross.post, y: p.y < 80 ? 80 + T.cross.far : 80 - T.cross.far };
+  let best: Player | null = null, bd: number = T.cross.snap;
+  for (const q of mates(m, p)) { if (q.role === 'gk') continue; const d = Math.hypot(q.x - spot.x, q.y - spot.y); if (d < bd) { bd = d; best = q; } }
+  return best ? { id: best.id, x: clamp(best.x + best.vx * 0.3, ESCAPE.x0 + 8, ESCAPE.x1 - 8), y: clamp(best.y + best.vy * 0.3, 4, PITCH.d - 4) } : { id: -1, x: spot.x, y: spot.y };
+}
+
 export function planPass(m: Match, p: Player, lob: boolean): KickPlan {
+  const cr = lob ? crossTarget(m, p) : null;
+  if (cr) return { kind: 'chip', speed: 0, vz: 0, tx: cr.x, ty: cr.y, err: T.lobErr, spin: 0, lob: true, target: cr.id >= 0 ? cr.id : undefined };
   const c = choosePass(m, p, p.input.mx, p.input.my, lob ? T.lobMaxD : T.passMax * 1.2);
   const stick = Math.hypot(p.input.mx, p.input.my);
   if (c) return { kind: lob ? 'chip' : 'pass', speed: 0, vz: 0, tx: c.x, ty: c.y, err: lob ? T.lobErr : T.passErr, spin: 0, lob, target: c.id };
@@ -152,10 +192,14 @@ function startKick(m: Match, p: Player, plan: KickPlan, prep: number, floor = 0)
 const PREP: Record<KickKind, number> = { pass: T.passPrep, chip: T.passPrep, shot: T.shotPrep, volley: T.volleyPrep, header: T.headerPrep, chilena: T.chilenaPrep, restart: T.passPrep };
 
 /** What an airborne free ball asks of a player standing under it. */
+/** The target of a pass in the air (a cross, a lob) gets a window 30 % bigger to reach it with the head or the foot. */
+export const aerialK = (m: Match, p: Player): number => (m.lastPass && m.lastPass.to === p.id && m.lastPass.team === p.team && m.t - m.lastPass.t < 2.5 ? T.aerialTargetMult : 1);
+
 export function aerialZone(m: Match, p: Player): 'volley' | 'header' | null {
   const b = m.ball;
   if (b.state !== 'free' || p.noControlT > 0) return null;
-  if (!ballNear(m, p, T.aerial.dx, T.aerial.dy)) return null;
+  const k = aerialK(m, p);
+  if (!ballNear(m, p, T.aerial.dx * k, T.aerial.dy * k)) return null;
   if (b.z >= T.aerial.zMin && b.z < T.aerial.volleyZ) return 'volley';
   if (b.z >= T.aerial.volleyZ && b.z <= T.aerial.headerZ) return 'header';
   return null;
@@ -219,17 +263,18 @@ function slideContacts(m: Match, p: Player, a: Act): void {
 }
 
 /** Frontal steal: the rival with the ball is in reach in front. Returns whether an attempt was made. */
-export function tryFrontSteal(m: Match, p: Player): boolean {
+export function tryFrontSteal(m: Match, p: Player, slack = false): boolean {
   if (p.cd.steal > 0) return false;
   const b = m.ball, c = playerById(m, b.owner);
   if (!c || c.team === p.team || c.immuneT > 0) return false;
   const fx = (c.x - p.x) * p.facing;
-  if (fx < -2 || fx > T.steal.reach || Math.abs(c.y - p.y) > T.steal.dy) return false;
+  if (fx < -2 || fx > T.steal.reach + (slack ? T.steal.slack.x : 0) || Math.abs(c.y - p.y) > T.steal.dy + (slack ? T.steal.slack.y : 0)) return false;
   p.cd.steal = T.steal.cd;
   const easyCarrier = c.control === 'human' && c.controls === 'easy' ? T.easy.stolen : 1;   // the ball sticks more to a child on easy controls
-  if (m.rng.chance(T.steal.p * c.stats.stolen * easyCarrier)) {
+  const contained = (p.containT ?? 0) >= T.contain.after ? T.contain.stealBonus : 1;           // after half a second of holding him the steal is likelier
+  if (m.rng.chance(Math.min(0.95, T.steal.p * (p.stats.steal ?? 1) * c.stats.stolen * easyCarrier * contained))) {
     dropBall(m, c); startStagger(m, c, T.steal.fail);
-    b.owner = p.id; b.state = 'owned'; p.immuneT = T.immune; p.stats2.steals++; setTouch(m, p); addBar(m, p.team, T.bar.steal);
+    b.owner = p.id; b.state = 'owned'; p.immuneT = T.immune; p.stats2.steals++; setTouch(m, p); addBar(m, p.team, T.bar.steal + (contained > 1 ? T.bar.containSteal : 0));
     emit(m, 'steal', b.x, b.y, 0, p.id);
   } else {
     startStagger(m, p, T.steal.fail);
@@ -292,6 +337,17 @@ export function handleInput(m: Match, p: Player, dt: number): void {
     return;
   }
 
+  // first time: a button pressed up to `buffer` s before the ball reaches the player is kept and taken the moment it does, as a shot or a pass
+  const reach = b.state === 'free' && b.z < T.ctrl.z && ballNear(m, p, T.firstTimeReach, T.firstTimeReach * 0.7) && p.noControlT <= 0;
+  if (own) p.buf = null;
+  else if (p.buf) {
+    if (m.t > p.buf.until) p.buf = null;
+    else if (reach) {
+      const kind = p.buf.kind; p.buf = null;
+      const pl = kind === 'shoot' ? planShot(m, p, 0) : planPass(m, p, false);
+      startKick(m, p, { ...pl, first: true }, kind === 'shoot' ? PREP.shot : PREP.pass); return;
+    }
+  }
   if (own) {
     if (sh.release || (p.shoot.down && p.shoot.t >= T.autoFire)) { p.shoot.down = false; startKick(m, p, planShot(m, p, sh.release ? sh.t : p.shoot.t), PREP.shot); return; }
     if (pa.release) { const lob = pa.t >= T.lobHold; startKick(m, p, planPass(m, p, lob), PREP.pass); }
@@ -302,12 +358,33 @@ export function handleInput(m: Match, p: Player, dt: number): void {
     if (pa.press) { const a = planAerial(m, p, zone, true); startKick(m, p, a.plan, a.prep, a.floor); }
     return;
   }
-  const loose = b.state === 'free' && b.z < T.ctrl.z && ballNear(m, p, T.firstTimeReach, T.firstTimeReach * 0.7) && p.noControlT <= 0;
+  const loose = reach;
+  if (p.control === 'human' && (sh.press || pa.press) && b.state === 'free' && !reach) {
+    // will the ball be at my feet in the next quarter second? Then the press waits for it instead of being a slide
+    for (let t = 0.05; t <= T.bufferArrive + 1e-6; t += 0.05) {
+      const pt = ballAt(m, t);
+      if (pt.z < T.ctrl.z && Math.abs(pt.x - p.x) < T.firstTimeReach && Math.abs(pt.y - p.y) < T.firstTimeReach * 0.7) { p.buf = { kind: sh.press ? 'shoot' : 'pass', until: m.t + T.buffer }; return; }
+    }
+  }
   if (loose && sh.release) { startKick(m, p, planShot(m, p, 0), PREP.shot); return; }
   if (sh.press) {
     if (p.control === 'ai') { if (inp.slide) startSlide(m, p); else tryFrontSteal(m, p); }
-    else startSlide(m, p);
+    else {
+      // "close steals, far slides": a rival with the ball right in front is taken from the front (never with a slide), anywhere else it is a slide
+      const c = playerById(m, b.owner), fx = c ? (c.x - p.x) * p.facing : 0;
+      if (c && c.team !== p.team && c.immuneT <= 0 && fx >= -2 && fx <= T.steal.reach + T.steal.slack.x && Math.abs(c.y - p.y) <= T.steal.dy + T.steal.slack.y) tryFrontSteal(m, p, true);
+      else startSlide(m, p);
+    }
   }
+}
+
+/** The rival with the ball whom a human without the ball could steal from the front right now (for the mark under his feet, view only). */
+export function stealTarget(m: Match, p: Player): Player | null {
+  if (p.cd.steal > 0 || m.phase !== 'play' || LOCK.has(p.state) || p.act) return null;
+  const c = playerById(m, m.ball.owner);
+  if (!c || c.team === p.team || c.immuneT > 0) return null;
+  const fx = (c.x - p.x) * p.facing;
+  return fx >= -2 && fx <= T.steal.reach + T.steal.slack.x && Math.abs(c.y - p.y) <= T.steal.dy + T.steal.slack.y ? c : null;
 }
 
 // ------------------------------------------------------------------------------------------------ acts in progress
@@ -348,7 +425,7 @@ function resolveKick(m: Match, p: Player, plan: KickPlan): void {
   const mine = b.owner === p.id;
   let ok = mine;
   if (!ok && b.state === 'free') {
-    if (plan.air) ok = Math.abs(b.x - p.x) < T.aerial.dx + 6 && Math.abs(b.y - p.y) < T.aerial.dy + 6 && b.z >= T.aerial.zMin - 4 && b.z <= T.aerial.headerZ + 14;
+    if (plan.air) ok = Math.abs(b.x - p.x) < T.aerial.dx * aerialK(m, p) + 6 && Math.abs(b.y - p.y) < T.aerial.dy * aerialK(m, p) + 6 && b.z >= T.aerial.zMin - 4 && b.z <= T.aerial.headerZ + 14;
     else ok = Math.abs(b.x - p.x) < T.firstTimeReach + 6 && Math.abs(b.y - p.y) < T.firstTimeReach && b.z < T.ctrl.z;
   }
   if (!ok && plan.kind === 'restart' && b.state === 'dead') ok = true;

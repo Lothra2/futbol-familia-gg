@@ -1,7 +1,7 @@
 import { T } from '../tuning';
 import { DT } from '../step';
 import { PITCH, attackDir, goalX, ownGoalX } from '../field';
-import { choosePass } from '../actions';
+import { choosePass, segDist } from '../actions';
 import { emptyInput, type InputFrame } from '../types';
 import { aiParams } from './difficulty';
 import { formationTarget, teamMode } from './formation';
@@ -10,6 +10,43 @@ import { etaTo, ballAt } from './predict';
 import type { AIMind, Match, Player } from '../state';
 
 const clamp = (v: number, a: number, b: number): number => Math.max(a, Math.min(b, v));
+/** Where a forward goes while a teammate carries the ball (mejora 2): first and second post when the carrier is about to cross from the wing,
+ *  a run behind the last defender every few seconds (one forward at a time, the farthest from the ball), and otherwise the free space ahead of the ball. */
+function supportSpot(m: Match, p: Player, carrier: Player, foes: Player[], dir: 1 | -1, gx: number): { x: number; y: number; sprint: boolean } {
+  const A = p.ai, field = foes.filter((q) => q.role !== 'gk');
+  if (Math.abs(gx - carrier.x) < 240 && (carrier.y < 42 || carrier.y > 118)) {
+    const first = p.slot === 3;
+    return { x: gx - dir * (first ? 36 : 58), y: first ? 66 : 94, sprint: true };
+  }
+  if (A.runUntil !== undefined && m.t < A.runUntil) return { x: A.runX!, y: A.runY!, sprint: true };
+  const key = `runAt${p.team}`, next = (m.data[key] as number | undefined) ?? 0;
+  if (m.t >= next && field.length) {
+    const fw = m.players.filter((q) => q.team === p.team && q.role === 'fwd' && q.control === 'ai' && q.id !== carrier.id);
+    const far = fw.sort((a, c) => Math.hypot(c.x - carrier.x, c.y - carrier.y) - Math.hypot(a.x - carrier.x, a.y - carrier.y))[0];
+    if (far && far.id === p.id) {
+      const last = field.reduce((a, c) => (c.x * dir > a.x * dir ? c : a));
+      if ((last.x - carrier.x) * dir > 30) {
+        A.runUntil = m.t + T.space.runFor; A.runX = clamp(last.x + dir * 22, 40, PITCH.w - 40); A.runY = clamp(last.y < 80 ? last.y + 40 : last.y - 40, 14, PITCH.d - 14);
+        m.data[key] = m.t + m.rng.range(T.space.runEvery[0], T.space.runEvery[1]) * (aiParams(m, p).counter > 0 ? 0.5 : 1);
+        return { x: A.runX, y: A.runY, sprint: true };
+      }
+      m.data[key] = m.t + 1;   // nobody to run behind yet: look again in a second
+    }
+  }
+  // the free space ahead of the ball: the candidate farthest from every rival, near where he already is, not in the lane of the carrier or of the other forward
+  const other = m.players.find((q) => q.team === p.team && q.role === 'fwd' && q.id !== p.id && q.id !== carrier.id);
+  let best = { x: p.x, y: p.y, s: -Infinity };
+  for (const ox of [T.space.minX, (T.space.minX + T.space.maxX) / 2, T.space.maxX]) for (const cy of [24, 52, 80, 108, 136]) {
+    const cx = clamp(carrier.x + dir * ox, 40, PITCH.w - 40);
+    if (Math.abs(cy - carrier.y) < 18 && Math.abs(cx - carrier.x) < 90) continue;
+    let near = 99; for (const o of field) near = Math.min(near, Math.hypot(o.x - cx, (o.y - cy) / T.yFactor));
+    let sc = Math.min(near, 60) / 60 * 2 - Math.hypot(cx - p.x, cy - p.y) / 260 + (Math.abs(gx - cx) < 240 ? 0.3 : 0);
+    if (other && Math.hypot(other.x - cx, other.y - cy) < 28) sc -= 1;
+    if (near < T.space.safe) sc -= 0.8;
+    if (sc > best.s) best = { x: cx, y: cy, s: sc };
+  }
+  return { x: best.x, y: best.y, sprint: Math.hypot(best.x - p.x, best.y - p.y) > 80 };
+}
 
 export const newMind = (): AIMind => ({
   nextThink: 0, held: emptyInput(), armedAt: 0, holdLeft: 0, holdBtn: null, lastX: 0, lastY: 0, lastT: 0, sidestepUntil: 0, sidestepDx: 0, sidestepDy: 0,
@@ -84,10 +121,30 @@ function brainThink(m: Match, p: Player, humanize: boolean): InputFrame {
       if (A.specialAt === 0) A.specialAt = full + m.rng.range(T.special.aiDelayMin, T.special.aiDelayMax);
       if (m.t >= A.specialAt) { f.specialPressed = true; A.specialAt = 0; return f; }
     }
+    // a cross: on the wing in the last 220 px with a mate waiting at the far post, a high pass to him (the same held pass a person does)
+    if (dGoal < T.cross.zone && dGoal > 60 && (p.y < T.cross.wing || p.y > PITCH.d - T.cross.wing) && p.holdT > 0.5 && m.rng.chance(T.cross.aiChance * par.crossBias)) {
+      const spot = { x: gx - dir * T.cross.post, y: p.y < 80 ? 80 + T.cross.far : 80 - T.cross.far };
+      if (mates.some((q) => Math.hypot(q.x - spot.x, q.y - spot.y) < T.cross.snap)) {
+        f.mx = dir; f.my = 0; f.passPressed = true; f.pass = true; A.holdBtn = 'pass'; A.holdLeft = 0.3; A.held = { ...f, passPressed: false }; A.armedAt = 0;
+        return f;
+      }
+    }
+    // the counter (Tiburoncitos): the ball was just won, so the long ball to the forward who already runs, before the rivals get back
+    const holdSince = (m.data.holdSince as number | undefined) ?? 0;
+    if (par.counter > 0 && m.t - holdSince < 1.6 && p.holdT > 0.15 && p.holdT < 1.0 && m.rng.chance(0.5 * par.counter)) {
+      const pc = choosePass(m, p, 0, 0, 360);
+      if (pc && (pc.x - p.x) * dir >= 140 && !foes.some((o) => segDist(o.x, o.y, p.x, p.y, pc.x, pc.y) < 18)) {
+        const mate = m.players.find((q) => q.id === pc.id) ?? pc, md = Math.hypot(mate.x - p.x, mate.y - p.y) || 1, d = Math.hypot(pc.x - p.x, pc.y - p.y);
+        f.mx = (mate.x - p.x) / md; f.my = (mate.y - p.y) / md; f.passPressed = true; f.pass = true;
+        if (d > 200) { A.holdBtn = 'pass'; A.holdLeft = 0.3; A.held = { ...f, passPressed: false }; } else f.pass = false;
+        A.armedAt = 0;
+        return f;
+      }
+    }
     const shootRange = p.role === 'def' ? par.shootRange * 0.8 : par.shootRange;
     if (dGoal <= shootRange && ready(true)) {
       const gk = foes.find((q) => q.role === 'gk');
-      f.my = gk && Math.abs(gk.y - 80) > 5 && m.rng.chance(0.4) ? (gk.y < 80 ? 1 : -1) : m.rng.chance(0.5) ? 0 : m.rng.chance(0.5) ? 1 : -1;
+      f.my = 0.55 * (gk && Math.abs(gk.y - 80) > 5 && m.rng.chance(0.4) ? (gk.y < 80 ? 1 : -1) : m.rng.chance(0.5) ? 0 : m.rng.chance(0.5) ? 1 : -1);   // 0.55 of the stick is the 68 / 92 of the old three-point aim
       f.mx = dir; f.shootPressed = true; f.shoot = true;
       if (dGoal > 150) { A.holdBtn = 'shoot'; A.holdLeft = 0.3; A.held = { ...f, shootPressed: false }; } else f.shoot = false;
       A.armedAt = 0;
@@ -95,11 +152,18 @@ function brainThink(m: Match, p: Player, humanize: boolean): InputFrame {
     }
     const pressed = !!near;
     const proactive = (p.role === 'def' && dGoal > 420 && m.rng.chance(0.2)) || (dGoal > 300 && m.rng.chance(0.03));
-    if ((pressed || proactive) && (proactive || ready(true))) {
-      const c = choosePass(m, p, 0, 0, 300);
+    // a progressive pass: a mate clearly further ahead, free, with nobody on the line, is played to after he has held the ball a moment
+    let progressive = false;
+    if (!pressed && !proactive && p.holdT > T.space.progressHold && dGoal > shootRange + 20 && m.rng.chance(T.space.progressive * par.passBias)) {
+      const pc = choosePass(m, p, 0, 0, 260);
+      progressive = !!pc && (pc.x - p.x) * dir >= T.space.progressGain && !foes.some((o) => segDist(o.x, o.y, p.x, p.y, pc.x, pc.y) < 20 || Math.hypot(o.x - pc.x, o.y - pc.y) < 28);
+    }
+    if ((pressed || proactive || progressive) && (proactive || progressive || ready(true))) {
+      const c = choosePass(m, p, 0, 0, progressive ? 260 : 300);
       if (c && (c.x - p.x) * dir > -30) {
-        const d = Math.hypot(c.x - p.x, c.y - p.y);
-        f.mx = (c.x - p.x) / d; f.my = (c.y - p.y) / d; f.passPressed = true; f.pass = true;
+        // the stick points at the mate himself (not at the lead point of a through pass, which can fall outside the 30 degree cone for a close mate)
+        const mate = m.players.find((q) => q.id === c.id) ?? c, md = Math.hypot(mate.x - p.x, mate.y - p.y) || 1, d = Math.hypot(c.x - p.x, c.y - p.y);
+        f.mx = (mate.x - p.x) / md; f.my = (mate.y - p.y) / md; f.passPressed = true; f.pass = true;
         if (d > 200) { A.holdBtn = 'pass'; A.holdLeft = 0.3; A.held = { ...f, passPressed: false }; } else f.pass = false;
         A.armedAt = 0;
         return f;
@@ -119,7 +183,19 @@ function brainThink(m: Match, p: Player, humanize: boolean): InputFrame {
     const rank = order.indexOf(p);
     const danger = Math.abs(carrier.x - ownGoalX(p.team)) < 300;
     const sitBack = m.difficulty === 'tranquilos' && p.team === 1 && Math.abs(carrier.x - ownGoalX(p.team)) > 450;   // the Tranquilos let the game flow in the middle
-    if (!sitBack && rank < Math.min(2, par.press + (danger ? 1 : 0))) {
+    // a human of my team is containing the carrier: the closest AI mate does not rush in, he cuts the lane to the best receiver of the rival
+    const humanContains = m.players.some((q) => q.team === p.team && q.control === 'human' && (q.containT ?? 0) > 0);
+    if (humanContains && rank === 0) {
+      const c = choosePass(m, carrier, 0, 0, 300);
+      if (c) { go((carrier.x + c.x) / 2, (carrier.y + c.y) / 2, Math.hypot(p.x - c.x, p.y - c.y) > 70); return f; }
+    }
+    const pressers = Math.min(3, par.press + (danger ? 1 : 0));
+    // the next one after those who press cuts the lane to the most dangerous receiver instead of waiting on his spot (mejora 2: a pass is not free)
+    if (!sitBack && rank === pressers && !(humanContains && rank === 0) && (p.team === 0 || m.difficulty === 'campeones')) {   // Tranquilos and Normales rivals do not cut lanes: with them passing flows
+      const c = choosePass(m, carrier, 0, 0, 300);
+      if (c) { go(carrier.x + (c.x - carrier.x) * T.space.cutAt, carrier.y + (c.y - carrier.y) * T.space.cutAt, Math.hypot(p.x - c.x, p.y - c.y) > 70); return f; }
+    }
+    if (!sitBack && !(humanContains && rank === 0) && rank < pressers) {
       const lead = ballAt(m, 0.25);
       const d = Math.hypot(carrier.x - p.x, carrier.y - p.y);
       go(lead.x, lead.y, d > 60);
@@ -137,15 +213,30 @@ function brainThink(m: Match, p: Player, humanize: boolean): InputFrame {
   // ------------------------------------------------------------------ a teammate carries it: support
   if (mine && carrier) {
     const t = formationTarget(m, p, teamMode(m, p) === 'defend' ? 'neutral' : 'attack');
-    const lane = p.slot % 2 === 1 ? 1 : -1;   // 1: lower lane
-    let x = t.x, y = t.y;
-    if (p.role === 'fwd') { x = clamp(carrier.x + dir * 90, 40, PITCH.w - 40); if (Math.abs(gx - x) < 90) x = gx - dir * 90; y = clamp(carrier.y + (lane > 0 ? 1 : -1) * 36, 14, PITCH.d - 14); if (Math.abs(y - carrier.y) < 20) y = carrier.y + (carrier.y > 80 ? -34 : 34); }
-    go(x, y, Math.hypot(x - p.x, y - p.y) > 80);
+    let x = t.x, y = t.y, sprint = false;
+    const lp = m.lastPass;
+    if (lp && lp.from === p.id && lp.team === p.team && m.t - lp.t < T.space.goFor && carrier.id === lp.to) {
+      // pass and go: whoever just passed runs into the space ahead of the receiver, asking for the ball back (the one-two the human can return in one touch)
+      x = clamp(carrier.x + dir * T.space.goAhead, 40, PITCH.w - 40); y = clamp(carrier.y > 80 ? carrier.y - 36 : carrier.y + 36, 14, PITCH.d - 14); sprint = true;
+    } else if (p.role === 'fwd') { const sp = supportSpot(m, p, carrier, foes, dir, gx); x = sp.x; y = sp.y; sprint = sp.sprint; }
+    else if (p.role === 'def' && (carrier.x - PITCH.w / 2) * dir > -160) {
+      // short support: the defender who is on the far side of the carrier comes up behind the ball, a triangle for the pass back
+      const defs = m.players.filter((q) => q.team === p.team && q.role === 'def').sort((a, c) => Math.abs(c.y - carrier.y) - Math.abs(a.y - carrier.y));
+      if (defs[0]?.id === p.id) { x = clamp(carrier.x - dir * T.space.supportAt, 40, PITCH.w - 40); y = clamp(carrier.y > 80 ? carrier.y - 50 : carrier.y + 50, 14, PITCH.d - 14); }
+    }
+    go(x, y, sprint || Math.hypot(x - p.x, y - p.y) > 80);
     return f;
   }
 
   // ------------------------------------------------------------------ loose ball
   // the mates the AI plays with do not wait for the human: they race for the ball among themselves
+  // the receiver of a pass of his team goes to meet it, whoever else is closer (the others keep their place)
+  const lp = m.lastPass;
+  if (lp && lp.to === p.id && lp.team === p.team && !lp.done && m.t - lp.t < 2.5 && b.state === 'free') {
+    const tgt = ballAt(m, Math.min(0.5, etaTo(m, p)));
+    go(tgt.x, tgt.y, true);
+    return f;
+  }
   const cands = m.players.filter((q) => q.team === p.team && q.role !== 'gk' && q.control === 'ai');
   const eta = etaTo(m, p), best = Math.min(...cands.map((q) => etaTo(m, q)));
   const untouched = m.t - b.lastTouch.t > 4;
