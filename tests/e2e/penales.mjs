@@ -19,11 +19,14 @@ for (const [w, h] of [[1280, 720], [844, 390], [667, 375]]) {
   const aim = await page.evaluate(() => { const p = window.__futbol.match.pen; return { y: p.aimY, z: p.aimZ, s: p.turn }; });
   ok(`${w}x${h}: las flechas mueven la mira (arriba sube la altura, izquierda cambia el lado)`, aim.z > 0.9 && Math.abs(aim.y - 80) > 10, JSON.stringify(aim));
   await page.keyboard.up('ArrowUp'); await page.keyboard.up('ArrowLeft');
+  await page.keyboard.press('Space');   // Tiro: the penalty goes (no automatic kick for a person before 14 s)
   await page.waitForFunction(() => window.__futbol.match.pen.step === 'fly', null, { timeout: 12000 }); await page.waitForTimeout(250); await shot('3_vuelo');
   await page.waitForFunction(() => window.__futbol.match.pen.step === 'result', null, { timeout: 8000 }); await page.waitForTimeout(500); await shot('4_resultado');
   const vis = await page.evaluate(() => !!window.__futbol.scene.penCine);
   ok(`${w}x${h}: la vista épica existe`, vis);
-  await page.waitForFunction(() => window.__futbol.match.phase === 'over', null, { timeout: 150000 });
+  // the person keeps kicking: Tiro now and then until the shootout is over
+  for (let i = 0; i < 400 && !(await page.evaluate(() => window.__futbol.match.phase === 'over')); i++) { await page.keyboard.press('Space'); await page.waitForTimeout(400); }
+  await page.waitForFunction(() => window.__futbol.match.phase === 'over', null, { timeout: 10000 });
   ok(`${w}x${h}: la tanda termina`, true, JSON.stringify(await page.evaluate(() => window.__futbol.match.pen?.kicks)));
   ok(`${w}x${h}: sin errores de consola`, errors.length === 0, errors.join('|'));
   await ctx.close();

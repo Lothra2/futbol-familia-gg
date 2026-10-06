@@ -6,7 +6,7 @@ export const T_ES = {
     arcoiris: '¡TIRO ARCOÍRIS!', burbuja: '¡BALÓN BURBUJA!', canonazo: '¡CAÑONAZO!', estrellas: '¡ESTRELLAS GUÍA!', carrera: '¡CARRERA LOCA!', relampago: '¡RAYO 21!',
     llamarada: '¡LLAMARADA!', ola: '¡OLA GIGANTE!', picada: '¡PICADA DEL VIENTO!', hojas: '¡REMOLINO DE HOJAS!',
   } as Record<string, string>,
-  banners: { goal: '¡GOOOL!', throwin: '¡Saque de banda!', goalkick: '¡Saque de arco!', corner: '¡Córner!', freekick: '¡Tiro libre!', freekickFull: 'Sube y baja la mira, empuja hacia el arco para dar efecto y toca Tiro cuando diga ¡AHORA!', freekickEasy: 'Mueve la mira y toca Tiro', halftime: '¡Medio tiempo!', final: '¡Se acabó!', far: '¡Acércate más!', help: '', save: '¡Atajada!', post: '¡Al palo!' },
+  banners: { goal: '¡GOOOL!', throwin: '¡Saque de banda!', goalkick: '¡Saque de arco!', corner: '¡Córner!', freekick: '¡Tiro libre!', freekickFull: 'Apunta con el stick (arriba y abajo) y empuja hacia el arco para dar efecto. Toca Tiro, y otra vez Tiro cuando el medidor esté en verde', freekickEasy: 'Mueve la mira y toca Tiro', halftime: '¡Medio tiempo!', final: '¡Se acabó!', far: '¡Acércate más!', help: '', save: '¡Atajada!', post: '¡Al palo!' },
   hud: { half1: '1T', half2: '2T' },
   hints: { star: '¡Especial listo!' },
   result: {

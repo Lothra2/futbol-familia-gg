@@ -20,7 +20,12 @@ for (const [w, h] of [[1280, 720], [844, 390]]) {
   const aim = await page.evaluate(() => { const fk = window.__futbol.match.restart.fk; return { y: fk.aimY, c: fk.curve }; });
   await page.keyboard.up('ArrowUp'); await page.keyboard.up('ArrowRight');
   ok(`${w}x${h}: el stick mueve la mira y el efecto`, aim.y < 80 && aim.c > 0.5, JSON.stringify(aim));
-  await page.waitForFunction(() => { const r = window.__futbol.match.restart; return !r || r.t > 1.72; }, null, { timeout: 20000 });
+  // the first Tiro starts the meter, the second one (in the green) kicks
+  await page.waitForFunction(() => window.__futbol.match.restart.t > 1.0, null, { timeout: 20000 });
+  await page.keyboard.press('Space');
+  await page.waitForFunction(() => window.__futbol.match.restart?.fk.stage === 'meter', null, { timeout: 4000 });
+  ok(`${w}x${h}: el primer Tiro arranca el medidor sin patear`, await page.evaluate(() => window.__futbol.match.phase === 'restart'));
+  await page.waitForFunction(() => { const r = window.__futbol.match.restart; return r && (r.t - r.fk.mt) / 1.6 > 0.4 && (r.t - r.fk.mt) / 1.6 < 0.5; }, null, { timeout: 8000, polling: 10 });
   await page.screenshot({ path: `docs/qa/shots/tirolibre_${w}x${h}_2_ahora.png` });
   await page.keyboard.press('Space');
   await page.waitForFunction(() => window.__futbol.match.phase !== 'restart', null, { timeout: 4000 });

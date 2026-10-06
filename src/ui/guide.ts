@@ -65,7 +65,7 @@ const TIPS: [string, string, string][] = [
   ['Tu poder', 'Pases, robos y paredes llenan la barra <b>★</b>. Con la barra llena y cerca del arco, toca <b>Especial</b>. En la película, toca <b>Tiro</b> cuando el anillo se cierre: más puntería, más gol.', 'special'],
   ['Quién eres', 'Controlas al más cercano al balón. El anillo de color te dice quién eres. Sin balón, un toque rápido de <b>Pase</b> cambia de jugador.', 'move'],
   ['Quitar el balón', 'Cerca del rival, <b>Tiro</b> le roba de frente. Lejos, te tiras en barrida. <b>Mantén Pase</b> para marcarlo: te pones entre él y tu arco.', 'shoot'],
-  ['Tiro libre', 'Si derriban a tu jugador cerca del arco, hay tiro libre con barrera. Sube y baja la mira con el stick, empuja <b>hacia el arco</b> para dar efecto y toca <b>Tiro</b> cuando el medidor diga <b>¡AHORA!</b>.', 'shoot'],
+  ['Tiro libre', 'Si derriban a tu jugador cerca del arco, hay tiro libre con barrera. Apunta con el stick (arriba y abajo) y empuja <b>hacia el arco</b> para dar efecto. Toca <b>Tiro</b>: arranca un medidor. Toca <b>Tiro</b> otra vez cuando esté en verde (<b>¡AHORA!</b>). Si se pasa, vuelves a apuntar.', 'shoot'],
   ['Penales', 'Si empatan, se define en penales. Mueve el stick a los lados para apuntar y <b>arriba o abajo</b> para la altura, y toca <b>Tiro</b>. Muy alto se va por encima del travesaño.', 'move'],
   ['Saltar escenas', 'Toca la pantalla o cualquier botón para saltar las cinemáticas, el gol y la repetición.', ''],
 ];

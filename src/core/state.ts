@@ -89,7 +89,7 @@ export interface Ball {
 export type Phase = 'kickoff' | 'play' | 'restart' | 'goal' | 'halftime' | 'cinematic' | 'penalties' | 'over';
 export type RestartKind = 'kickoff' | 'throwin' | 'goalkick' | 'corner' | 'freekick';
 /** The aim of a free kick: where in the goal (y), how much effect (0 flat to 1 full, the bend goes around the wall), the players of the wall and the one who was fouled. */
-export interface FreeKick { aimY: number; curve: number; wall: number[]; fouled: number }
+export interface FreeKick { aimY: number; curve: number; wall: number[]; fouled: number; /** 'aim': the taker aims with no hurry. After the first Tiro the meter swings once (`mt` is when it started) and the second Tiro kicks. */ stage: 'aim' | 'meter'; mt: number }
 export interface Restart { kind: RestartKind; team: Team; x: number; y: number; taker: number; t: number; kicked: boolean; aiAt: number; fk?: FreeKick }
 
 export interface Match {

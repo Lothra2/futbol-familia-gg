@@ -3,7 +3,7 @@ import { CENTER, ESCAPE, GOAL, PITCH, attackDir, goalX, ownGoalX, slotPos } from
 import { emit } from './events';
 import { addBar, stepCinematic } from './specials';
 import { startPenalties } from './penalties';
-import { startFreeKick, stepFreeKick, takeFreeKick } from './freekick';
+import { fkSwingOver, startFreeKick, stepFreeKick, takeFreeKick } from './freekick';
 import { choosePass, playerById, restartKick } from './actions';
 import { emptyInput } from './types';
 import type { Match, Player, Restart, RestartKind, Team } from './state';
@@ -114,7 +114,7 @@ function goalScored(m: Match, team: Team): void {
   const pt = b.prevTouch;
   if (last && last.team === team && pt.team === team && pt.player !== null && pt.player !== last.id && m.t - pt.t < 4) assist = pt.player;
   m.lastGoal = { team, scorer: last && last.team === team ? scorer : null, assist };
-  if (m.data.fkTeam === team && m.t - ((m.data.fkAt as number) ?? -99) < 6) m.data.fkGoals = ((m.data.fkGoals as number) ?? 0) + 1;   // a goal from a free kick (practice reads it)
+  if (m.data.fkTeam === team && m.t - ((m.data.fkKickAt as number) ?? -99) < 5) m.data.fkGoals = ((m.data.fkGoals as number) ?? 0) + 1;   // a goal from a free kick (practice reads it)
   if (last && last.team === team) last.stats2.goals++;
   const a = playerById(m, assist); if (a) a.stats2.assists++;
   addBar(m, other(team), T.bar.conceded);
@@ -175,9 +175,17 @@ function stepRestart(m: Match, dt: number): void {
   if (r.kind === 'kickoff' && r.t < T.restart.wipe) return;
   let go = false;
   const easy = isHuman(t) && t.controls === 'easy';
-  if (isHuman(t)) {
-    go = t.input.shootPressed || (r.kind !== 'freekick' && t.input.passPressed);
-    const auto = r.kind === 'freekick' ? (easy ? T.free.easyAuto : T.free.auto) : r.kind === 'kickoff' ? (easy ? T.restart.easyKickoffAuto : T.restart.kickoffAuto) : (easy ? T.restart.easyAuto : T.restart.humanAuto);
+  if (isHuman(t) && r.kind === 'freekick') {
+    // aim without a hurry, the first Tiro starts the meter, the second one kicks (easy controls: one Tiro). No time limit in practice
+    const fk = r.fk!, press = t.input.shootPressed || t.input.passPressed;
+    if (easy) go = press;
+    else if (fk.stage === 'aim') { if (press) { fk.stage = 'meter'; fk.mt = r.t; } }
+    else if (press) go = true;
+    else if (fkSwingOver(fk, r.t)) fk.stage = 'aim';
+    if (!m.training && r.t >= T.free.auto) go = true;
+  } else if (isHuman(t)) {
+    go = t.input.shootPressed || t.input.passPressed;
+    const auto = r.kind === 'kickoff' ? (easy ? T.restart.easyKickoffAuto : T.restart.kickoffAuto) : (easy ? T.restart.easyAuto : T.restart.humanAuto);
     if (r.t >= auto) go = true;
   } else go = r.t >= r.aiAt + (r.kind === 'kickoff' ? T.restart.wipe : 0);
   if (go) doRestartKick(m, r);

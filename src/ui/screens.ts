@@ -203,7 +203,7 @@ export class Screens {
       <div class="qgrid"><div class="qcol"><div class="lbl">Jugadores</div>${this.chips('tplayers', [{ v: 1, label: '1 jugador' }, { v: 2, label: '2 juntos' }], this.d.cfg().players)}
       <div class="lbl">Tu equipo</div>${this.squadHtml(this.d.cfg())}</div>
       <div class="qcol opts"><div class="lbl">Qué practicar</div>${this.chips('tdrill', [{ v: 'todo', label: 'Todos los retos' }, { v: 'libre', label: 'Tiros libres' }, { v: 'penal', label: 'Penales' }], this.d.cfg().drill ?? 'todo')}
-      <p class="note">${({ todo: 'Pases, tiros, el poder, un tiro libre y penales con Thor. Sin tiempo, sin presión.', libre: 'Tiros libres contra la barrera, uno tras otro. Mira con el stick y toca Tiro en ¡AHORA!', penal: 'Penales uno tras otro, vistos desde atrás del pateador. Mira con el stick y toca Tiro.' } as Record<string, string>)[this.d.cfg().drill ?? 'todo']}</p></div></div><div class="mfoot"><button class="btn primary go" data-act="trainGo" data-focus>¡A entrenar!</button></div>`;
+      <p class="note">${({ todo: 'Pases, tiros, el poder, un tiro libre y penales con Thor. Sin tiempo, sin presión.', libre: 'Tiros libres contra la barrera, uno tras otro. Apunta, toca Tiro y otra vez Tiro en verde.', penal: 'Penales uno tras otro, vistos desde atrás del pateador. Mira con el stick y toca Tiro.' } as Record<string, string>)[this.d.cfg().drill ?? 'todo']}</p></div></div><div class="mfoot"><button class="btn primary go" data-act="trainGo" data-focus>¡A entrenar!</button></div>`;
   }
 
   // ------------------------------------------------------------------ behaviour

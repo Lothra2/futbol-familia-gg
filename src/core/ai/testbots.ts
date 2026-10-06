@@ -34,7 +34,9 @@ export function botFrame(m: Match, h: HumanCtl, s: BotState): InputFrame {
   if (m.phase === 'restart' && rs?.kind === 'freekick' && rs.taker === p.id && rs.fk) {
     const f = emptyInput(), want = 80 + (m.tick % 2 ? -17 : 17), dir = attackDir(p.team);
     f.my = Math.max(-1, Math.min(1, (want - rs.fk.aimY) / 8)); f.mx = rs.fk.curve < 0.8 ? 0.4 * dir : 0;
-    if (s.kind === 'sophie' ? fkMeter(rs.t) >= T.free.sweet : rs.t > 1.7) f.shootPressed = true;
+    // sophie presses Tiro to start the meter and again at the top of it, nina5 (easy controls) presses once
+    if (s.kind === 'sophie') { if (rs.fk.stage === 'aim' ? rs.t > 1.2 : fkMeter(rs.fk, rs.t) >= T.free.sweet) f.shootPressed = true; }
+    else if (rs.t > 1.7) f.shootPressed = true;
     return f;
   }
   if (s.kind === 'sophie') {

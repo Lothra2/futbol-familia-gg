@@ -8,8 +8,14 @@ import type { Match, Player, Restart, Team } from './state';
 const clamp = (v: number, a: number, b: number): number => Math.max(a, Math.min(b, v));
 const sgn = (v: number): number => (v < 0 ? -1 : 1);
 
-/** The meter of the free kick, 0 to 1 and back, from the moment the taker is in place. The kick is best when it is pressed at the top. */
-export const fkMeter = (t: number): number => 0.5 - 0.5 * Math.cos(2 * Math.PI * T.free.meterHz * Math.max(0, t - T.restart.position));
+/** The meter of the free kick: after the first Tiro it swings up and down once in `sweep` seconds (0 while the taker is still aiming). The kick is best when it is pressed at the top. */
+export function fkMeter(fk: { stage: 'aim' | 'meter'; mt: number }, t: number): number {
+  if (fk.stage !== 'meter') return 0;
+  const x = (t - fk.mt) / T.free.sweep;
+  return x <= 0 ? 0 : x >= 1 ? 0 : x < 0.5 ? 2 * x : 2 - 2 * x;
+}
+/** Has the meter finished its swing without a press? Then the taker goes back to aiming (nothing is lost). */
+export const fkSwingOver = (fk: { stage: 'aim' | 'meter'; mt: number }, t: number): boolean => fk.stage === 'meter' && t - fk.mt >= T.free.sweep;
 /** What the meter says about a press: 1 is the top (¡AHORA!), 0.5 is fair, 0 is bad. */
 export const fkTiming = (u: number): number => (u >= T.free.sweet ? 1 : u >= T.free.ok ? 0.5 : 0);
 
@@ -42,7 +48,7 @@ export function startFreeKick(m: Match, team: Team, x: number, y: number, fouled
   if (victim) { victim.x = sx - dir * 14; victim.y = clamp(sy + (sy < PITCH.d / 2 ? 26 : -26), 10, PITCH.d - 10); victim.vx = victim.vy = 0; victim.noControlT = 1.5; }
   m.restart = {
     kind: 'freekick', team, x: sx, y: sy, taker: taker.id, t: 0, kicked: false, aiAt: m.rng.range(T.free.aiMin, T.free.aiMax),
-    fk: { aimY: PITCH.d / 2, curve: 0.5, wall: wallers.map((p) => p.id), fouled },
+    fk: { aimY: PITCH.d / 2, curve: 0.5, wall: wallers.map((p) => p.id), fouled, stage: 'aim', mt: 0 },
   };
   m.phase = 'restart'; m.phaseT = 0;
   Object.assign(m.ball, { x: sx, y: sy, z: 0, vx: 0, vy: 0, vz: 0, spin: 0, state: 'dead', owner: null, inNet: false });
@@ -74,7 +80,7 @@ export function takeFreeKick(m: Match, r: Restart, t: Player): void {
   const fk = r.fk!, human = t.control === 'human', easy = human && t.controls === 'easy';
   let aimY = fk.aimY, curve = fk.curve, err: number, q: number, timing: number;
   if (human) {
-    timing = easy ? 1 : fkTiming(fkMeter(r.t));
+    timing = easy ? 1 : fk.stage === 'meter' ? fkTiming(fkMeter(fk, r.t)) : 0.5;   // a kick without the meter (the time ran out) is a fair one
     err = T.free.err * (timing === 1 ? 0.5 : timing === 0.5 ? 1 : 2.2); q = T.free.q[timing * 2];
     if (easy) curve = Math.min(curve, 0.7);
   } else {
@@ -85,7 +91,7 @@ export function takeFreeKick(m: Match, r: Restart, t: Player): void {
   }
   const d = Math.abs(goalX(r.team) - r.x), zg = timing === 1 ? T.free.zGoal[0] : T.free.zGoal[1];
   const { v, vz } = timing === 0 ? { v: T.free.vMin + 40, vz: 90 } : lift(d, zg);   // a bad timing: low, into the wall
-  m.data.fkTaken = ((m.data.fkTaken as number) ?? 0) + 1; m.data.fkTeam = r.team;
+  m.data.fkTaken = ((m.data.fkTaken as number) ?? 0) + 1; m.data.fkTeam = r.team; m.data.fkKickAt = m.t;   // a goal counts when it comes from THIS kick, however long the aiming took
   freeKickShot(m, t, { ty: aimY, speed: v, vz, err, spin: fkSpin(aimY, curve), q });
   m.data.fkTiming = timing;
 }

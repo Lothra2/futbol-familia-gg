@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest';
 import { step } from '../../src/core/match';
 import { T } from '../../src/core/tuning';
 import { DT } from '../../src/core/step';
-import { fkMeter } from '../../src/core/freekick';
+import { fkMeter, startTrainingFreeKick } from '../../src/core/freekick';
 import { ball, clear, fam, give, mk, put, rival, secs, ticks, inp } from './helpers';
 
 /** The family carries the ball at x and a rival slides into his legs: the foul of a slide near the goal of the one who slides. */
@@ -58,24 +58,69 @@ describe('tiro libre por barrida a la pierna', () => {
     secs(m, 2, () => { t.input = inp({ my: -1, mx: -1 }); });
     expect(fk.aimY).toBeLessThan(y0); expect(fk.curve).toBe(0);
   });
+  /** Taps Tiro for one step. */
+  const tap = (m: ReturnType<typeof mk>, t: ReturnType<typeof fam>): void => { t.input = inp({ shootPressed: true }); step(m); t.input = inp(); };
+  it('el primer Tiro arranca el medidor y no patea; el segundo patea', () => {
+    const m = mk({}, true); foul(m, 760); ticks(m, 24);
+    const r = m.restart!, t = m.players.find((p) => p.id === r.taker)!;
+    secs(m, 1);
+    tap(m, t);
+    expect(m.restart!.fk!.stage).toBe('meter'); expect(m.phase).toBe('restart');
+    tap(m, t);
+    expect(m.phase).toBe('play');
+  });
+  it('un Tiro antes de que el que patea esté listo no se pierde ni patea solo', () => {
+    const m = mk({}, true); foul(m, 760); ticks(m, 24);
+    const t = m.players.find((p) => p.id === m.restart!.taker)!;
+    tap(m, t);
+    expect(m.restart!.fk!.stage).toBe('aim'); expect(m.phase).toBe('restart');
+    secs(m, 1); tap(m, t);
+    expect(m.restart!.fk!.stage).toBe('meter');
+  });
+  it('si el medidor termina sin tocar, vuelve a apuntar (no se pierde nada)', () => {
+    const m = mk({}, true); foul(m, 760); ticks(m, 24);
+    const t = m.players.find((p) => p.id === m.restart!.taker)!;
+    secs(m, 1); tap(m, t);
+    secs(m, T.free.sweep + 0.1);
+    expect(m.phase).toBe('restart'); expect(m.restart!.fk!.stage).toBe('aim');
+  });
+  it('en el entrenamiento no hay límite de tiempo y en el partido el tiro sale solo mucho después', () => {
+    const tr = mk({ training: true }, true); startTrainingFreeKick(tr); secs(tr, 40);
+    expect(tr.phase).toBe('restart');
+    const m = mk({}, true); foul(m, 760); ticks(m, 24); secs(m, T.free.auto - 2);
+    expect(m.phase).toBe('restart'); expect(m.data.fkTaken ?? 0).toBe(0); secs(m, 4);
+    expect(m.data.fkTaken).toBe(1);
+  });
   it('en el punto alto de la barra el balón pasa por encima de la barrera y no es de ellos', () => {
     const m = mk({}, true); foul(m, 760); ticks(m, 24);
     const r = m.restart!, t = m.players.find((p) => p.id === r.taker)!;
-    while (m.restart && fkMeter(m.restart.t) < T.free.sweet) { t.input = inp(); step(m); }
-    t.input = inp({ shootPressed: true }); step(m); t.input = inp();
+    secs(m, 1); tap(m, t);
+    while (m.restart && fkMeter(m.restart.fk!, m.restart.t) < T.free.sweet) { t.input = inp(); step(m); }
+    tap(m, t);
     expect(m.phase).toBe('play');
     let rivalHad = false;
     secs(m, 0.8, () => { const o = m.players.find((p) => p.id === m.ball.owner); if (o && o.team === 1 && o.role !== 'gk') rivalHad = true; });
     expect(rivalHad).toBe(false);
   });
-  it('con mal tiempo el balón sale bajo y se lo queda la barrera', () => {
+  it('con mal tiempo (segundo Tiro nada más empezar el medidor) el balón sale bajo y se lo queda la barrera', () => {
     const m = mk({}, true); foul(m, 760); ticks(m, 24);
-    const r = m.restart!, t = m.players.find((p) => p.id === r.taker)!;
-    while (m.restart && m.restart.t < T.restart.position + 0.1) { t.input = inp(); step(m); }
-    t.input = inp({ shootPressed: true }); step(m); t.input = inp();
+    const t = m.players.find((p) => p.id === m.restart!.taker)!;
+    secs(m, 1); tap(m, t); tap(m, t);
     let rivalHad = false;
     secs(m, 0.8, () => { const o = m.players.find((p) => p.id === m.ball.owner); if (o && o.team === 1) rivalHad = true; });
     expect(rivalHad).toBe(true);
+  });
+  it('un gol de tiro libre cuenta aunque se haya tardado en apuntar', () => {
+    const m = mk({}, true); foul(m, 760); ticks(m, 24);
+    const t = m.players.find((p) => p.id === m.restart!.taker)!;
+    secs(m, 12);            // a long time aiming
+    secs(m, 0); tap(m, t);
+    while (m.restart && fkMeter(m.restart.fk!, m.restart.t) < T.free.sweet) { t.input = inp(); step(m); }
+    tap(m, t);
+    // the ball goes into the net: put it there as the shot would
+    ball(m, 955, 80, 5, 300, 0, 0);
+    secs(m, 0.5);
+    expect(m.score[0]).toBe(1); expect(m.data.fkGoals).toBe(1);
   });
   it('la barrera no se mueve mientras se apunta', () => {
     const m = mk({}, true); foul(m, 760); ticks(m, 24);
@@ -85,9 +130,10 @@ describe('tiro libre por barrida a la pierna', () => {
   });
   it('tras cualquier tiro libre vuelve a sonar el partido y el reloj sigue', () => {
     const m = mk({}, true); foul(m, 760); ticks(m, 24);
-    const c = m.clock;
+    const c = m.clock, t = m.players.find((p) => p.id === m.restart!.taker)!;
+    secs(m, 1); tap(m, t); secs(m, 0.3); tap(m, t);
     secs(m, 8);
-    expect(m.phase).not.toBe('restart'); expect(m.clock).toBeGreaterThan(c);
+    expect(m.data.fkTaken).toBe(1); expect(m.clock).toBeGreaterThan(c);
     void ball; void DT;
   });
 });

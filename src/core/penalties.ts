@@ -8,7 +8,7 @@ import type { Match, Pen, Player, Team } from './state';
 const clamp = (v: number, a: number, b: number): number => Math.max(a, Math.min(b, v));
 const other = (t: Team): Team => (t === 0 ? 1 : 0);
 /** Seconds of each step of a penalty kick. */
-export const PEN = { ready: 1.7, aimAuto: 4.5, aiAimMin: 1.0, aiAimMax: 1.8, fly: 0.95, result: 2.1, reach: 28 } as const;
+export const PEN = { ready: 1.7, aimAuto: 14, aiAimMin: 1.0, aiAimMax: 1.8, fly: 0.95, result: 2.1, reach: 28 } as const;
 const SHOOTERS = [3, 4, 1, 2];     // forwards first
 const gk = (m: Match, t: Team): Player => m.players.find((p) => p.team === t && p.role === 'gk')!;
 
@@ -118,7 +118,7 @@ export function stepPenalties(m: Match, dt: number): void {
       pen.aimY += (80 + clamp(mx, -1, 1) * reach * sgn - pen.aimY) * Math.min(1, 10 * dt);
       pen.aimZ += (clamp(0.4 - my * 0.6, 0.05, 1) - pen.aimZ) * Math.min(1, 10 * dt);
       fire = !!f && (f.shootPressed || f.passPressed);
-      if (pen.t >= PEN.aimAuto) fire = true;
+      if (pen.t >= PEN.aimAuto && !pen.practice) fire = true;   // no time limit in practice
     } else { pen.aimY = pen.aimY + (pen.aiY! - pen.aimY) * Math.min(1, 6 * dt); pen.aimZ = pen.aimZ + (pen.aiZ! - pen.aimZ) * Math.min(1, 6 * dt); if (pen.t >= pen.aiAt!) fire = true; }
     if (fire) {
       const err = human ? (human.controls === 'easy' ? 2 : 4) : (t === 1 ? ({ tranquilos: 9, normales: 5, campeones: 3 }[m.difficulty]) : 6);
@@ -141,6 +141,7 @@ export function stepPenalties(m: Match, dt: number): void {
       pen.step = 'result'; pen.t = 0;
       const goal = pen.outcome === 'goal';
       pen.kicks[t].push(goal ? 1 : 0);
+      if (pen.practice && goal) m.data.penGoals = ((m.data.penGoals as number) ?? 0) + 1;   // counted the moment it goes in
       if (goal) { b.inNet = true; b.z = 6; m.stats.goals[t]++; shooter.stats2.goals++; emit(m, 'goal', b.x, b.y, b.z, shooter.id, t); emit(m, 'pengoal', b.x, b.y); shooter.state = 'celebrate'; keeper.state = 'sad'; keeper.act = null; }
       else if (pen.outcome === 'saved') { keeper.stats2.saves++; m.stats.saves[keeper.team]++; emit(m, 'save', b.x, b.y, 0, keeper.id, 1); emit(m, 'pensave', b.x, b.y); keeper.state = 'celebrate'; keeper.act = null; shooter.state = 'sad'; shooter.act = null; }
       else { emit(m, pen.outcome === 'post' ? 'post' : 'bounce', b.x, b.y, b.z, undefined, 200); emit(m, 'penmiss', b.x, b.y); shooter.state = 'sad'; shooter.act = null; keeper.state = 'idle'; keeper.act = null; }
@@ -149,8 +150,7 @@ export function stepPenalties(m: Match, dt: number): void {
   } else {
     if (pen.t >= PEN.result) {
       if (pen.winner !== null) { m.penWinner = pen.winner; m.phase = 'over'; m.phaseT = 0; emit(m, 'whistle', m.ball.x, m.ball.y, 0, undefined, 3); emit(m, 'final', m.ball.x, m.ball.y); return; }
-      if (pen.practice) { if (pen.outcome === 'goal') m.data.penGoals = ((m.data.penGoals as number) ?? 0) + 1; }
-      else pen.turn = other(pen.turn);
+      if (!pen.practice) pen.turn = other(pen.turn);
       pen.round++;
       m.ball.inNet = false;
       setupKick(m);

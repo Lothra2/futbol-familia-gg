@@ -52,7 +52,9 @@ describe('entrenamiento con Thor', () => {
     expect(m.phase).toBe('penalties'); expect(m.pen!.practice).toBe(true);
     let done = false, sawRival = false;
     for (let i = 0; i < 60 * 400 && !done; i++) { setHumanInput(m, 0, botFrame(m, m.humans[0], st)); step(m); if (m.pen && m.pen.turn !== 0) sawRival = true; if (i % 6 === 0) done = t.update(m).allDone; }
-    expect(done).toBe(true); expect(sawRival).toBe(false); expect(m.pen).toBeNull(); expect(m.phase).not.toBe('penalties'); expect(m.data.penGoals as number).toBeGreaterThanOrEqual(2);
+    expect(done).toBe(true);
+    for (let i = 0; i < 60 * 4 && m.pen; i++) { step(m); t.update(m); }   // the practice ends when the celebration of the last goal is over
+    expect(sawRival).toBe(false); expect(m.pen).toBeNull(); expect(m.phase).not.toBe('penalties'); expect(m.data.penGoals as number).toBeGreaterThanOrEqual(2);
   });
   it('los ejercicios del menú se repiten sin terminar nunca: tiros libres y penales', () => {
     for (const drill of ['libre', 'penal'] as const) {
