@@ -65,7 +65,7 @@ export class PlayerView {
     if (on && this.ghostT <= 0) {
       this.ghostT = 0.05;
       const g = this.ghosts[this.ghostI++ % this.ghosts.length];
-      g.setVisible(true).setFrame(frame).setPosition(x, y).setFlipX(flip).setDepth(depth).setTint(tint).setAlpha(0.45);
+      g.setVisible(true).setFrame(frame).setPosition(x, y).setFlipX(flip).setDepth(depth).setTint(tint).setAlpha(0.28);
     }
     for (const g of this.ghosts) if (g.visible) { g.setAlpha(g.alpha - dt * 2.6); if (g.alpha <= 0.02) g.setVisible(false); }
   }
@@ -104,9 +104,9 @@ export class PlayerView {
       this.sprite.setTint(k > 0.5 ? 0xfff3b0 : 0xffd447);
       if (this.fx && Math.floor(this.goldT * 18) !== Math.floor((this.goldT - dt) * 18)) this.fx.sparkle(x + (Math.random() - 0.5) * 20, y - 10 - Math.random() * 26);
     } else if (this.goldT > 0) { this.goldT = 0; this.sprite.clearTint(); }
-    const lean = sprinting ? 1 : 0;
+    const lean = 0;   // no sheared slices: they made every sprinting player look blurred
     this.setBody(frame, x, y, p.facing < 0, 200 + p.y, lean * p.facing);
-    this.afterimages(dt, sprinting, frame, x, y, p.facing < 0, 199.2 + p.y / 1000, p.team === 0 ? 0x9bff9b : 0xff9b9b);
+    this.afterimages(dt, sprinting && humanSlot !== null, frame, x, y, p.facing < 0, 199.2 + p.y / 1000, p.team === 0 ? 0x9bff9b : 0xff9b9b);
     const k = Math.max(0.5, 1 - p.z / 80);
     this.shadow.setPosition(x, gy).setScale(k, 1).setDepth(199);
     const mine = humanSlot !== null;

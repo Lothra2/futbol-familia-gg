@@ -65,4 +65,19 @@ describe('entrenamiento con Thor', () => {
       expect(sets, drill).toBe(2);
     }
   });
+  it('tras patear el tiro libre el balón sigue su camino: no se coloca otro tiro libre antes de ver cómo termina (aunque se haya tardado en apuntar)', () => {
+    const m = mk(); const t = new Training(m, false, 'libre');
+    t.update(m);
+    expect(m.restart?.kind).toBe('freekick');
+    const taker = m.players.find((p) => p.id === m.restart!.taker)!;
+    const tap = (): void => { setHumanInput(m, 0, { mx: 0, my: 0, shoot: false, pass: false, sprint: false, special: false, shootPressed: true, passPressed: false, specialPressed: false }); step(m); setHumanInput(m, 0, null); };
+    for (let i = 0; i < 60 * 10; i++) { step(m); if (i % 6 === 0) t.update(m); }   // 10 s aiming
+    expect(m.restart?.kind).toBe('freekick');
+    tap(); for (let i = 0; i < 40; i++) step(m); tap();
+    expect(m.restart).toBeNull(); expect(taker.id).toBeGreaterThan(-1);
+    const bx = m.ball.x;
+    for (let i = 0; i < 90; i++) { step(m); if (i % 6 === 0) t.update(m); }
+    expect(m.restart?.kind === 'freekick' && m.data.fkTries === 2).toBe(false);
+    expect(Math.abs(m.ball.x - bx)).toBeGreaterThan(20);
+  });
 });

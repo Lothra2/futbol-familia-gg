@@ -13,7 +13,7 @@ export const CHALLENGES: Challenge[] = [
   { id: 'goles', title: 'Marca 3 goles', hint: 'Mantén Tiro para más potencia y suéltalo cerca del arco', need: 3, read: (m) => sum(m, (s) => s.goals) },
   { id: 'poder', title: 'Marca un gol con tu poder', hint: 'Acércate al arco con el balón y toca Especial', need: 1, read: (m) => sum(m, (s) => s.spGoals) },
   { id: 'libre', title: 'Mete un tiro libre', hint: 'Apunta con el stick, toca Tiro y otra vez Tiro cuando el medidor esté en verde. Sin prisa', need: 1, read: (m) => (m.data.fkGoals as number) ?? 0,
-    tick: (m) => { if (((m.phase === 'play' && !m.restart) || m.phase === 'kickoff') && m.t - ((m.data.fkAt as number) ?? -99) > 4) startTrainingFreeKick(m); } },
+    tick: (m) => { if (((m.phase === 'play' && !m.restart) || m.phase === 'kickoff') && m.t - ((m.data.fkKickAt as number) ?? -99) > 4) startTrainingFreeKick(m); } },
   { id: 'penales', title: 'Mete 2 penales', hint: 'Mueve el stick a los lados para apuntar y arriba o abajo para la altura. Toca Tiro para patear', need: 2, read: (m) => (m.data.penGoals as number) ?? 0,
     tick: (m) => { if (((m.phase === 'play' && !m.restart) || m.phase === 'kickoff') && !m.pen) startPenaltyPractice(m); } },
 ];

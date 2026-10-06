@@ -26,6 +26,7 @@ export class PenCine {
   private bg: Phaser.GameObjects.Graphics;
   private glow: Phaser.GameObjects.Graphics;
   private fg: Phaser.GameObjects.Graphics;
+  private net: Phaser.GameObjects.Graphics;
   private shooterImg: Phaser.GameObjects.Image;
   private keeperImg: Phaser.GameObjects.Image;
   private ball: Phaser.GameObjects.Image;
@@ -44,6 +45,7 @@ export class PenCine {
     this.bg = scene.add.graphics().setDepth(4800).setScrollFactor(0);
     this.glow = scene.add.graphics().setDepth(4801).setScrollFactor(0).setBlendMode(Phaser.BlendModes.ADD);
     this.shooterImg = scene.add.image(0, 0, 'ball').setDepth(4803).setScrollFactor(0);
+    this.net = scene.add.graphics().setDepth(4801.5).setScrollFactor(0);   // the net is behind the keeper, so he is not washed out by it
     this.keeperImg = scene.add.image(0, 0, 'ball').setDepth(4802).setScrollFactor(0);
     this.fg = scene.add.graphics().setDepth(4804).setScrollFactor(0);
     this.ball = scene.add.image(0, 0, 'ball', 0).setDepth(4805).setScrollFactor(0);
@@ -53,7 +55,7 @@ export class PenCine {
     this.hint = scene.add.text(0, 0, '', font(11, '#ffffff')).setOrigin(0.5, 1).setDepth(4807).setScrollFactor(0).setResolution(1);
     this.nameS = scene.add.text(0, 0, '', font(11)).setOrigin(0, 0).setDepth(4807).setScrollFactor(0).setResolution(1);
     this.nameK = scene.add.text(0, 0, '', font(11)).setOrigin(1, 0).setDepth(4807).setScrollFactor(0).setResolution(1);
-    this.all = [this.bg, this.glow, this.shooterImg, this.keeperImg, this.fg, this.ball, this.pShoot, this.pKeep, this.banner, this.hint, this.nameS, this.nameK];
+    this.all = [this.bg, this.glow, this.net, this.shooterImg, this.keeperImg, this.fg, this.ball, this.pShoot, this.pKeep, this.banner, this.hint, this.nameS, this.nameK];
     this.show(false);
   }
 
@@ -79,7 +81,7 @@ export class PenCine {
     const shooter = m.players.find((p) => p.id === pen.shooter), keeper = m.players.find((p) => p.id === pen.keeper);
     const sv = views.find((v) => v.p.id === pen.shooter)?.sprite, kv = views.find((v) => v.p.id === pen.keeper)?.sprite;
     const pal = PAL[this.stadium] ?? PAL.volcan, s = pen.turn === 0 ? 1 : -1, human = shooter?.control === 'human';
-    const bg = this.bg, gl = this.glow, fg = this.fg; bg.clear(); gl.clear(); fg.clear();
+    const bg = this.bg, gl = this.glow, fg = this.fg, net = this.net; bg.clear(); gl.clear(); fg.clear(); net.clear();
 
     // ---- geometry: the goal head on, the line of the goal at gy, the spot in front of the camera
     const gy = Math.round(H * 0.5), gh = Math.round(H * 0.26), gw = Math.round(Math.min(gh * 3, W * 0.72)), cx = Math.round(W / 2), x0 = cx - Math.round(gw / 2), x1 = x0 + gw, top = gy - gh;
@@ -130,11 +132,11 @@ export class PenCine {
     const impX = mx(pen.shotY), impY = mz(Math.min(pen.shotZ, GOAL.bar - 2)), bulge = goal ? Math.sin(Math.min(1, t / 0.55) * Math.PI * 0.9) * gh * 0.16 : 0;
     const bump = (x: number, y: number): number => bulge * Math.exp(-(((x - impX) / (gw * 0.28)) ** 2 + ((y - impY) / (gh * 0.5)) ** 2));
     bg.fillStyle(0x0d0a1c, 0.55).fillRect(bx0, btop, bx1 - bx0, bbot - btop);
-    fg.lineStyle(1, 0xffffff, 0.42);
+    net.lineStyle(1, 0xffffff, 0.42);
     const gv = 14, gh2 = 7;
-    for (let i = 0; i <= gv; i++) { const x = bx0 + ((bx1 - bx0) * i) / gv; let px = x, py = btop; for (let j = 1; j <= 8; j++) { const y = btop + ((bbot - btop) * j) / 8, yy = y + bump(x, y); fg.lineBetween(px, py, x, yy); px = x; py = yy; } }
-    for (let j = 0; j <= gh2; j++) { const y = btop + ((bbot - btop) * j) / gh2; let px = bx0, py = y + bump(bx0, y); for (let i = 1; i <= 14; i++) { const x = bx0 + ((bx1 - bx0) * i) / 14, yy = y + bump(x, y); fg.lineBetween(px, py, x, yy); px = x; py = yy; } }
-    fg.lineStyle(1, 0xffffff, 0.3).lineBetween(x0, top, bx0, btop).lineBetween(x1, top, bx1, btop).lineBetween(x0, gy, bx0, bbot).lineBetween(x1, gy, bx1, bbot);
+    for (let i = 0; i <= gv; i++) { const x = bx0 + ((bx1 - bx0) * i) / gv; let px = x, py = btop; for (let j = 1; j <= 8; j++) { const y = btop + ((bbot - btop) * j) / 8, yy = y + bump(x, y); net.lineBetween(px, py, x, yy); px = x; py = yy; } }
+    for (let j = 0; j <= gh2; j++) { const y = btop + ((bbot - btop) * j) / gh2; let px = bx0, py = y + bump(bx0, y); for (let i = 1; i <= 14; i++) { const x = bx0 + ((bx1 - bx0) * i) / 14, yy = y + bump(x, y); net.lineBetween(px, py, x, yy); px = x; py = yy; } }
+    net.lineStyle(1, 0xffffff, 0.3).lineBetween(x0, top, bx0, btop).lineBetween(x1, top, bx1, btop).lineBetween(x0, gy, bx0, bbot).lineBetween(x1, gy, bx1, bbot);
     // the keeper stands inside, before the front frame
     const kfeet = gy + 3;
     const kx = keeper ? mx(keeper.y) : cx;
