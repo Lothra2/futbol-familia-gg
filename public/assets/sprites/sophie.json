@@ -1,0 +1,395 @@
+{
+ "cell": [
+  48,
+  48
+ ],
+ "pivot": [
+  24,
+  46
+ ],
+ "anims": {
+  "walk": {
+   "start": 8,
+   "frames": 6,
+   "fps": 10,
+   "loop": true
+  },
+  "idle": {
+   "start": 14,
+   "frames": 2,
+   "fps": 3,
+   "loop": true
+  },
+  "jump_takeoff": {
+   "start": 16,
+   "frames": 1,
+   "fps": 0,
+   "loop": false
+  },
+  "jump_rise": {
+   "start": 17,
+   "frames": 1,
+   "fps": 0,
+   "loop": false
+  },
+  "jump_apex": {
+   "start": 18,
+   "frames": 1,
+   "fps": 0,
+   "loop": false
+  },
+  "jump_fall": {
+   "start": 19,
+   "frames": 1,
+   "fps": 0,
+   "loop": false
+  },
+  "land": {
+   "start": 20,
+   "frames": 1,
+   "fps": 12,
+   "loop": false
+  },
+  "pickup": {
+   "start": 21,
+   "frames": 3,
+   "fps": 12,
+   "loop": false
+  },
+  "carry_idle": {
+   "start": 24,
+   "frames": 1,
+   "fps": 4,
+   "loop": true
+  },
+  "carry_run": {
+   "start": 25,
+   "frames": 4,
+   "fps": 14,
+   "loop": true
+  },
+  "throw": {
+   "start": 29,
+   "frames": 3,
+   "fps": 14,
+   "loop": false
+  },
+  "swim": {
+   "start": 32,
+   "frames": 4,
+   "fps": 8,
+   "loop": true
+  },
+  "push": {
+   "start": 36,
+   "frames": 3,
+   "fps": 14,
+   "loop": false
+  },
+  "bop": {
+   "start": 39,
+   "frames": 1,
+   "fps": 10,
+   "loop": false
+  },
+  "stagger": {
+   "start": 40,
+   "frames": 2,
+   "fps": 10,
+   "loop": false
+  },
+  "tumble": {
+   "start": 42,
+   "frames": 5,
+   "fps": 10,
+   "loop": false
+  },
+  "rescue_pose": {
+   "start": 47,
+   "frames": 1,
+   "fps": 0,
+   "loop": false
+  },
+  "power": {
+   "start": 48,
+   "frames": 4,
+   "fps": 12,
+   "loop": false
+  },
+  "celebrate": {
+   "start": 52,
+   "frames": 4,
+   "fps": 10,
+   "loop": true
+  },
+  "ready": {
+   "start": 56,
+   "frames": 1,
+   "fps": 0,
+   "loop": false
+  },
+  "trap": {
+   "start": 57,
+   "frames": 1,
+   "fps": 0,
+   "loop": false
+  },
+  "pass": {
+   "start": 58,
+   "frames": 2,
+   "fps": 0,
+   "loop": false
+  },
+  "chip": {
+   "start": 60,
+   "frames": 1,
+   "fps": 0,
+   "loop": false
+  },
+  "shot": {
+   "start": 61,
+   "frames": 3,
+   "fps": 0,
+   "loop": false
+  },
+  "run": {
+   "start": 80,
+   "frames": 6,
+   "fps": 13,
+   "loop": true
+  },
+  "skid": {
+   "start": 87,
+   "frames": 1,
+   "fps": 0,
+   "loop": false
+  },
+  "header": {
+   "start": 65,
+   "frames": 2,
+   "fps": 0,
+   "loop": false
+  },
+  "volley": {
+   "start": 67,
+   "frames": 1,
+   "fps": 0,
+   "loop": false
+  },
+  "chilena": {
+   "start": 68,
+   "frames": 3,
+   "fps": 0,
+   "loop": false
+  },
+  "call": {
+   "start": 71,
+   "frames": 1,
+   "fps": 0,
+   "loop": false
+  },
+  "slide": {
+   "start": 73,
+   "frames": 2,
+   "fps": 0,
+   "loop": false
+  },
+  "bump": {
+   "start": 75,
+   "frames": 1,
+   "fps": 0,
+   "loop": false
+  },
+  "sad": {
+   "start": 76,
+   "frames": 1,
+   "fps": 0,
+   "loop": false
+  },
+  "clap": {
+   "start": 77,
+   "frames": 1,
+   "fps": 4,
+   "loop": false
+  },
+  "goal_knee": {
+   "start": 78,
+   "frames": 1,
+   "fps": 0,
+   "loop": false
+  },
+  "goal_plane": {
+   "start": 79,
+   "frames": 1,
+   "fps": 0,
+   "loop": false
+  },
+  "dance": {
+   "start": 88,
+   "frames": 4,
+   "fps": 9,
+   "loop": true
+  },
+  "win": {
+   "start": 92,
+   "frames": 1,
+   "fps": 0,
+   "loop": false
+  },
+  "lose": {
+   "start": 93,
+   "frames": 1,
+   "fps": 0,
+   "loop": false
+  },
+  "laugh": {
+   "start": 94,
+   "frames": 1,
+   "fps": 0,
+   "loop": false
+  },
+  "point": {
+   "start": 95,
+   "frames": 1,
+   "fps": 0,
+   "loop": false
+  }
+ },
+ "sheets": [
+  {
+   "name": "run",
+   "row": 0,
+   "scale": 0.0544
+  },
+  {
+   "name": "walk_idle",
+   "row": 1,
+   "scale": 0.0522
+  },
+  {
+   "name": "jump_pickup",
+   "row": 2,
+   "scale": 0.0522
+  },
+  {
+   "name": "carry_throw",
+   "row": 3,
+   "scale": 0.0545
+  },
+  {
+   "name": "swim_push",
+   "row": 4,
+   "scale": 0.0522
+  },
+  {
+   "name": "hit_tumble",
+   "row": 5,
+   "scale": 0.0522
+  },
+  {
+   "name": "power_celebrate",
+   "row": 6,
+   "scale": 0.0522
+  },
+  {
+   "name": "futbol_suelo",
+   "row": 9,
+   "scale": 0.0614
+  },
+  {
+   "name": "futbol_suelo",
+   "row": 9,
+   "scale": 0.0614
+  },
+  {
+   "name": "futbol_patada",
+   "row": 7,
+   "scale": 0.0661
+  },
+  {
+   "name": "futbol_suelo",
+   "row": 9,
+   "scale": 0.0614
+  },
+  {
+   "name": "futbol_patada",
+   "row": 7,
+   "scale": 0.0661
+  },
+  {
+   "name": "futbol_aire",
+   "row": 8,
+   "scale": 0.0664
+  },
+  {
+   "name": "futbol_suelo",
+   "row": 9,
+   "scale": 0.0614
+  },
+  {
+   "name": "futbol_patada",
+   "row": 7,
+   "scale": 0.0661
+  },
+  {
+   "name": "futbol_carrera",
+   "row": 10,
+   "scale": 0.0635
+  },
+  {
+   "name": "futbol_aire",
+   "row": 8,
+   "scale": 0.0664
+  },
+  {
+   "name": "futbol_suelo",
+   "row": 9,
+   "scale": 0.0614
+  },
+  {
+   "name": "futbol_patada",
+   "row": 7,
+   "scale": 0.0661
+  },
+  {
+   "name": "futbol_carrera",
+   "row": 10,
+   "scale": 0.06
+  },
+  {
+   "name": "futbol_aire",
+   "row": 8,
+   "scale": 0.0664
+  },
+  {
+   "name": "futbol_suelo",
+   "row": 9,
+   "scale": 0.0614
+  },
+  {
+   "name": "futbol_patada",
+   "row": 7,
+   "scale": 0.0661
+  },
+  {
+   "name": "futbol_carrera",
+   "row": 10,
+   "scale": 0.06
+  },
+  {
+   "name": "futbol_aire",
+   "row": 8,
+   "scale": 0.0664
+  },
+  {
+   "name": "futbol_suelo",
+   "row": 9,
+   "scale": 0.0614
+  },
+  {
+   "name": "futbol_fiesta",
+   "row": 11,
+   "scale": 0.057
+  }
+ ]
+}

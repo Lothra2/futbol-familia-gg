@@ -1,0 +1,160 @@
+{
+ "cell": [
+  48,
+  48
+ ],
+ "pivot": [
+  24,
+  46
+ ],
+ "bob": true,
+ "anims": {
+  "run": {
+   "start": 0,
+   "frames": 6,
+   "fps": 12,
+   "loop": true
+  },
+  "idle": {
+   "start": 6,
+   "frames": 2,
+   "fps": 3,
+   "loop": true
+  },
+  "ready": {
+   "start": 8,
+   "frames": 1,
+   "fps": 0,
+   "loop": false
+  },
+  "trap": {
+   "start": 9,
+   "frames": 1,
+   "fps": 0,
+   "loop": false
+  },
+  "pass": {
+   "start": 10,
+   "frames": 2,
+   "fps": 0,
+   "loop": false
+  },
+  "chip": {
+   "start": 12,
+   "frames": 1,
+   "fps": 0,
+   "loop": false
+  },
+  "shot": {
+   "start": 13,
+   "frames": 3,
+   "fps": 0,
+   "loop": false
+  },
+  "header": {
+   "start": 17,
+   "frames": 2,
+   "fps": 0,
+   "loop": false
+  },
+  "volley": {
+   "start": 19,
+   "frames": 1,
+   "fps": 0,
+   "loop": false
+  },
+  "chilena": {
+   "start": 20,
+   "frames": 3,
+   "fps": 0,
+   "loop": false
+  },
+  "call": {
+   "start": 23,
+   "frames": 1,
+   "fps": 0,
+   "loop": false
+  },
+  "slide": {
+   "start": 25,
+   "frames": 2,
+   "fps": 0,
+   "loop": false
+  },
+  "stagger": {
+   "start": 27,
+   "frames": 1,
+   "fps": 0,
+   "loop": false
+  },
+  "tumble": {
+   "start": 28,
+   "frames": 3,
+   "fps": 10,
+   "loop": false
+  },
+  "sad": {
+   "start": 31,
+   "frames": 1,
+   "fps": 0,
+   "loop": false
+  },
+  "dance": {
+   "start": 32,
+   "frames": 4,
+   "fps": 9,
+   "loop": true
+  },
+  "win": {
+   "start": 36,
+   "frames": 1,
+   "fps": 0,
+   "loop": false
+  },
+  "lose": {
+   "start": 37,
+   "frames": 1,
+   "fps": 0,
+   "loop": false
+  },
+  "laugh": {
+   "start": 38,
+   "frames": 1,
+   "fps": 0,
+   "loop": false
+  },
+  "point": {
+   "start": 39,
+   "frames": 1,
+   "fps": 0,
+   "loop": false
+  }
+ },
+ "sheets": [
+  {
+   "name": "futbol_correr",
+   "row": 0,
+   "scale": 0.0633
+  },
+  {
+   "name": "futbol_patada",
+   "row": 1,
+   "scale": 0.0683
+  },
+  {
+   "name": "futbol_aire",
+   "row": 2,
+   "scale": 0.0647
+  },
+  {
+   "name": "futbol_suelo",
+   "row": 3,
+   "scale": 0.0679
+  },
+  {
+   "name": "futbol_fiesta",
+   "row": 4,
+   "scale": 0.056
+  }
+ ]
+}

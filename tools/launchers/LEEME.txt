@@ -1,0 +1,17 @@
+FUTBOL FAMILIA GG
+=================
+Windows: doble clic en jugar.bat
+Mac: doble clic en jugar.command (si no abre: clic derecho > Abrir)
+Linux: ./jugar.command
+Se abre el navegador solo en http://localhost:8080 (hace falta Python instalado).
+Deja la ventana negra abierta mientras juegas. Ciérrala para parar.
+
+Tambien puedes arrastrar esta carpeta completa a Netlify (netlify.com/drop) y jugar desde el celular.
+
+CONTROLES (teclado)
+  1 jugador:  mover WASD o flechas | Tiro J o Espacio (mantén = potencia) | Pase K (mantén = pase alto)
+              Correr L o Shift | Especial I o Enter | Pausa Esc
+  2 jugadores en el mismo teclado:
+              J1: WASD, F tiro, G pase, H correr, T especial
+              J2: flechas, "," tiro, "." pase, "/" correr, ";" especial
+En celular y tablet salen el joystick y los botones en pantalla.

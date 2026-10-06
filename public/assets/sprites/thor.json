@@ -1,0 +1,250 @@
+{
+ "cell": [
+  48,
+  48
+ ],
+ "pivot": [
+  24,
+  46
+ ],
+ "anims": {
+  "run": {
+   "start": 0,
+   "frames": 8,
+   "fps": 14,
+   "loop": true
+  },
+  "walk": {
+   "start": 8,
+   "frames": 6,
+   "fps": 10,
+   "loop": true
+  },
+  "sit_idle": {
+   "start": 14,
+   "frames": 2,
+   "fps": 3,
+   "loop": true
+  },
+  "jump_takeoff": {
+   "start": 16,
+   "frames": 1,
+   "fps": 0,
+   "loop": false
+  },
+  "jump_rise": {
+   "start": 17,
+   "frames": 1,
+   "fps": 0,
+   "loop": false
+  },
+  "jump_apex": {
+   "start": 18,
+   "frames": 1,
+   "fps": 0,
+   "loop": false
+  },
+  "jump_fall": {
+   "start": 19,
+   "frames": 1,
+   "fps": 0,
+   "loop": false
+  },
+  "land": {
+   "start": 20,
+   "frames": 1,
+   "fps": 12,
+   "loop": false
+  },
+  "fetch": {
+   "start": 21,
+   "frames": 3,
+   "fps": 12,
+   "loop": false
+  },
+  "carry_run": {
+   "start": 24,
+   "frames": 6,
+   "fps": 14,
+   "loop": true
+  },
+  "toss": {
+   "start": 30,
+   "frames": 2,
+   "fps": 12,
+   "loop": false
+  },
+  "swim_paddle": {
+   "start": 32,
+   "frames": 4,
+   "fps": 8,
+   "loop": true
+  },
+  "headpush": {
+   "start": 36,
+   "frames": 3,
+   "fps": 14,
+   "loop": false
+  },
+  "bop": {
+   "start": 39,
+   "frames": 1,
+   "fps": 10,
+   "loop": false
+  },
+  "stagger": {
+   "start": 40,
+   "frames": 2,
+   "fps": 10,
+   "loop": false
+  },
+  "roll": {
+   "start": 42,
+   "frames": 5,
+   "fps": 10,
+   "loop": false
+  },
+  "rescue_pose": {
+   "start": 47,
+   "frames": 1,
+   "fps": 0,
+   "loop": false
+  },
+  "zoomies": {
+   "start": 48,
+   "frames": 4,
+   "fps": 16,
+   "loop": true
+  },
+  "celebrate_tailchase": {
+   "start": 52,
+   "frames": 4,
+   "fps": 10,
+   "loop": true
+  },
+  "dribble": {
+   "start": 57,
+   "frames": 2,
+   "fps": 10,
+   "loop": true
+  },
+  "nudge": {
+   "start": 59,
+   "frames": 1,
+   "fps": 0,
+   "loop": false
+  },
+  "header": {
+   "start": 60,
+   "frames": 2,
+   "fps": 0,
+   "loop": false
+  },
+  "slide": {
+   "start": 62,
+   "frames": 1,
+   "fps": 0,
+   "loop": false
+  },
+  "sad": {
+   "start": 63,
+   "frames": 1,
+   "fps": 0,
+   "loop": false
+  },
+  "gk_ready": {
+   "start": 64,
+   "frames": 1,
+   "fps": 0,
+   "loop": false
+  },
+  "gk_shuffle": {
+   "start": 65,
+   "frames": 1,
+   "fps": 0,
+   "loop": false
+  },
+  "gk_dive": {
+   "start": 66,
+   "frames": 2,
+   "fps": 0,
+   "loop": false
+  },
+  "gk_jump": {
+   "start": 68,
+   "frames": 1,
+   "fps": 0,
+   "loop": false
+  },
+  "gk_hold": {
+   "start": 69,
+   "frames": 1,
+   "fps": 0,
+   "loop": false
+  },
+  "gk_punch": {
+   "start": 70,
+   "frames": 1,
+   "fps": 0,
+   "loop": false
+  },
+  "gk_happy": {
+   "start": 71,
+   "frames": 1,
+   "fps": 0,
+   "loop": false
+  }
+ },
+ "sheets": [
+  {
+   "name": "run",
+   "row": 0,
+   "scale": 0.0745
+  },
+  {
+   "name": "walk_idle",
+   "row": 1,
+   "scale": 0.0669
+  },
+  {
+   "name": "jump_fetch",
+   "row": 2,
+   "scale": 0.0669
+  },
+  {
+   "name": "carry_toss",
+   "row": 3,
+   "scale": 0.0677
+  },
+  {
+   "name": "swim_push",
+   "row": 4,
+   "scale": 0.0669
+  },
+  {
+   "name": "hit_tumble",
+   "row": 5,
+   "scale": 0.0669
+  },
+  {
+   "name": "zoom_celebrate",
+   "row": 6,
+   "scale": 0.0669
+  },
+  {
+   "name": "futbol_portero",
+   "row": 8,
+   "scale": 0.0788
+  },
+  {
+   "name": "futbol_perro",
+   "row": 7,
+   "scale": 0.078
+  },
+  {
+   "name": "futbol_portero",
+   "row": 8,
+   "scale": 0.0788
+  }
+ ]
+}

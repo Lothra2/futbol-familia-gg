@@ -1,0 +1,169 @@
+{
+ "cell": [
+  48,
+  48
+ ],
+ "pivot": [
+  24,
+  46
+ ],
+ "anims": {
+  "run": {
+   "start": 0,
+   "frames": 8,
+   "fps": 14,
+   "loop": true
+  },
+  "walk": {
+   "start": 8,
+   "frames": 6,
+   "fps": 10,
+   "loop": true
+  },
+  "idle": {
+   "start": 14,
+   "frames": 2,
+   "fps": 3,
+   "loop": true
+  },
+  "jump_takeoff": {
+   "start": 16,
+   "frames": 1,
+   "fps": 0,
+   "loop": false
+  },
+  "jump_rise": {
+   "start": 17,
+   "frames": 1,
+   "fps": 0,
+   "loop": false
+  },
+  "jump_apex": {
+   "start": 18,
+   "frames": 1,
+   "fps": 0,
+   "loop": false
+  },
+  "jump_fall": {
+   "start": 19,
+   "frames": 1,
+   "fps": 0,
+   "loop": false
+  },
+  "land": {
+   "start": 20,
+   "frames": 1,
+   "fps": 12,
+   "loop": false
+  },
+  "pickup": {
+   "start": 21,
+   "frames": 3,
+   "fps": 12,
+   "loop": false
+  },
+  "carry_idle": {
+   "start": 24,
+   "frames": 1,
+   "fps": 4,
+   "loop": true
+  },
+  "carry_run": {
+   "start": 25,
+   "frames": 4,
+   "fps": 14,
+   "loop": true
+  },
+  "throw": {
+   "start": 29,
+   "frames": 3,
+   "fps": 14,
+   "loop": false
+  },
+  "swim": {
+   "start": 32,
+   "frames": 4,
+   "fps": 8,
+   "loop": true
+  },
+  "push": {
+   "start": 36,
+   "frames": 3,
+   "fps": 14,
+   "loop": false
+  },
+  "bop": {
+   "start": 39,
+   "frames": 1,
+   "fps": 10,
+   "loop": false
+  },
+  "stagger": {
+   "start": 40,
+   "frames": 2,
+   "fps": 10,
+   "loop": false
+  },
+  "tumble": {
+   "start": 42,
+   "frames": 5,
+   "fps": 10,
+   "loop": false
+  },
+  "rescue_pose": {
+   "start": 47,
+   "frames": 1,
+   "fps": 0,
+   "loop": false
+  },
+  "power": {
+   "start": 48,
+   "frames": 4,
+   "fps": 12,
+   "loop": false
+  },
+  "celebrate": {
+   "start": 52,
+   "frames": 4,
+   "fps": 10,
+   "loop": true
+  }
+ },
+ "sheets": [
+  {
+   "name": "run",
+   "row": 0,
+   "scale": 0.0665
+  },
+  {
+   "name": "walk_idle",
+   "row": 1,
+   "scale": 0.0557
+  },
+  {
+   "name": "jump_pickup",
+   "row": 2,
+   "scale": 0.0557
+  },
+  {
+   "name": "carry_throw",
+   "row": 3,
+   "scale": 0.0616
+  },
+  {
+   "name": "swim_push",
+   "row": 4,
+   "scale": 0.0557
+  },
+  {
+   "name": "hit_tumble",
+   "row": 5,
+   "scale": 0.0557
+  },
+  {
+   "name": "power_celebrate",
+   "row": 6,
+   "scale": 0.0557
+  }
+ ]
+}

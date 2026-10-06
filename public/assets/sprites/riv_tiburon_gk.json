@@ -1,0 +1,139 @@
+{
+ "cell": [
+  48,
+  48
+ ],
+ "pivot": [
+  24,
+  46
+ ],
+ "bob": true,
+ "anims": {
+  "run": {
+   "start": 0,
+   "frames": 6,
+   "fps": 12,
+   "loop": true
+  },
+  "idle": {
+   "start": 6,
+   "frames": 2,
+   "fps": 3,
+   "loop": true
+  },
+  "ready": {
+   "start": 8,
+   "frames": 1,
+   "fps": 0,
+   "loop": false
+  },
+  "pass": {
+   "start": 9,
+   "frames": 2,
+   "fps": 0,
+   "loop": false
+  },
+  "shot": {
+   "start": 11,
+   "frames": 3,
+   "fps": 0,
+   "loop": false
+  },
+  "header": {
+   "start": 14,
+   "frames": 1,
+   "fps": 0,
+   "loop": false
+  },
+  "volley": {
+   "start": 15,
+   "frames": 1,
+   "fps": 0,
+   "loop": false
+  },
+  "slide": {
+   "start": 17,
+   "frames": 2,
+   "fps": 0,
+   "loop": false
+  },
+  "stagger": {
+   "start": 19,
+   "frames": 1,
+   "fps": 0,
+   "loop": false
+  },
+  "tumble": {
+   "start": 20,
+   "frames": 3,
+   "fps": 10,
+   "loop": false
+  },
+  "sad": {
+   "start": 23,
+   "frames": 1,
+   "fps": 0,
+   "loop": false
+  },
+  "gk_ready": {
+   "start": 24,
+   "frames": 1,
+   "fps": 0,
+   "loop": false
+  },
+  "gk_dive": {
+   "start": 25,
+   "frames": 2,
+   "fps": 0,
+   "loop": false
+  },
+  "gk_jump": {
+   "start": 27,
+   "frames": 1,
+   "fps": 0,
+   "loop": false
+  },
+  "throw": {
+   "start": 28,
+   "frames": 1,
+   "fps": 0,
+   "loop": false
+  },
+  "celebrate": {
+   "start": 29,
+   "frames": 2,
+   "fps": 8,
+   "loop": true
+  },
+  "clap": {
+   "start": 31,
+   "frames": 1,
+   "fps": 0,
+   "loop": false
+  }
+ },
+ "sheets": [
+  {
+   "name": "futbol_correr",
+   "row": 0,
+   "scale": 0.0606
+  },
+  {
+   "name": "futbol_patada",
+   "row": 1,
+   "scale": 0.0631
+  },
+  {
+   "name": "futbol_suelo",
+   "row": 2,
+   "scale": 0.0686
+  },
+  {
+   "name": "futbol_portero",
+   "row": 3,
+   "scale": 0.0693
+  }
+ ],
+ "rival": "tiburon",
+ "keeper": true
+}

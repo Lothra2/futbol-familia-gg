@@ -1,0 +1,128 @@
+{
+ "alana": {
+  "w": 167,
+  "h": 182,
+  "headX": 73,
+  "headY": 27
+ },
+ "caras_alana": {
+  "w": 320,
+  "h": 80,
+  "headX": 160,
+  "headY": 13
+ },
+ "caras_juandi": {
+  "w": 320,
+  "h": 80,
+  "headX": 158,
+  "headY": 12
+ },
+ "caras_mama": {
+  "w": 320,
+  "h": 80,
+  "headX": 157,
+  "headY": 13
+ },
+ "caras_papa": {
+  "w": 320,
+  "h": 80,
+  "headX": 158,
+  "headY": 13
+ },
+ "caras_sophie": {
+  "w": 320,
+  "h": 80,
+  "headX": 160,
+  "headY": 13
+ },
+ "caras_thor": {
+  "w": 320,
+  "h": 80,
+  "headX": 159,
+  "headY": 12
+ },
+ "juandi": {
+  "w": 160,
+  "h": 182,
+  "headX": 78,
+  "headY": 24
+ },
+ "mama": {
+  "w": 135,
+  "h": 182,
+  "headX": 71,
+  "headY": 28
+ },
+ "papa": {
+  "w": 159,
+  "h": 182,
+  "headX": 88,
+  "headY": 26
+ },
+ "riv_buho_a": {
+  "w": 160,
+  "h": 182,
+  "headX": 89,
+  "headY": 28
+ },
+ "riv_buho_b": {
+  "w": 162,
+  "h": 129,
+  "headX": 83,
+  "headY": 20
+ },
+ "riv_dragon_a": {
+  "w": 154,
+  "h": 182,
+  "headX": 87,
+  "headY": 27
+ },
+ "riv_dragon_b": {
+  "w": 162,
+  "h": 145,
+  "headX": 80,
+  "headY": 23
+ },
+ "riv_mapache_a": {
+  "w": 162,
+  "h": 168,
+  "headX": 80,
+  "headY": 24
+ },
+ "riv_mapache_b": {
+  "w": 162,
+  "h": 139,
+  "headX": 91,
+  "headY": 21
+ },
+ "riv_tiburon_a": {
+  "w": 137,
+  "h": 182,
+  "headX": 75,
+  "headY": 29
+ },
+ "riv_tiburon_b": {
+  "w": 162,
+  "h": 143,
+  "headX": 71,
+  "headY": 22
+ },
+ "sophie": {
+  "w": 147,
+  "h": 182,
+  "headX": 66,
+  "headY": 27
+ },
+ "thor_a": {
+  "w": 162,
+  "h": 112,
+  "headX": 89,
+  "headY": 15
+ },
+ "thor_b": {
+  "w": 162,
+  "h": 89,
+  "headX": 64,
+  "headY": 12
+ }
+}

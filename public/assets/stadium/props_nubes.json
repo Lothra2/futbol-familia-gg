@@ -1,0 +1,42 @@
+{
+ "cell": [
+  48,
+  48
+ ],
+ "pivot": [
+  24,
+  46
+ ],
+ "anims": {
+  "mascot": {
+   "start": 0,
+   "frames": 4,
+   "fps": 4,
+   "loop": true
+  },
+  "torch": {
+   "start": 4,
+   "frames": 1,
+   "fps": 0,
+   "loop": false
+  },
+  "banner": {
+   "start": 5,
+   "frames": 1,
+   "fps": 0,
+   "loop": false
+  },
+  "drum": {
+   "start": 6,
+   "frames": 1,
+   "fps": 0,
+   "loop": false
+  },
+  "statue": {
+   "start": 7,
+   "frames": 1,
+   "fps": 0,
+   "loop": false
+  }
+ }
+}
