@@ -1,5 +1,5 @@
 import { T } from './tuning';
-import { ESCAPE, GOAL, PITCH, attackDir, goalX, ownGoalX } from './field';
+import { ESCAPE, GOAL, MID, PITCH, SY, attackDir, goalX, ownGoalX } from './field';
 import { lobLaunch, speedToReach } from './ball';
 import { emit } from './events';
 import { addBar } from './specials';
@@ -34,7 +34,11 @@ export function dropBall(m: Match, p: Player, vx = 0, vy = 0, vz = 0): void {
   b.owner = null; b.state = 'free'; b.vx = vx; b.vy = vy; b.vz = vz;
 }
 export const startStagger = (m: Match, p: Player, dur: number): void => { dropBall(m, p); begin(p, { kind: 'stagger', t: 0, dur }, 'stagger'); p.holdT = 0; };
-export const startTumble = (m: Match, p: Player, dur: number): void => { dropBall(m, p); begin(p, { kind: 'tumble', t: 0, dur }, 'tumble'); p.holdT = 0; };
+/** A fall. Like Nintendo World Cup, a hard hit sends the player flying: `kx`, `ky` push him along the ground (fading out) and `vz` lifts him. */
+export const startTumble = (m: Match, p: Player, dur: number, kx = 0, ky = 0, vz = 0): void => {
+  dropBall(m, p); begin(p, { kind: 'tumble', t: 0, dur, dx: kx, dy: ky }, 'tumble'); p.holdT = 0;
+  if (vz > 0) { p.vz = vz; p.z = Math.max(p.z, 0.5); }
+};
 export const startDizzy = (p: Player, dur: number): void => begin(p, { kind: 'dizzy', t: 0, dur }, 'dizzy');
 export const startGetup = (p: Player, dur: number): void => begin(p, { kind: 'getup', t: 0, dur }, 'getup');
 /** A keeper stretches towards y. The save itself is rolled by ai/keeper.ts; the dive moves him and plays the pose. */
@@ -113,7 +117,7 @@ export function choosePass(m: Match, p: Player, sx: number, sy: number, maxD: nu
         // a pass that a rival can cut on its way (a rival close to the line of the pass) is a bad pass, and so is a very long one
         let cut = 0;
         for (const o of foes(m, p)) if (segDist(o.x, o.y, p.x, p.y, q.x, q.y) < T.space.cutDist) cut += 0.6;
-        s = fwd / 200 - Math.abs(q.y - p.y) / 400 - near - cut - (d < 60 ? 0.3 : 0) - Math.max(0, d - 160) / 300;
+        s = fwd / 200 - Math.abs(q.y - p.y) / 1200 - near - cut - (d < 60 ? 0.3 : 0) - Math.max(0, d - 160) / 300;
       }
       if (!best || s > best.s) best = { q, s };
     }
@@ -134,10 +138,10 @@ function shotTarget(m: Match, p: Player, assist: boolean): { ty: number; spin: n
   const sy = p.input.my;
   if (assist) {
     const gk = m.players.find((q) => q.team !== p.team && q.role === 'gk');
-    return { ty: gk && gk.y < 80 ? 92 : 68, spin: 0 };
+    return { ty: gk && gk.y < MID ? MID + 18 : MID - 18, spin: 0 };
   }
-  // the aim follows the stick continuously: 80 +- 22 px (the posts are at 56 and 104), a small dead zone keeps the centre
-  return { ty: Math.abs(sy) < 0.15 ? 80 : clamp(80 + clamp(sy, -1, 1) * T.chance.aim, 58, 102), spin: 0 };
+  // the aim follows the stick continuously: the middle of the goal +- T.chance.aim px (just inside the posts), a small dead zone keeps the centre
+  return { ty: Math.abs(sy) < 0.15 ? MID : clamp(MID + clamp(sy, -1, 1) * T.chance.aim, GOAL.y0 + 3, GOAL.y1 - 3), spin: 0 };
 }
 
 /** A tapped shot by a person with the keeper off his line and close: a chip over him (a shot for the stats, the bar and the keeper). */
@@ -145,7 +149,7 @@ function vaselinaPlan(m: Match, p: Player): KickPlan | null {
   if (p.control !== 'human') return null;
   const gk = m.players.find((q) => q.team !== p.team && q.role === 'gk'), gx = goalX(p.team), dir = attackDir(p.team);
   if (!gk || Math.abs(gk.x - gx) <= T.vasel.out || Math.hypot(gk.x - p.x, gk.y - p.y) >= T.vasel.near || Math.abs(gx - m.ball.x) >= T.vasel.range) return null;
-  return { kind: 'chip', speed: 0, vz: 0, tx: gx + dir * 10, ty: clamp(80 + clamp(p.input.my, -1, 1) * T.vasel.up, 60, 100), err: 4, spin: 0, lob: true, vaselina: true };
+  return { kind: 'chip', speed: 0, vz: 0, tx: gx + dir * 10, ty: clamp(MID + clamp(p.input.my, -1, 1) * T.vasel.up, MID - 30, MID + 30), err: 4, spin: 0, lob: true, vaselina: true };
 }
 
 export function planShot(m: Match, p: Player, hold: number, assist = false): KickPlan {
@@ -163,7 +167,7 @@ export function planShot(m: Match, p: Player, hold: number, assist = false): Kic
 function crossTarget(m: Match, p: Player): PassChoice | null {
   const gx = goalX(p.team), dir = attackDir(p.team);
   if (Math.abs(gx - m.ball.x) > T.cross.zone || (p.y > T.cross.wing && p.y < PITCH.d - T.cross.wing)) return null;
-  const spot = { x: gx - dir * T.cross.post, y: p.y < 80 ? 80 + T.cross.far : 80 - T.cross.far };
+  const spot = { x: gx - dir * T.cross.post, y: p.y < MID ? MID + T.cross.far : MID - T.cross.far };
   let best: Player | null = null, bd: number = T.cross.snap;
   for (const q of mates(m, p)) { if (q.role === 'gk') continue; const d = Math.hypot(q.x - spot.x, q.y - spot.y); if (d < bd) { bd = d; best = q; } }
   return best ? { id: best.id, x: clamp(best.x + best.vx * 0.3, ESCAPE.x0 + 8, ESCAPE.x1 - 8), y: clamp(best.y + best.vy * 0.3, 4, PITCH.d - 4) } : { id: -1, x: spot.x, y: spot.y };
@@ -253,7 +257,7 @@ function slideContacts(m: Match, p: Player, a: Act): void {
     for (const o of foes(m, p)) {
       if (LOCK.has(o.state) || o.z > 8 || o.immuneT > 0 && m.ball.owner === o.id) continue;
       if (within(o.x, o.y, T.slide.reach + 4, T.slide.half + 3)) {
-        startTumble(m, o, T.slide.tumble);
+        startTumble(m, o, T.slide.tumble, (a.dx ?? 0) * T.fly.slide, (a.dy ?? 0) * T.fly.slide, T.fly.slideVz);
         emit(m, 'slidehit', o.x, o.y, 0, o.id);
         // a foul: the rival who carried the ball is brought down close to the goal of the one who slides (rules.ts gives the free kick when the step ends)
         if (!m.training && m.t - ((m.data.fkAt as number) ?? -99) > T.free.cd && Math.abs(o.x - ownGoalX(p.team)) < T.free.zone && (m.ball.owner === o.id || Math.hypot(m.ball.x - o.x, m.ball.y - o.y) < T.free.ballNear)) m.data.foul = { team: o.team, x: o.x, y: o.y, who: o.id };
@@ -324,7 +328,7 @@ export function handleInput(m: Match, p: Player, dt: number): void {
     if (!(sh.press || pa.press)) return;
     if (own) {
       const toGoal = Math.abs(goalX(p.team) - p.x);
-      if (toGoal < 240 && Math.abs(p.y - 80) < 60) { startKick(m, p, planShot(m, p, 0, true), T.shotPrep); return; }
+      if (toGoal < 240 && Math.abs(p.y - MID) < 60 * SY) { startKick(m, p, planShot(m, p, 0, true), T.shotPrep); return; }
       // pass only to a teammate who is clearly further ahead and free; otherwise a long touch towards the goal
       const c = choosePass(m, p, 0, 0, T.passMax * 1.2);
       const dir0 = attackDir(p.team);
@@ -416,7 +420,13 @@ export function updateAct(m: Match, p: Player, dt: number): { moveScale: number;
     }
     case 'bump': if (a.t >= a.dur) endAct(p); break;
     case 'steal': if (a.t >= a.dur) endAct(p); break;
-    default: if (a.t >= a.dur) endAct(p); break;   // stagger, tumble, dizzy, getup
+    case 'tumble': {
+      // thrown back by the hit: the push fades out in under half a second
+      if (a.dx || a.dy) { const k = Math.max(0, 1 - a.t / T.fly.fade); override = { vx: (a.dx ?? 0) * k, vy: (a.dy ?? 0) * k }; }
+      if (a.t >= a.dur) endAct(p);
+      break;
+    }
+    default: if (a.t >= a.dur) endAct(p); break;   // stagger, dizzy, getup
   }
   return { moveScale, override };
 }

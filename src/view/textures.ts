@@ -62,6 +62,14 @@ export function makeTextures(scene: Phaser.Scene): void {
     ['#########', '.#######.', '..#####..', '...###...', '....#....'].forEach((row, y) => [...row].forEach((ch, x) => { if (ch === '#') px(c, '#ffffff', x, y); }));
     px(c, PAL.ink, 0, 0, 9, 1);
   });
+  // the "1" and "2" over the player a person moves (Nintendo World Cup): a 3 x 5 digit at double size with an ink rim, tinted by the view
+  for (const n of [1, 2]) tex(scene, `mark_${n}`, 10, 14, (c) => {
+    DIGITS[String(n)].forEach((row, y) => [...row].forEach((ch, x) => { if (ch === '#') px(c, PAL.ink, x * 2, y * 2, 4, 4); }));
+    DIGITS[String(n)].forEach((row, y) => [...row].forEach((ch, x) => { if (ch === '#') px(c, '#ffffff', x * 2 + 1, y * 2 + 1, 2, 2); }));
+    px(c, PAL.ink, 3, 11, 4, 3); px(c, '#ffffff', 4, 11, 2, 2);
+  });
+  // where a high ball comes down: a small blinking cross on the ground
+  tex(scene, 'land', 9, 5, (c) => { ['#.......#', '..#...#..', '....#....', '..#...#..', '#.......#'].forEach((row, y) => [...row].forEach((ch, x) => { if (ch === '#') px(c, '#ffffff', x, y); })); });
   tex(scene, 'dust', 4, 4, (c) => { px(c, PAL.cream, 1, 0, 2, 4); px(c, PAL.cream, 0, 1, 4, 2); });
   tex(scene, 'spark', 5, 5, (c) => { px(c, '#FFE45C', 2, 0, 1, 5); px(c, '#FFE45C', 0, 2, 5, 1); px(c, '#ffffff', 2, 2); });
   tex(scene, 'confetti', 3, 3, (c) => { px(c, '#ffffff', 0, 0, 2, 3); });

@@ -1,8 +1,8 @@
 import Phaser from 'phaser';
 import type { Match, Player } from '../core/state';
-import { GOAL } from '../core/field';
+import { GOAL, MID } from '../core/field';
 import { PEN } from '../core/penalties';
-import type { PlayerView } from './PlayerView';
+import type { NesPlayer } from './NesPlayer';
 import { cropFrame, faceKey } from './Cinematic';
 import { services } from '../app/services';
 
@@ -74,7 +74,7 @@ export class PenCine {
     return Math.max(w, h);
   }
 
-  update(m: Match, W: number, H: number, time: number, dt: number, views: PlayerView[]): void {
+  update(m: Match, W: number, H: number, time: number, dt: number, views: NesPlayer[]): void {
     const pen = m.pen, on = m.phase === 'penalties' && !!pen;
     this.show(on);
     if (!on || !pen) { this.lastKey = ''; return; }
@@ -85,7 +85,7 @@ export class PenCine {
 
     // ---- geometry: the goal head on, the line of the goal at gy, the spot in front of the camera
     const gy = Math.round(H * 0.5), gh = Math.round(H * 0.26), gw = Math.round(Math.min(gh * 3, W * 0.72)), cx = Math.round(W / 2), x0 = cx - Math.round(gw / 2), x1 = x0 + gw, top = gy - gh;
-    const spotY = Math.round(H * 0.84), mx = (y: number): number => cx + Math.round((s * (y - 80)) / 24 * (gw / 2)), mz = (z: number): number => gy - Math.round(gh * (z / GOAL.bar));
+    const spotY = Math.round(H * 0.84), mx = (y: number): number => cx + Math.round((s * (y - MID)) / ((GOAL.y1 - GOAL.y0) / 2) * (gw / 2)), mz = (z: number): number => gy - Math.round(gh * (z / GOAL.bar));
     const t = pen.t, step = pen.step;
     const goal = step === 'result' && pen.outcome === 'goal', saved = step === 'result' && pen.outcome === 'saved', wasted = step === 'result' && (pen.outcome === 'miss' || pen.outcome === 'post');
 

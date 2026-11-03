@@ -6,8 +6,8 @@ export const T_ES = {
     arcoiris: '¡TIRO ARCOÍRIS!', burbuja: '¡BALÓN BURBUJA!', canonazo: '¡CAÑONAZO!', estrellas: '¡ESTRELLAS GUÍA!', carrera: '¡CARRERA LOCA!', relampago: '¡RAYO 21!',
     llamarada: '¡LLAMARADA!', ola: '¡OLA GIGANTE!', picada: '¡PICADA DEL VIENTO!', hojas: '¡REMOLINO DE HOJAS!',
   } as Record<string, string>,
-  banners: { goal: '¡GOOOL!', throwin: '¡Saque de banda!', goalkick: '¡Saque de arco!', corner: '¡Córner!', freekick: '¡Tiro libre!', freekickFull: 'Apunta con el stick (arriba y abajo) y empuja hacia el arco para dar efecto. Toca Tiro, y otra vez Tiro cuando el medidor esté en verde', freekickEasy: 'Mueve la mira y toca Tiro', halftime: '¡Medio tiempo!', final: '¡Se acabó!', far: '¡Acércate más!', help: '', save: '¡Atajada!', post: '¡Al palo!' },
-  hud: { half1: '1T', half2: '2T' },
+  banners: { kickoff: '¡A JUGAR!', goal: '¡GOOOL!', throwin: '¡Saque de banda!', goalkick: '¡Saque de arco!', corner: '¡Córner!', freekick: '¡Tiro libre!', freekickFull: 'Apunta con el stick (arriba y abajo) y empuja hacia el arco para dar efecto. Toca Tiro, y otra vez Tiro cuando el medidor esté en verde', freekickEasy: 'Mueve la mira y toca Tiro', halftime: '¡Medio tiempo!', final: '¡Se acabó!', far: '¡Acércate más!', help: '', save: '¡Atajada!', post: '¡Al palo!' },
+  hud: { half1: '1T', half2: '2T', pos: { gk: 'POR', def: 'DEF', mid: 'MED', fwd: 'DEL' } as Record<string, string> },
   hints: { star: '¡Especial listo!' },
   result: {
     title: '¡Fin del partido!', win: '¡Qué partidazo, ganaron!', draw: '¡Empate! ¡Qué partidazo!', lose: '¡Casi casi! ¡La revancha es tuya!', again: 'Otra vez', menu: 'Menú', mvp: 'La mejor',

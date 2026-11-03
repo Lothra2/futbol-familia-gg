@@ -4,7 +4,7 @@ import { setHumanInput } from '../../src/core/control';
 import { Training, CHALLENGES } from '../../src/app/training';
 import { botFrame, newBot } from '../../src/core/ai/testbots';
 
-const mk = (): ReturnType<typeof createMatch> => createMatch({ seed: 3, training: true, humans: [{ team: 0, slot: 3, humanSlot: 0, controls: 'full' }] });
+const mk = (): ReturnType<typeof createMatch> => createMatch({ seed: 3, training: true, humans: [{ team: 0, slot: 4, humanSlot: 0, controls: 'full' }] });
 
 describe('entrenamiento con Thor', () => {
   it('no hay reloj: el partido nunca termina y la barra siempre esta llena', () => {

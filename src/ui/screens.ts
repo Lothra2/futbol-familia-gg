@@ -2,7 +2,8 @@ import type Phaser from 'phaser';
 import type { SaveStore } from '../save/save';
 import { LEVEL_XP, defaultSave } from '../save/save';
 import type { MatchConfig } from '../app/controller';
-import { FIELD_CHARS, type FieldChar } from '../core/teams';
+import { FIELD_CHARS, lineup, type FieldChar } from '../core/teams';
+import { FORMATIONS, FORMATION_IDS, PITCH } from '../core/field';
 import { KINGDOMS, kingdomOf, type Kingdom } from '../data/kingdoms';
 import { cupInProgress, cupKingdom, startCup } from '../app/cup';
 import { outfitsFor, PRIZES, xpToNext } from '../app/progress';
@@ -66,6 +67,13 @@ export class Screens {
   // ------------------------------------------------------------------ helpers
   private av(id: string, scale = 2, extra = ''): string {
     if (scale === 2 && window.innerHeight < 520) scale = 1;
+    // the NES look first (tools/nwc atlases, 24 cells a row, the idle facing us); a kingdom card shows its first kid
+    const nid = /^riv_[a-z]+$/.test(id) ? `${id}_1` : id;
+    const nm = this.d.game.cache.json.get(`nwc_${nid}_meta`) as { cols: number; anims: Record<string, { start: number }> } | undefined;
+    if (nm) {
+      const st = nm.anims.idle_down?.start ?? 0, col = st % nm.cols, row = Math.floor(st / nm.cols), s = 48 * scale;
+      return `<i class="av ${extra}" style="width:${s}px;height:${s}px;background-image:url(assets/nwc/${nid}.png);background-size:${nm.cols * 48 * scale}px auto;background-position:-${col * s}px -${row * s}px"></i>`;
+    }
     const meta = this.d.game.cache.json.get(`${id}_meta`) as { anims: Record<string, { start: number }> } | undefined;
     const st = meta?.anims.idle?.start ?? 0, col = st % 8, row = Math.floor(st / 8), s = 48 * scale;
     return `<i class="av ${extra}" style="width:${s}px;height:${s}px;background-image:url(assets/sprites/${id}.png);background-size:${384 * scale}px auto;background-position:-${col * s}px -${row * s}px"></i>`;
@@ -123,10 +131,21 @@ export class Screens {
       <div class="mfoot"><button class="btn primary go" data-act="quick" data-focus>Jugar un partido</button></div>`;
   }
 
-  /** Squad cards: one character rests, tap to change. */
+  /** The Waiting Room of Nintendo World Cup: the formation drawn on a little pitch with the five and Thor (tap two to swap their places),
+   *  the formation, the strategy of the AI mates and the weather. */
+  private swapSel: number | null = null;
   private squadHtml(c: MatchConfig): string {
-    const rester = FIELD_CHARS.find((f) => !c.squad.includes(f)) ?? 'juandi';
-    return `<div class="cards" id="squad">${FIELD_CHARS.map((f, i) => `<button class="card${f === rester ? ' rest' : ' sel'}" data-i="${i}">${this.av(f, 2)}<b>${NAMES[f]}</b><em>${f === rester ? 'Descansa' : 'Nv ' + this.level(f)}</em></button>`).join('')}<div class="card thor">${this.av('thor', 2)}<b>Thor</b><em>Portero</em></div></div>`;
+    const form = c.formation ?? '2-1-2', order = lineup(c.squad), pos: Record<string, string> = { gk: 'POR', def: 'DEF', mid: 'MED', fwd: 'DEL' };
+    const spots = FORMATIONS[form].map((sp, i) => {
+      const id = i === 0 ? 'thor' : order[i - 1], left = (sp.x / (PITCH.w * 0.5)) * 88 + 4, top = (sp.y / PITCH.d) * 84 + 4;
+      return `<button class="spot${this.swapSel === i ? ' sel' : ''}${i === 0 ? ' gk' : ''}" data-slot="${i}" style="left:${left.toFixed(1)}%;top:${top.toFixed(1)}%">${this.av(id, 1)}<b>${NAMES[id]}</b><em>${pos[sp.role]}</em></button>`;
+    }).join('');
+    const st = c.strategy ?? { atk: 'mixto', def: 'mixto' };
+    return `<div class="wroom" id="squad"><div class="board"><i class="hl"></i><i class="cc"></i><i class="ar"></i>${spots}</div>
+      <div class="wopts"><div class="grp"><div class="lbl">Formación</div>${this.chips('form', FORMATION_IDS.map((f) => ({ v: f, label: f })), form)}</div>
+      <div class="grp"><div class="lbl">Ataque</div>${this.chips('atk', [{ v: 'pase', label: 'Pases' }, { v: 'mixto', label: 'Mixto' }, { v: 'gambeta', label: 'Gambeta' }], st.atk)}</div>
+      <div class="grp"><div class="lbl">Defensa</div>${this.chips('defs', [{ v: 'marcar', label: 'Marcar' }, { v: 'mixto', label: 'Mixto' }, { v: 'barrer', label: 'Barrida' }], st.def)}</div>
+      <div class="grp"><div class="lbl">Clima</div>${this.chips('wx', [{ v: 'sol', label: 'Sol' }, { v: 'lluvia', label: 'Lluvia' }, { v: 'viento', label: 'Viento' }], c.weather ?? 'sol')}</div></div></div>`;
   }
   private kingdomCards(sel: string, trophies: Record<string, boolean | number>, lockFrom = -1): string {
     return `<div class="cards kcards" id="kingdoms">${KINGDOMS.map((k, i) => `<button class="card k${k.species === sel ? ' sel' : ''}${i > lockFrom && lockFrom >= 0 ? ' locked' : ''}" data-i="${i}" style="--kc:${k.color}">${this.av('riv_' + k.species, 2)}<b>${k.team}</b><em>${trophies[k.id] ? '★ ' : ''}${k.name}</em></button>`).join('')}</div>`;
@@ -136,7 +155,7 @@ export class Screens {
     const c = this.d.cfg(), s = this.d.store.data;
     const ctl = [{ v: 'easy', label: 'Fáciles' }, { v: 'full', label: 'Completos' }];
     return `${this.head('Partido rápido', 'Arma tu equipo y elige a quién enfrentar')}
-      <div class="qgrid"><div class="qcol"><div class="lbl">Tu equipo <small>toca para elegir quién descansa</small></div>${this.squadHtml(c)}
+      <div class="qgrid"><div class="qcol"><div class="lbl">Sala de espera <small>toca dos jugadores para cambiarlos de puesto</small></div>${this.squadHtml(c)}
         <div class="lbl">Rival</div>${this.kingdomCards(c.rival, s.trophies)}</div>
       <div class="qcol opts">
         <div class="grp"><div class="lbl">Jugadores</div>${this.chips('players', [{ v: 1, label: '1 jugador' }, { v: 2, label: '2 juntos' }, { v: 3, label: '2 uno contra otro' }], c.players === 1 ? 1 : c.versus ? 3 : 2)}</div>
@@ -239,7 +258,16 @@ export class Screens {
     chips('cdiff', (i) => { store.data.cup.difficulty = (['tranquilos', 'normales', 'campeones'] as const)[i]; store.save(); });
     chips('half', (i) => { c.half = [60, 90, 120][i]; set(); this.persist(); });
     chips('time', (i) => { c.time = ([undefined, 'day', 'sunset', 'night'] as const)[i]; set(); });
-    el.querySelectorAll('#squad .card[data-i]').forEach((b) => b.addEventListener('click', () => { const i = Number((b as HTMLElement).dataset.i); c.squad = FIELD_CHARS.filter((f) => f !== FIELD_CHARS[i]); set(); redraw(); }));
+    el.querySelectorAll('#squad .spot[data-slot]').forEach((b) => b.addEventListener('click', () => {
+      const i = Number((b as HTMLElement).dataset.slot);
+      if (i === 0) return;   // Thor always keeps the goal
+      if (this.swapSel === null || this.swapSel === i) { this.swapSel = this.swapSel === i ? null : i; redraw(); return; }
+      const o = lineup(c.squad), a = this.swapSel - 1, z = i - 1; [o[a], o[z]] = [o[z], o[a]]; c.squad = o; this.swapSel = null; set(); services.audio?.play('pass'); redraw();
+    }));
+    chips('form', (i) => { c.formation = FORMATION_IDS[i]; set(); });
+    chips('atk', (i) => { c.strategy = { ...(c.strategy ?? { atk: 'mixto', def: 'mixto' }), atk: (['pase', 'mixto', 'gambeta'] as const)[i] }; set(); });
+    chips('defs', (i) => { c.strategy = { ...(c.strategy ?? { atk: 'mixto', def: 'mixto' }), def: (['marcar', 'mixto', 'barrer'] as const)[i] }; set(); });
+    chips('wx', (i) => { c.weather = (['sol', 'lluvia', 'viento'] as const)[i]; set(); });
     el.querySelectorAll('#kingdoms .card[data-i]').forEach((b) => b.addEventListener('click', () => { const k = KINGDOMS[Number((b as HTMLElement).dataset.i)]; c.rival = k.species; c.stadium = k.stadium; set(); this.d.game.scene.getScene('Menu')?.scene.restart({ stadium: k.stadium, time: c.time }); redraw(); }));
     // settings
     const s = store.data.settings, apply = (): void => { services.audio?.setVolumes(s.music, s.sfx, s.muted, s.crowd); store.save(); };

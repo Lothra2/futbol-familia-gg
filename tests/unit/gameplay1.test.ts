@@ -1,20 +1,21 @@
+import { MID } from '../../src/core/field';
 import { describe, expect, it } from 'vitest';
 import { createMatch, step } from '../../src/core/match';
 import { setHumanInput } from '../../src/core/control';
 import { stealTarget } from '../../src/core/actions';
 import { T } from '../../src/core/tuning';
-import { ball, clear, fam, give, inp, put, rival, secs } from './helpers';
+import { ball, clear, fam, give, inp, put, rival, secs, Y } from './helpers';
 import type { HumanSeat } from '../../src/core/match';
 import type { Match } from '../../src/core/state';
 
 const seat = (slot: number, controls: 'easy' | 'full' = 'full'): HumanSeat => ({ team: 0, slot, humanSlot: 0, controls });
-const mkH = (controls: 'easy' | 'full' = 'full', ai: 'none' | 'brain' = 'none', seed = 1): Match => { const m = createMatch({ ai, skipKickoff: true, seed, humans: [seat(3, controls)] }); for (const p of m.players) p.speedMult = 1; return m; };
+const mkH = (controls: 'easy' | 'full' = 'full', ai: 'none' | 'brain' = 'none', seed = 1): Match => { const m = createMatch({ ai, skipKickoff: true, seed, humans: [seat(4, controls)] }); for (const p of m.players) p.speedMult = 1; return m; };
 const ctl = (m: Match) => m.players.find((p) => p.id === m.humans[0].id)!;
-/** The human defends: Sophie at (300, 80) facing right, a rival with the ball at `gap` px in front. */
+/** The human defends: Sophie at (300, MID) facing right, a rival with the ball at `gap` px in front. */
 function defend(gap: number, dyc = 0, controls: 'easy' | 'full' = 'full', seed = 1): { m: Match; me: ReturnType<typeof ctl>; r: ReturnType<typeof rival> } {
   const m = mkH(controls, 'none', seed); clear(m);
-  const me = fam(m, 'sophie'); put(me, 300, 80); me.facing = 1;
-  const r = rival(m, 3); put(r, 300 + gap, 80 + dyc); r.facing = -1; give(m, r); r.immuneT = 0;
+  const me = fam(m, 'sophie'); put(me, 300, MID); me.facing = 1;
+  const r = rival(m, 3); put(r, 300 + gap, MID + dyc); r.facing = -1; give(m, r); r.immuneT = 0;
   for (let i = 0; i < 40; i++) { setHumanInput(m, 0, inp()); step(m); give(m, r); r.immuneT = 0; }   // let the control settle on Sophie
   return { m, me, r };
 }
@@ -74,9 +75,9 @@ describe('mejora 1: defender', () => {
   it('el compañero IA más cercano corta la línea de pase mientras el humano contiene', () => {
     const m = mkH('full', 'brain'); clear(m);
     const me = fam(m, 'sophie'), mate = fam(m, 'mama'), r = rival(m, 3), r2 = rival(m, 4);
-    put(me, 300, 80); me.facing = 1; put(r, 330, 80); give(m, r); put(r2, 600, 40); put(mate, 360, 120);
+    put(me, 300, MID); me.facing = 1; put(r, 330, MID); give(m, r); put(r2, 600, Y(40)); put(mate, 360, Y(120));
     for (let i = 0; i < 20; i++) { setHumanInput(m, 0, inp()); step(m); give(m, r); r.immuneT = 0; r.vx = r.vy = 0; }
-    for (let i = 0; i < 100; i++) { setHumanInput(m, 0, inp({ pass: true, passPressed: i === 0 })); step(m); give(m, r); r.immuneT = 0; r.vx = r.vy = 0; put(r2, 600, 40); }
+    for (let i = 0; i < 100; i++) { setHumanInput(m, 0, inp({ pass: true, passPressed: i === 0 })); step(m); give(m, r); r.immuneT = 0; r.vx = r.vy = 0; put(r2, 600, Y(40)); }
     expect(ctl(m)).toBe(me);
     // the mate stands in the corridor between the carrier and his best receiver instead of lunging at the carrier
     expect(Math.hypot(mate.x - r.x, mate.y - r.y)).toBeGreaterThan(40);

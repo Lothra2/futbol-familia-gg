@@ -1,5 +1,5 @@
 import { DIFFICULTY, SPECIAL_BASE, STYLE, T } from './tuning';
-import { PITCH, attackDir, goalX, ownGoalX, slotPos } from './field';
+import { MID, PITCH, attackDir, goalX, ownGoalX, slotPos } from './field';
 import { emit } from './events';
 import { playerById, setTouch, startDive, startStagger, startTumble } from './actions';
 import type { Flight, Match, Player, SpecialKind, Team } from './state';
@@ -117,7 +117,7 @@ function resolveSpecial(m: Match): void {
   const x0 = s.x + dir * 8, y0 = s.y;
   const goal = sp.outcome === 'goal';
   const x1 = goal ? gx + dir * 8 : gx - dir * (T.gk.rebound + m.rng.range(0, 14));
-  const y1 = goal ? 80 + m.rng.range(-18, 18) : 80 + m.rng.range(-30, 30);
+  const y1 = goal ? MID + m.rng.range(-27, 27) : MID + m.rng.range(-45, 45);
   const dist = Math.hypot(x1 - x0, y1 - y0);
   const targets = sp.kind === 'estrellas' ? [...foes].filter((o) => (o.x - s.x) * dir > -40).sort((a, c) => Math.hypot(a.x - s.x, a.y - s.y) - Math.hypot(c.x - s.x, c.y - s.y)).slice(0, 3).map((o) => o.id) : [];
   m.flight = { kind: sp.kind, team, shooter: s.id, keeper: sp.keeper, outcome: sp.outcome, t: 0, dur: flightDur(sp.kind, dist), x0, y0, x1, y1, dived: false, targets, hit: [] };
@@ -168,10 +168,10 @@ export function stepFlight(m: Match, dt: number): void {
   const keeper = playerById(m, f.keeper);
   if (keeper && !f.dived && f.dur - f.t < T.gk.diveT * 0.8) {
     f.dived = true;
-    startDive(m, keeper, f.outcome === 'save' ? f.y1 : f.y1 + (f.y1 > 80 ? -44 : 44));   // a goal means he guessed the wrong side
+    startDive(m, keeper, f.outcome === 'save' ? f.y1 : f.y1 + (f.y1 > MID ? -66 : 66));   // a goal means he guessed the wrong side
   }
   const foes = m.players.filter((q) => q.team !== f.team && q.role !== 'gk');
-  if (f.kind === 'canonazo') for (const o of foes) if (!f.hit.includes(o.id) && (b.x - o.x) * dir >= -4 && Math.abs(o.y - b.y) < 16) { f.hit.push(o.id); startTumble(m, o, 0.5); }
+  if (f.kind === 'canonazo') for (const o of foes) if (!f.hit.includes(o.id) && (b.x - o.x) * dir >= -4 && Math.abs(o.y - b.y) < 20) { f.hit.push(o.id); startTumble(m, o, 0.6, dir * T.fly.shot, Math.sign(o.y - b.y || 1) * T.fly.shot * 0.4, T.fly.shotVz); }
   if (f.kind === 'estrellas') for (const id of f.targets) { const o = playerById(m, id)!; if (!f.hit.includes(id) && (b.x - o.x) * dir >= -4) { f.hit.push(id); startStagger(m, o, 0.6); } }
   if (u >= 1) endFlight(m, f, s);
 }
@@ -180,12 +180,12 @@ function endFlight(m: Match, f: Flight, s: Player): void {
   const b = m.ball, dir = attackDir(f.team), keeper = playerById(m, f.keeper);
   m.flight = null;
   s.state = 'idle'; s.immuneT = 0;
-  if (f.kind === 'carrera') { const home = slotPos(f.team, s.slot); emit(m, 'zas', s.x, s.y, 0, s.id); s.x = home.x; s.y = home.y; }
+  if (f.kind === 'carrera') { const home = slotPos(f.team, s.slot, m.form[f.team]); emit(m, 'zas', s.x, s.y, 0, s.id); s.x = home.x; s.y = home.y; }
   b.owner = null; b.state = 'free'; b.vx = b.vy = b.vz = 0; b.spin = 0; b.z = 0;
   setTouch(m, s);
   if (f.outcome === 'goal') {
     b.x = f.x1; b.y = f.y1; b.z = 6; b.inNet = true; b.scored = f.team; s.stats2.spGoals++;
-    if (keeper && f.kind === 'canonazo') startTumble(m, keeper, 0.7);
+    if (keeper && f.kind === 'canonazo') startTumble(m, keeper, 0.8, dir * T.fly.shot * 0.6, 0, T.fly.shotVz);
   } else {
     const inward = -dir as 1 | -1;
     b.x = f.x1; b.y = f.y1; b.vx = inward * 60; b.vy = m.rng.range(-40, 40); b.vz = 80; b.inNet = false;

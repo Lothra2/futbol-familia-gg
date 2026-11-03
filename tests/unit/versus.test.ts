@@ -6,7 +6,7 @@ import { DT } from '../../src/core/step';
 
 /** Two humans, one per team: both seats work, neither team's AI mates spend a bar a human saves, and the matches end clean. */
 function play(seed: number): { m: ReturnType<typeof createMatch>; stuck: number } {
-  const m = createMatch({ seed, halfLength: 60, humans: [{ team: 0, slot: 3, humanSlot: 0, controls: 'full' }, { team: 1, slot: 3, humanSlot: 1, controls: 'full' }] });
+  const m = createMatch({ seed, halfLength: 60, humans: [{ team: 0, slot: 4, humanSlot: 0, controls: 'full' }, { team: 1, slot: 3, humanSlot: 1, controls: 'full' }] });
   const b0 = newBot('sophie'), b1 = newBot('sophie');
   let n = 0, nan = 0;
   while (m.phase !== 'over' && n * DT < 1200) {   // a tie goes to penalties
@@ -19,7 +19,7 @@ function play(seed: number): { m: ReturnType<typeof createMatch>; stuck: number 
 
 describe('versus: dos jugadores uno contra otro', () => {
   it('las dos mesas existen y cada humano controla a su equipo', () => {
-    const m = createMatch({ seed: 1, humans: [{ team: 0, slot: 3, humanSlot: 0, controls: 'full' }, { team: 1, slot: 3, humanSlot: 1, controls: 'easy' }] });
+    const m = createMatch({ seed: 1, humans: [{ team: 0, slot: 4, humanSlot: 0, controls: 'full' }, { team: 1, slot: 3, humanSlot: 1, controls: 'easy' }] });
     expect(m.humans.map((h) => h.team)).toEqual([0, 1]);
     expect(m.players.filter((p) => p.control === 'human').map((p) => p.team).sort()).toEqual([0, 1]);
   });
@@ -29,7 +29,7 @@ describe('versus: dos jugadores uno contra otro', () => {
     expect(over).toBe(20); expect(goals).toBeGreaterThan(5);
   });
   it('el humano del rival usa su barra (no se la gastan sus companeros IA)', () => {
-    const m = createMatch({ seed: 2, humans: [{ team: 0, slot: 3, humanSlot: 0, controls: 'full' }, { team: 1, slot: 3, humanSlot: 1, controls: 'full' }], skipKickoff: true });
+    const m = createMatch({ seed: 2, humans: [{ team: 0, slot: 4, humanSlot: 0, controls: 'full' }, { team: 1, slot: 3, humanSlot: 1, controls: 'full' }], skipKickoff: true });
     m.bar[1] = 100;
     for (let i = 0; i < 60 * 40; i++) { step(m); m.events = []; if (m.phase === 'cinematic') { const sp = m.special!; const s = m.players.find((p) => p.id === sp.shooter)!; expect(s.team === 1 ? s.control : 'human').toBe('human'); } }
     expect(m.specialsUsed[1] === 0 || true).toBe(true);

@@ -6,11 +6,11 @@ const clamp = (v: number, a: number, b: number): number => Math.max(a, Math.min(
 
 /** Where a field player stands when he has nothing better to do: his slot in the 2-2, pushed by the ball, forward in attack and back in defence. */
 export function formationTarget(m: Match, p: Player, mode: Mode): { x: number; y: number } {
-  const base = slotPos(p.team, p.slot), b = m.ball, dir = attackDir(p.team);
+  const base = slotPos(p.team, p.slot, m.form[p.team]), b = m.ball, dir = attackDir(p.team);
   let x = base.x + (b.x - PITCH.w / 2) * 0.5;
   if (mode === 'attack') x += dir * 60;
   else if (mode === 'defend') x -= dir * 80;
-  const y = base.y + (b.y - PITCH.d / 2) * 0.25;
+  const y = base.y + (b.y - PITCH.d / 2) * 0.5;
   return { x: clamp(x, 40, PITCH.w - 40), y: clamp(y, 14, PITCH.d - 14) };
 }
 

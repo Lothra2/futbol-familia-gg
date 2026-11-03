@@ -1,7 +1,8 @@
 import { describe, expect, it } from 'vitest';
 import { CHAIN, PoseSmoother, isLoop, logicalPose, resolvePose, sequenceFrame, type Atlas, type Logical } from '../../src/view/poses';
 import { newCam, cameraTarget, shakeCamera, updateCamera } from '../../src/core/camera';
-import { CAM_MAX_X, CAM_MIN_X } from '../../src/core/field';
+import { MID } from '../../src/core/field';
+import { BOUNDS, sx, sy } from '../../src/core/proj';
 import { fam, mk, rival, put, ball, secs, give, inp } from './helpers';
 import { step } from '../../src/core/match';
 import { startSlide } from '../../src/core/actions';
@@ -71,7 +72,7 @@ describe('poses', () => {
   });
   it('la barrida y el golpe de una partida real producen poses válidas durante todo el partido', () => {
     const m = mk({}, true); const p = fam(m, 'sophie'), a = load('sophie');
-    put(p, 400, 80); ball(m, 100, 20, 0, 0, 0, 0);
+    put(p, 400, MID); ball(m, 100, 20, 0, 0, 0, 0);
     p.input = inp({ shootPressed: true, mx: 1 }); step(m); p.input = inp();
     for (let i = 0; i < 90; i++) { const l = logicalPose(p), anim = a[resolvePose(a, l)]; const f = isLoop(l) ? 0 : sequenceFrame(anim, l, p.stateT, p); expect(f).toBeLessThan(anim.frames); step(m); }
     void startSlide; void rival; void give; void secs;
@@ -79,23 +80,28 @@ describe('poses', () => {
 });
 
 describe('cámara', () => {
-  it('sigue al balón sin salirse nunca de los límites (en cualquier ancho de pantalla)', () => {
-    for (const w of [426, 512, 633, 640]) {
-      const m = mk(); const c = newCam(); updateCamera(c, m, w, 1 / 60, true);
-      for (let i = 0; i < 400; i++) { ball(m, ((i * 97) % 1000) - 20, 80, 0, (i % 2 ? 1 : -1) * 500, 0, 0); updateCamera(c, m, w, 1 / 60); expect(c.x).toBeGreaterThanOrEqual(CAM_MIN_X); expect(c.x).toBeLessThanOrEqual(CAM_MAX_X - w); }
+  it('sigue al balón en los dos ejes sin salirse nunca de lo dibujado (en cualquier pantalla)', () => {
+    for (const [w, h] of [[426, 240], [512, 288], [633, 300], [640, 384]]) {
+      const m = mk(); const c = newCam(); updateCamera(c, m, w, 1 / 60, true, h);
+      for (let i = 0; i < 400; i++) {
+        ball(m, ((i * 97) % 1000) - 20, ((i * 53) % 440) - 20, 0, (i % 2 ? 1 : -1) * 500, (i % 3 - 1) * 300, 0); updateCamera(c, m, w, 1 / 60, false, h);
+        expect(c.x).toBeGreaterThanOrEqual(BOUNDS.x0); expect(c.x).toBeLessThanOrEqual(BOUNDS.x1 - w);
+        expect(c.y).toBeGreaterThanOrEqual(BOUNDS.y0); expect(c.y).toBeLessThanOrEqual(BOUNDS.y1 - h);
+      }
     }
   });
   it('el primer cuadro salta al objetivo y después suaviza', () => {
-    const m = mk(); ball(m, 800, 80, 0, 0, 0, 0); const c = newCam(); updateCamera(c, m, 480, 1 / 60, true);
-    expect(c.x).toBe(cameraTarget(m, 480));
-    ball(m, 200, 80, 0, 0, 0, 0); updateCamera(c, m, 480, 1 / 60);
-    expect(c.x).toBeGreaterThan(cameraTarget(m, 480)); expect(c.x).toBeLessThan(560);
+    const m = mk(); ball(m, 800, MID, 0, 0, 0, 0); const c = newCam(); updateCamera(c, m, 480, 1 / 60, true);
+    expect(c.x).toBeCloseTo(cameraTarget(m, 480).x, 5); expect(c.y).toBeCloseTo(cameraTarget(m, 480).y, 5);
+    ball(m, 200, 40, 0, 0, 0, 0); updateCamera(c, m, 480, 1 / 60);
+    expect(c.x).toBeGreaterThan(cameraTarget(m, 480).x); expect(c.y).toBeGreaterThan(cameraTarget(m, 480).y);
   });
-  it('se adelanta hacia donde va el balón y un poco más si lo lleva un humano', () => {
-    const m = mk(); ball(m, 480, 80, 0, 300, 0, 0); const slow = cameraTarget(m, 480); ball(m, 480, 80, 0, 0, 0, 0);
-    expect(slow).toBeGreaterThan(cameraTarget(m, 480));
-    const p = fam(m, 'sophie'); p.control = 'human'; give(m, p); ball(m, 480, 80, 0, 0, 0, 0); m.ball.owner = p.id; m.ball.state = 'owned';
-    expect(cameraTarget(m, 480)).toBeGreaterThan(480 - 240 + 30);
+  it('centra el balón en los dos ejes y se adelanta hacia donde va, y un poco más si lo lleva un humano', () => {
+    const m = mk(); ball(m, 480, MID, 0, 0, 0, 0); const t0 = cameraTarget(m, 480, 270);
+    expect(t0.x + 240).toBeCloseTo(sx(480), 5); expect(t0.y + 135).toBeCloseTo(sy(MID), 5);
+    ball(m, 480, MID, 0, 300, 0, 0); expect(cameraTarget(m, 480).x).toBeGreaterThan(t0.x);
+    const p = fam(m, 'sophie'); p.control = 'human'; give(m, p); ball(m, 480, MID, 0, 0, 0, 0); m.ball.owner = p.id; m.ball.state = 'owned';
+    expect(cameraTarget(m, 480).x).toBeGreaterThan(t0.x + 30);
   });
   it('la sacudida se apaga sola', () => {
     const c = newCam(); shakeCamera(c, 0.2); const m = mk();

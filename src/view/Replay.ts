@@ -1,6 +1,6 @@
 import Phaser from 'phaser';
 import type { Ball, Match, Player, SpecialKind } from '../core/state';
-import { CAM_MAX_X, CAM_MIN_X } from '../core/field';
+import { BOUNDS, sx, sy } from '../core/proj';
 
 /** One drawn moment: every player and the ball as they were (copies: the match keeps moving on). */
 export interface Snap { rt: number; ps: Player[]; ball: Ball; kind: SpecialKind | null }
@@ -52,25 +52,28 @@ export class ReplayOverlay {
   destroy(): void { this.g.destroy(); this.tint.destroy(); this.tag.destroy(); this.hint.destroy(); }
 }
 
-/** Plays a clip back in slow motion and says where the camera is. */
+/** Plays a clip back in slow motion and says where the camera is (both axes, the ball in the middle). */
 export class ReplayPlayer {
-  t = 0; camX = 0;
-  constructor(readonly clip: Snap[], readonly speed = 0.5, private hold = 0.7) {
-    this.camX = this.target(clip[0], 640);
+  t = 0; camX = 0; camY = 0;
+  constructor(readonly clip: Snap[], readonly speed = 0.5, private hold = 0.7, W = 640, H = 360) {
+    const c = this.target(clip[0], W, H); this.camX = c.x; this.camY = c.y;
   }
   get length(): number { return this.clip.length ? this.clip[this.clip.length - 1].rt - this.clip[0].rt : 0; }
   get done(): boolean { return this.t >= this.length / this.speed + this.hold; }
-  private target(s: Snap, W: number): number { const b = s.ball; return Math.max(CAM_MIN_X, Math.min(CAM_MAX_X - W, b.x + Math.max(-60, Math.min(60, b.vx * 0.25)) - W / 2)); }
+  private target(s: Snap, W: number, H: number): { x: number; y: number } {
+    const b = s.ball, cl = (v: number, lo: number, hi: number): number => (hi < lo ? (lo + hi) / 2 : Math.max(lo, Math.min(hi, v)));
+    return { x: cl(sx(b.x + Math.max(-60, Math.min(60, b.vx * 0.25))) - W / 2, BOUNDS.x0, BOUNDS.x1 - W), y: cl(sy(b.y) - H / 2, BOUNDS.y0, BOUNDS.y1 - H) };
+  }
   /** The snapshot at the current time (the last one while it holds on the final picture). */
   frame(): Snap {
     const t0 = this.clip[0].rt + this.t * this.speed;
     let i = 0; while (i < this.clip.length - 1 && this.clip[i + 1].rt <= t0) i++;
     return this.clip[i];
   }
-  step(dt: number, W: number): Snap {
+  step(dt: number, W: number, H = 360): Snap {
     this.t += dt;
-    const f = this.frame();
-    this.camX += (this.target(f, W) - this.camX) * Math.min(1, 5 * dt);
+    const f = this.frame(), c = this.target(f, W, H), k = Math.min(1, 5 * dt);
+    this.camX += (c.x - this.camX) * k; this.camY += (c.y - this.camY) * k;
     return f;
   }
 }

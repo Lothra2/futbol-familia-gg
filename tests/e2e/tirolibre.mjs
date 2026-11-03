@@ -19,7 +19,7 @@ for (const [w, h] of [[1280, 720], [844, 390]]) {
   await page.keyboard.down('ArrowUp'); await page.keyboard.down('ArrowRight'); await later(page, 0.5);
   const aim = await page.evaluate(() => { const fk = window.__futbol.match.restart.fk; return { y: fk.aimY, c: fk.curve }; });
   await page.keyboard.up('ArrowUp'); await page.keyboard.up('ArrowRight');
-  ok(`${w}x${h}: el stick mueve la mira y el efecto`, aim.y < 80 && aim.c > 0.5, JSON.stringify(aim));
+  ok(`${w}x${h}: el stick mueve la mira y el efecto`, aim.y < 190 && aim.c > 0.5, JSON.stringify(aim));
   // the first Tiro starts the meter, the second one (in the green) kicks
   await page.waitForFunction(() => window.__futbol.match.restart.t > 1.0, null, { timeout: 20000 });
   await page.keyboard.press('Space');

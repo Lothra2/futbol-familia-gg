@@ -7,8 +7,8 @@ const ok = (name, cond, extra = '') => { console.log(cond ? 'PASS' : 'FAIL', nam
 const stage = (page) => page.evaluate(() => {
   const m = window.__futbol.match;
   for (const p of m.players) if (p.role === 'gk') { p.x = 800; p.y = 10; p.noControlT = 99; }
-  const sh = m.players.find((p) => p.team === 0 && p.role !== 'gk'); sh.x = 880; sh.y = 80;
-  Object.assign(m.ball, { x: 890, y: 80, z: 0, vx: 520, vy: 0, state: 'free', owner: null }); m.ball.lastTouch = { player: sh.id, team: 0, t: m.t };
+  const sh = m.players.find((p) => p.team === 0 && p.role !== 'gk'); sh.x = 880; sh.y = 200;
+  Object.assign(m.ball, { x: 890, y: 200, z: 0, vx: 520, vy: 0, state: 'free', owner: null }); m.ball.lastTouch = { player: sh.id, team: 0, t: m.t };
 });
 for (const mode of ['replay', 'skip', 'off']) {
   const { page, errors, ctx } = await openGame(b, srv.url, 'mode=quick&half=60&seed=5&autoplay=quieto&cine=full', { viewport: { width: 1280, height: 720 } });

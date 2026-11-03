@@ -1,3 +1,4 @@
+import { MID } from '../../src/core/field';
 import { describe, expect, it } from 'vitest';
 import { step } from '../../src/core/match';
 import { T } from '../../src/core/tuning';
@@ -10,9 +11,9 @@ function foul(m: ReturnType<typeof mk>, x: number, carrierTeam: 0 | 1 = 0): { ca
   clear(m);
   const carrier = carrierTeam === 0 ? fam(m, 'sophie') : rival(m, 3), slider = carrierTeam === 0 ? rival(m, 4) : fam(m, 'papa');
   const dir = carrierTeam === 0 ? 1 : -1;
-  put(carrier, x, 80); carrier.facing = dir; give(m, carrier);
+  put(carrier, x, MID); carrier.facing = dir; give(m, carrier);
   // the slider comes from behind (the ball is in front of the carrier, so the legs are the first thing he reaches)
-  put(slider, x - dir * 34, 80); slider.facing = dir as 1 | -1; slider.dirX = dir; slider.immuneT = 0;
+  put(slider, x - dir * 34, MID); slider.facing = dir as 1 | -1; slider.dirX = dir; slider.immuneT = 0;
   slider.input = inp({ shootPressed: true, slide: true, mx: dir }); step(m); slider.input = inp();
   return { carrier, slider };
 }
@@ -118,7 +119,7 @@ describe('tiro libre por barrida a la pierna', () => {
     while (m.restart && fkMeter(m.restart.fk!, m.restart.t) < T.free.sweet) { t.input = inp(); step(m); }
     tap(m, t);
     // the ball goes into the net: put it there as the shot would
-    ball(m, 955, 80, 5, 300, 0, 0);
+    ball(m, 955, MID, 5, 300, 0, 0);
     secs(m, 0.5);
     expect(m.score[0]).toBe(1); expect(m.data.fkGoals).toBe(1);
   });

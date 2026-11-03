@@ -6,15 +6,18 @@ import { StepClock } from '../core/step';
 import { botFrame, newBot, type BotKind } from '../core/ai/testbots';
 import type { InputRouter } from '../input/router';
 import type { CharId, MatchEvent } from '../core/types';
-import type { ControlMode, DifficultyId, Match } from '../core/state';
-import { DEFAULT_SQUAD, FIELD_CHARS, squadSeats, type FieldChar, type TeamKind } from '../core/teams';
+import type { ControlMode, DifficultyId, Match, Strategy, Weather } from '../core/state';
+import type { FormationId } from '../core/field';
+import { DEFAULT_SQUAD, FIELD_CHARS, lineup, squadSeats, type FieldChar, type TeamKind } from '../core/teams';
 
 export interface MatchConfig {
   players: 1 | 2;
   controls: ControlMode[];
   chars: CharId[];
-  /** The four family field players that start (the fifth rests). */
+  /** The five family field players in slot order: the formation puts slot 1 and 2 at the back and the last at the front. */
   squad: FieldChar[];
+  /** The Waiting Room (Nintendo World Cup): formation of the family, strategy of its AI mates and the weather. */
+  formation?: FormationId; strategy?: Strategy; weather?: Weather;
   difficulty: DifficultyId;
   half: 60 | 90 | 120 | number;
   seed: number;
@@ -44,15 +47,18 @@ export interface MatchConfig {
   /** Stadium look: which one, the hour of the day, the quality of the crowd and (tests) a frame rate that fakes slow frames. */
   stadium?: 'volcan' | 'bosque' | 'arrecife' | 'nubes'; time?: 'day' | 'sunset' | 'night'; crowd?: 'auto' | 'high' | 'low'; fpsCap?: number;
 }
+/** How each kingdom lines up: the Dragoncitos throw people forward, the Tiburoncitos keep two up front for the counter, the Búhos pass in the middle. */
+export const RIVAL_FORM: Record<string, FormationId> = { dragon: '1-2-2', tiburon: '2-1-2', buho: '2-2-1', mapache: '2-1-2', family: '2-1-2' };
 export const defaultConfig = (): MatchConfig => ({
   players: 1, controls: ['full', 'full'], chars: ['sophie', 'alana'], squad: [...DEFAULT_SQUAD], difficulty: 'normales', half: 90, seed: (Date.now() & 0xffff) + 1,
   rival: 'dragon', autoplay: null, ff: 1, cine: 'off', mirror: false,
 });
 
-/** The squad as it will be used: four different field characters, the default one if the list is not valid. */
+/** The squad as it will be used: the five field characters in slot order (6 contra 6, everybody plays). A list of four (old saves) keeps its order
+ *  and the fifth goes last, a list with repeats or strangers falls back to the default one. */
 export const cleanSquad = (s: readonly string[] | undefined): FieldChar[] => {
-  const u = [...new Set((s ?? []).filter((c): c is FieldChar => (FIELD_CHARS as readonly string[]).includes(c)))];
-  return u.length === 4 ? u : [...DEFAULT_SQUAD];
+  const raw = (s ?? []).filter((c): c is FieldChar => (FIELD_CHARS as readonly string[]).includes(c)), u = [...new Set(raw)];
+  return u.length === raw.length && (u.length === 4 || u.length === 5) ? lineup(u) : [...DEFAULT_SQUAD];
 };
 
 /** Owns one match: builds it from the menu choices, feeds it the human input (or a test bot) at the fixed step and hands back the events. */
@@ -72,7 +78,7 @@ export class MatchController {
       const c = (squad as string[]).includes(wanted) && !humans.some((h) => h.slot === seats[wanted as FieldChar]) ? (wanted as FieldChar) : free[0];
       humans.push({ team: 0, slot: seats[c]!, humanSlot: i, controls: cfg.controls[i] ?? 'full' });
     }
-    this.m = createMatch({ seed: cfg.seed, halfLength: cfg.half, humans, squad, ai: 'brain', difficulty: cfg.difficulty, away: cfg.rival, cine: cfg.cine, knockout: cfg.knockout, training: cfg.training, arc: cfg.arc });
+    this.m = createMatch({ seed: cfg.seed, halfLength: cfg.half, humans, squad, formation: [cfg.formation ?? '2-1-2', RIVAL_FORM[cfg.rival as string] ?? '2-1-2'], strategy: cfg.strategy, weather: cfg.weather, ai: 'brain', difficulty: cfg.difficulty, away: cfg.rival, cine: cfg.cine, knockout: cfg.knockout, training: cfg.training, arc: cfg.arc });
     if (cfg.autoplay) this.bots = humans.map(() => newBot(cfg.autoplay!));
     if (cfg.forceSpecial) this.force(cfg.forceSpecial);
   }

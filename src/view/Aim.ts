@@ -4,7 +4,8 @@ import { T } from '../core/tuning';
 import { PITCH, goalX } from '../core/field';
 import { choosePass, stealTarget } from '../core/actions';
 import { specialKind } from '../core/specials';
-import { J_COLORS } from './PlayerView';
+import { J_COLORS } from './colors';
+import { sx, sy } from '../core/proj';
 import { services } from '../app/services';
 
 const INK = 0x2a1b3d;
@@ -34,26 +35,26 @@ export class Aim {
 
   destroy(): void { this.gg.destroy(); this.g.destroy(); this.label.destroy(); this.star.destroy(); }
 
-  update(m: Match, top: number, time: number): void {
+  update(m: Match, time: number): void {
     const g = this.g; g.clear(); this.gg.clear();
     this.label.setVisible(false); this.star.setVisible(false);
     if (m.phase !== 'play') return;
     for (const p of m.players) {
       if (p.control !== 'human') continue;
-      if (m.ball.owner === p.id && m.ball.state === 'owned') { this.one(m, p, top, time); continue; }
+      if (m.ball.owner === p.id && m.ball.state === 'owned') { this.one(m, p, time); continue; }
       // without the ball (full controls): an arc under the rival you can take the ball from at the front (the steal), and a line while you contain him
       if (p.controls !== 'full') continue;
       const c = stealTarget(m, p), col = J_COLORS[p.humanSlot ?? 0] ?? 0xffd447;
-      if (c) { const k = 0.5 + 0.5 * Math.sin(time * 14); this.gg.lineStyle(2, col, 0.6 + 0.4 * k); this.gg.strokeEllipse(Math.round(c.x), Math.round(top + c.y), 22, 9); }
+      if (c) { const k = 0.5 + 0.5 * Math.sin(time * 14); this.gg.lineStyle(2, col, 0.6 + 0.4 * k); this.gg.strokeEllipse(Math.round(sx(c.x)), Math.round(sy(c.y)), 26, 10); }
       if ((p.containT ?? 0) > 0) {
         const o = m.players.find((q) => q.id === m.ball.owner);
-        if (o) { this.gg.lineStyle(2, col, 0.7); this.gg.lineBetween(Math.round(p.x), Math.round(top + p.y), Math.round(o.x), Math.round(top + o.y)); }
+        if (o) { this.gg.lineStyle(2, col, 0.7); this.gg.lineBetween(Math.round(sx(p.x)), Math.round(sy(p.y)), Math.round(sx(o.x)), Math.round(sy(o.y))); }
       }
     }
   }
 
-  private one(m: Match, p: Player, top: number, time: number): void {
-    const g = this.g, ground = this.gg, x = Math.round(p.x), gy = Math.round(top + p.y), col = J_COLORS[p.humanSlot ?? 0] ?? 0xffd447;
+  private one(m: Match, p: Player, time: number): void {
+    const g = this.g, ground = this.gg, x = Math.round(sx(p.x)), gy = Math.round(sy(p.y)), col = J_COLORS[p.humanSlot ?? 0] ?? 0xffd447;
     const full = p.controls === 'full';
     const shooting = full && p.shoot.down, passing = full && p.pass.down;
     // the special is ready: a pulsing aura at the feet and a star over the head
@@ -65,7 +66,7 @@ export class Aim {
       ground.strokeEllipse(x, gy, 26 + k * 6, 10 + k * 3);
       if (inZone) {
         ground.lineStyle(1, 0xffffff, 0.5 * k); ground.strokeEllipse(x, gy, 34 + k * 8, 14 + k * 4);
-        if (!shooting && !passing) this.star.setVisible(true).setText('★ ESPECIAL').setPosition(x, Math.round(top + p.y - 74 - Math.round(k * 2)));
+        if (!shooting && !passing) this.star.setVisible(true).setText('★ ESPECIAL').setPosition(x, Math.round(sy(p.y) - 60 - Math.round(k * 2)));
       }
     }
     // the teammate the pass would reach (small mark while no button is held, bright while the pass button is)
@@ -74,13 +75,13 @@ export class Aim {
     const lob = passing && p.pass.t >= T.lobHold;
     if (lob && !this.lobCue) { this.lobCue = true; services.audio?.play('lob'); } else if (!passing) this.lobCue = false;
     if (c) {
-      const ty = Math.round(top + c.y), tx = Math.round(c.x);
+      const ty = Math.round(sy(c.y)), tx = Math.round(sx(c.x));
       const a = passing ? 1 : 0.5;
-      g.fillStyle(col, a).fillTriangle(tx - 4, ty - 44, tx + 4, ty - 44, tx, ty - 38);
-      g.lineStyle(1, INK, a).strokeTriangle(tx - 4, ty - 44, tx + 4, ty - 44, tx, ty - 38);
+      g.fillStyle(col, a).fillTriangle(tx - 4, ty - 46, tx + 4, ty - 46, tx, ty - 40);
+      g.lineStyle(1, INK, a).strokeTriangle(tx - 4, ty - 46, tx + 4, ty - 46, tx, ty - 40);
       if (passing) {
         ground.lineStyle(2, lob ? 0x7be3ff : 0xffffff, 0.95).strokeEllipse(tx, ty, 18, 7);
-        const bx = Math.round(m.ball.x), by = Math.round(top + m.ball.y - 4);
+        const bx = Math.round(sx(m.ball.x)), by = Math.round(sy(m.ball.y) - 4);
         const n = 12;
         let px = bx, py = by;
         for (let i = 1; i <= n; i++) {
@@ -92,7 +93,7 @@ export class Aim {
     }
     // the charge of the button above the head
     if (shooting || passing) {
-      const w = 22, bx = x - w / 2, by = Math.round(top + p.y - 64);
+      const w = 22, bx = x - w / 2, by = Math.round(sy(p.y) - 52);
       const t = shooting ? p.shoot.t : p.pass.t;
       let fill: number, color: number, text: string;
       if (shooting) { fill = Math.min(1, t / T.autoFire); color = fill < 0.5 ? 0xffe45c : fill < 0.85 ? 0xff9a2e : 0xff4d2e; text = fill >= 0.98 ? '¡POTENCIA!' : 'TIRO'; }

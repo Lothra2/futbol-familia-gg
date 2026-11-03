@@ -3,7 +3,7 @@ import { createMatch, step } from '../../src/core/match';
 import { setHumanInput } from '../../src/core/control';
 import { addBar, barMult, flightDur, flightPos, launchSpecial, specialChance, specialKind, updateBar } from '../../src/core/specials';
 import { T } from '../../src/core/tuning';
-import { PITCH } from '../../src/core/field';
+import { PITCH, MID } from '../../src/core/field';
 import { ball, clear, fam, give, inp, mk, put, rival, secs, ticks } from './helpers';
 import type { HumanSeat } from '../../src/core/match';
 import type { Flight, Match, SpecialKind } from '../../src/core/state';
@@ -14,7 +14,7 @@ function ready(c: 'sophie' | 'alana' | 'papa' | 'mama', x: number, o: { cine?: '
   const slot = { sophie: 3, alana: 4, papa: 1, mama: 2 }[c];
   const m = createMatch({ ai: 'none', skipKickoff: true, seed: o.seed ?? 1, humans: [seat(slot, o.controls ?? 'full')], cine: o.cine ?? 'full' });
   for (const p of m.players) p.speedMult = 1;
-  clear(m); const p = fam(m, c); put(p, x, 80); give(m, p); m.bar[0] = 100;
+  clear(m); const p = fam(m, c); put(p, x, MID); give(m, p); m.bar[0] = 100;
   step(m);
   return m;
 }
@@ -26,13 +26,13 @@ describe('Barra Estrella', () => {
     addBar(m, 0, T.bar.pass); expect(m.bar[0]).toBe(5);
     addBar(m, 1, T.bar.conceded); expect(m.bar[1]).toBeCloseTo(8 * 0.75, 5);   // rivals at Normales charge x0.75
     addBar(m, 0, 500); expect(m.bar[0]).toBe(100);
-    ball(m, 700, 80); const before = m.bar[0], b1 = m.bar[1]; m.bar[0] = 0;
+    ball(m, 700, MID); const before = m.bar[0], b1 = m.bar[1]; m.bar[0] = 0;
     secs(m, 2); expect(m.bar[0]).toBeGreaterThan(T.bar.half * 2 - 0.4); expect(m.bar[0]).toBeLessThan(T.bar.half * 2 + 0.4);   // T.bar.half (0.5 since the jugabilidad work) per second in the half it attacks
     expect(m.bar[1]).toBe(b1); void before;
   });
   it('los controles fáciles cargan x1,4 y los rivales según la dificultad', () => {
-    const e = createMatch({ ai: 'none', skipKickoff: true, humans: [seat(3, 'easy')] }); expect(barMult(e, 0)).toBe(1.4);
-    const f = createMatch({ ai: 'none', skipKickoff: true, humans: [seat(3, 'full')] }); expect(barMult(f, 0)).toBe(1);
+    const e = createMatch({ ai: 'none', skipKickoff: true, humans: [seat(4, 'easy')] }); expect(barMult(e, 0)).toBe(1.4);
+    const f = createMatch({ ai: 'none', skipKickoff: true, humans: [seat(4, 'full')] }); expect(barMult(f, 0)).toBe(1);
     for (const [d, v] of [['tranquilos', 0.5], ['normales', 0.75], ['campeones', 1.0]] as const) expect(barMult(createMatch({ ai: 'none', difficulty: d }), 1)).toBe(v);
   });
   it('avisa una sola vez cuando se llena', () => {
@@ -41,7 +41,7 @@ describe('Barra Estrella', () => {
     expect(m.events.filter((e) => e.k === 'starfull').length).toBe(1);
   });
   it('un pase completado carga la barra y un robo también', () => {
-    const m = mk({}, true); clear(m); const a = fam(m, 'sophie'), b = fam(m, 'mama'); put(a, 300, 80); put(b, 440, 80); give(m, a);
+    const m = mk({}, true); clear(m); const a = fam(m, 'sophie'), b = fam(m, 'mama'); put(a, 300, MID); put(b, 440, MID); give(m, a);
     a.input = inp({ mx: 1, passPressed: true }); step(m); a.input = inp();
     for (let i = 0; i < 120 && m.ball.owner !== b.id; i++) step(m);
     expect(m.bar[0]).toBeGreaterThanOrEqual(5);
@@ -73,8 +73,8 @@ describe('lanzar el especial (B18)', () => {
     expect(specialKind(rival(mk(), 3))).toBe('llamarada');
   });
   it('Thor con el balón en las manos: cualquier humano de la familia puede lanzar su Carrera Loca', () => {
-    const m = createMatch({ ai: 'none', skipKickoff: true, humans: [seat(3)] }); for (const p of m.players) p.speedMult = 1;
-    const thor = fam(m, 'thor'); clear(m, [thor]); put(thor, 14, 80); m.ball.state = 'held'; m.ball.owner = thor.id; m.bar[0] = 100;
+    const m = createMatch({ ai: 'none', skipKickoff: true, humans: [seat(4)] }); for (const p of m.players) p.speedMult = 1;
+    const thor = fam(m, 'thor'); clear(m, [thor]); put(thor, 14, MID); m.ball.state = 'held'; m.ball.owner = thor.id; m.bar[0] = 100;
     thor.state = 'hold'; step(m); press(m);
     expect(m.phase).toBe('cinematic'); expect(m.special!.kind).toBe('carrera'); expect(m.special!.shooter).toBe(thor.id);
   });
@@ -106,7 +106,7 @@ describe('lanzar el especial (B18)', () => {
 describe('la cinemática es una fase de tiempo fijo', () => {
   const dur = (cine: 'full' | 'short' | 'off', n = 1): number => {
     const m = ready('sophie', 300, { cine }); let last = 0;
-    for (let k = 0; k < n; k++) { m.phase = 'play'; m.restart = null; m.special = null; m.flight = null; ball(m, 300, 80); m.bar[0] = 100; give(m, fam(m, 'sophie')); step(m); press(m); const t0 = m.t; while ((m.phase as string) === 'cinematic') step(m); last = m.t - t0; secs(m, 0.5); }
+    for (let k = 0; k < n; k++) { m.phase = 'play'; m.restart = null; m.special = null; m.flight = null; ball(m, 300, MID); m.bar[0] = 100; give(m, fam(m, 'sophie')); step(m); press(m); const t0 = m.t; while ((m.phase as string) === 'cinematic') step(m); last = m.t - t0; secs(m, 0.5); }
     return last;
   };
   it('completa 3,5 s la primera vez y 2,0 s las siguientes; corta 2,0 s; sin cinemática 0,6 s', () => {
@@ -128,7 +128,7 @@ describe('la cinemática es una fase de tiempo fijo', () => {
     expect(m.phase).not.toBe('cinematic');
   });
   it('durante la cinemática nada se mueve ni corre el reloj', () => {
-    const m = ready('sophie', 300); const a = fam(m, 'sophie'), r = rival(m, 3); put(r, 600, 80); r.input = inp({ mx: -1 }); press(m);
+    const m = ready('sophie', 300); const a = fam(m, 'sophie'), r = rival(m, 3); put(r, 600, MID); r.input = inp({ mx: -1 }); press(m);
     const x = r.x, clock = m.clock; secs(m, 1.0);
     expect(r.x).toBe(x); expect(m.clock).toBe(clock); expect(a.state).toBe('special');
   });
@@ -143,7 +143,7 @@ describe('la cinemática es una fase de tiempo fijo', () => {
     throw new Error('no goal in 40 seeds');
   });
   it('si era atajada el portero despeja y queda un rebote suelto cerca del área, nunca un balón en sus manos', () => {
-    for (let s = 1; s <= 80; s++) {
+    for (let s = 1; s <= MID; s++) {
       const m = ready('papa', 800, { seed: s, cine: 'off' }); press(m);
       if (m.special!.outcome !== 'save') continue;
       const gk = rival(m, 0); const saves = gk.stats2.saves;
@@ -153,11 +153,11 @@ describe('la cinemática es una fase de tiempo fijo', () => {
       expect(gk.stats2.saves).toBe(saves + 1);
       return;
     }
-    throw new Error('no save in 80 seeds');
+    throw new Error('no save in MID seeds');
   });
   it('el Cañonazo tumba a los rivales que están en el camino (cuando no es gol, que si es gol todos celebran o se lamentan)', () => {
     for (let s = 1; s <= 40; s++) {
-      const m = ready('papa', 600, { seed: s, cine: 'off' }); const r = rival(m, 3); put(r, 760, 80); press(m);
+      const m = ready('papa', 600, { seed: s, cine: 'off' }); const r = rival(m, 3); put(r, 760, MID); press(m);
       if (m.special!.outcome !== 'save') continue;
       while (m.phase === 'cinematic' || m.flight) step(m);
       expect(r.state).toBe('tumble'); return;
@@ -165,7 +165,7 @@ describe('la cinemática es una fase de tiempo fijo', () => {
     throw new Error('no save in 40 seeds');
   });
   it('los rivales también lanzan especial (la IA lo decide) y a la familia no le pasa si hay un humano guardando la barra', () => {
-    const m = createMatch({ ai: 'brain', skipKickoff: true, seed: 3, humans: [seat(3)] });
+    const m = createMatch({ ai: 'brain', skipKickoff: true, seed: 3, humans: [seat(4)] });
     m.bar[0] = 100; m.bar[1] = 100;
     let family = 0, rivals = 0;
     for (let i = 0; i < 60 * 100; i++) { step(m); for (const e of m.events) if (e.k === 'special') { if (m.special) { if (m.special.team === 0) family++; else rivals++; } } m.events = []; if (m.bar[1] < 100 && rivals) break; }
@@ -203,8 +203,8 @@ describe('el vuelo guionado después de la cinemática', () => {
     }
   });
   it('la Carrera Loca lleva a Thor con el balón hasta el arco rival y lo devuelve a su arco', () => {
-    const m = createMatch({ ai: 'none', skipKickoff: true, humans: [seat(3)], cine: 'off', seed: 4 }); for (const p of m.players) p.speedMult = 1;
-    const thor = fam(m, 'thor'); clear(m, [thor]); put(thor, 14, 80); m.ball.state = 'held'; m.ball.owner = thor.id; m.bar[0] = 100;
+    const m = createMatch({ ai: 'none', skipKickoff: true, humans: [seat(4)], cine: 'off', seed: 4 }); for (const p of m.players) p.speedMult = 1;
+    const thor = fam(m, 'thor'); clear(m, [thor]); put(thor, 14, MID); m.ball.state = 'held'; m.ball.owner = thor.id; m.bar[0] = 100;
     thor.state = 'hold'; step(m); press(m);
     while (m.phase === 'cinematic') step(m);
     let far = 0; while (m.flight) { step(m); far = Math.max(far, thor.x); }

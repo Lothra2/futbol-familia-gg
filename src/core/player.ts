@@ -1,5 +1,5 @@
 import { T } from './tuning';
-import { ESCAPE, ownGoalX } from './field';
+import { ESCAPE, MID, ownGoalX } from './field';
 import { emptyInput } from './types';
 import type { Match, Player } from './state';
 import { handleInput, playerById, updateAct } from './actions';
@@ -51,7 +51,7 @@ export function updatePlayer(m: Match, p: Player, dt: number, live: boolean): vo
   if (live && p.control === 'human' && p.controls === 'full' && p.pass.down && p.pass.t >= T.contain.tapMax && !p.act && !isLocked(p) && m.phase === 'play'
     && m.ball.state === 'owned' && carrier && carrier.team !== p.team && Math.hypot(carrier.x - p.x, carrier.y - p.y) < 140) {
     containing = true;
-    const gx = ownGoalX(p.team) - carrier.x, gy = 80 - carrier.y, gl = Math.hypot(gx, gy) || 1;
+    const gx = ownGoalX(p.team) - carrier.x, gy = MID - carrier.y, gl = Math.hypot(gx, gy) || 1;
     const dx = carrier.x + (gx / gl) * T.contain.dist - p.x, dy = (carrier.y + (gy / gl) * T.contain.dist - p.y) / T.yFactor, d = Math.hypot(dx, dy);
     if (d > 1.5) { const k = Math.min(1, d / 14); cmx = (dx / d) * k; cmy = (dy / d) * k; }
     p.facing = carrier.x >= p.x ? 1 : -1;

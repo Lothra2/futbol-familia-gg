@@ -69,11 +69,12 @@ function frame(b: Ball, x0: number, hooks?: BallHooks): void {
 function sub(b: Ball, dt: number, hooks?: BallHooks): void {
   const px = b.x, py = b.y, pz = b.z;
   const air = b.z > 0 || b.vz !== 0;
-  if (air) { const f = Math.exp(-T.airDrag * dt); b.vx *= f; b.vy *= f; }
+  if (air) { const f = Math.exp(-T.airDrag * dt); b.vx *= f; b.vy *= f; if (b.wind) b.vx += b.wind * dt; }
   else {
     const s = Math.hypot(b.vx, b.vy);
     if (s > 0) {
-      const n = (s + C) * Math.exp(-T.rollB * dt) - C;
+      const dw = dt * (b.wet ?? 1);   // rain: the same law, faster
+      const n = (s + C) * Math.exp(-T.rollB * dw) - C;
       if (n <= 0) { b.vx = b.vy = 0; } else { b.vx *= n / s; b.vy *= n / s; }
     }
   }

@@ -14,7 +14,7 @@ const ready = async (page) => { await page.waitForFunction(() => window.__futbol
   const { page, errors, ctx } = await openGame(b, srv.url, Q);
   const hosts = new Set(); page.on('request', (r) => { if (/^https?:/.test(r.url())) hosts.add(new URL(r.url()).host); });
   await ready(page);
-  const info = await page.evaluate(() => ({ canvases: document.querySelectorAll('canvas').length, loading: !!document.getElementById('loading'),
+  const info = await page.evaluate(() => ({ canvases: document.querySelectorAll('#game canvas').length, loading: !!document.getElementById('loading'),
     font: document.fonts.check('16px Pixelify'), w: window.__futbol.game.scale.width, h: window.__futbol.game.scale.height, css: document.querySelector('canvas').style.width }));
   ok('1280x720: un canvas, sin pantalla de carga, fuente cargada', info.canvases === 1 && !info.loading && info.font, JSON.stringify(info));
   ok('1280x720: pantalla logica 426x240 con escala entera x3', info.w === 426 && info.h === 240 && info.css === '1278px', `${info.w}x${info.h} css ${info.css}`);

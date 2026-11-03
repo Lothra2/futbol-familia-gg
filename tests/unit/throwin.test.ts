@@ -7,7 +7,7 @@ import { botFrame, newBot, type BotKind } from '../../src/core/ai/testbots';
 function measure(bot: BotKind, seeds: number[]): { throwins: number; chained: number; outs: number } {
   let throwins = 0, chained = 0, outs = 0;
   for (const seed of seeds) {
-    const humans = [{ team: 0 as const, slot: 3, humanSlot: 0, controls: bot === 'nina5' ? ('easy' as const) : ('full' as const) }];
+    const humans = [{ team: 0 as const, slot: 4, humanSlot: 0, controls: bot === 'nina5' ? ('easy' as const) : ('full' as const) }];
     const m = createMatch({ seed, ai: 'brain', halfLength: 120, humans });
     const st = newBot(bot);
     let last = '', lastT = -99;

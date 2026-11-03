@@ -1,8 +1,9 @@
 import type { Rng } from './rng';
+import type { FormationId } from './field';
 import type { CharId, InputFrame, MatchEvent, Species } from './types';
 
 export type Team = 0 | 1;
-export type Role = 'gk' | 'def' | 'fwd';
+export type Role = 'gk' | 'def' | 'mid' | 'fwd';
 export type ControlMode = 'easy' | 'full';
 export type PState = 'idle' | 'run' | 'sprint' | 'kick' | 'slide' | 'bump' | 'stagger' | 'tumble' | 'dizzy' | 'getup' | 'celebrate' | 'sad' | 'dive' | 'hold' | 'special';
 export type KickKind = 'pass' | 'chip' | 'shot' | 'volley' | 'header' | 'chilena' | 'restart';
@@ -29,6 +30,8 @@ export interface Act {
 
 export interface Player {
   id: number; team: Team; slot: number; role: Role; stats: PStats; charId?: CharId; species?: Species; name: string;
+  /** The sprite of this player (public/assets/nwc/<art>.png). */
+  art: string;
   control: 'human' | 'ai'; humanSlot: number | null; controls: ControlMode;
   x: number; y: number; z: number; vx: number; vy: number; vz: number; facing: 1 | -1; dirX: number; dirY: number;
   state: PState; stateT: number; act: Act | null; input: InputFrame;
@@ -84,6 +87,8 @@ export interface Ball {
   lastTouch: { team: Team | null; player: number | null; t: number };
   prevTouch: { team: Team | null; player: number | null; t: number };
   inNet: boolean; scored: Team | null;
+  /** The weather on the ball (Nintendo World Cup): `wet` multiplies the rolling friction (rain), `wind` pushes a ball in the air along x (px/s²). */
+  wet?: number; wind?: number;
 }
 
 export type Phase = 'kickoff' | 'play' | 'restart' | 'goal' | 'halftime' | 'cinematic' | 'penalties' | 'over';
@@ -91,6 +96,11 @@ export type RestartKind = 'kickoff' | 'throwin' | 'goalkick' | 'corner' | 'freek
 /** The aim of a free kick: where in the goal (y), how much effect (0 flat to 1 full, the bend goes around the wall), the players of the wall and the one who was fouled. */
 export interface FreeKick { aimY: number; curve: number; wall: number[]; fouled: number; /** 'aim': the taker aims with no hurry. After the first Tiro the meter swings once (`mt` is when it started) and the second Tiro kicks. */ stage: 'aim' | 'meter'; mt: number }
 export interface Restart { kind: RestartKind; team: Team; x: number; y: number; taker: number; t: number; kicked: boolean; aiAt: number; fk?: FreeKick }
+
+/** The weather of the Waiting Room. */
+export type Weather = 'sol' | 'lluvia' | 'viento';
+/** The strategy of the Waiting Room for the AI mates of the family: how they attack (pass, mixed, dribble) and defend (mark, mixed, tackle). */
+export interface Strategy { atk: 'pase' | 'mixto' | 'gambeta'; def: 'marcar' | 'mixto' | 'barrer' }
 
 export interface Match {
   t: number; tick: number; rng: Rng;
@@ -105,5 +115,9 @@ export interface Match {
   lastPass: { from: number; to: number; t: number; team: Team; done?: boolean } | null;
   lastGoal: { team: Team; scorer: number | null; assist: number | null } | null;
   stats: { goals: [number, number]; shots: [number, number]; saves: [number, number]; specials: [number, number] };
+  /** The formation of each team. */
+  form: [FormationId, FormationId];
+  /** The Waiting Room: the weather and the strategy of the family mates. */
+  weather: Weather; strat: Strategy;
   data: Record<string, any>;
 }

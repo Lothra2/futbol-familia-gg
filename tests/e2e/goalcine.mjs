@@ -12,7 +12,7 @@ for (const who of ['family', 'rival']) {
     const m = window.__futbol.match, team = who === 'family' ? 0 : 1, gx = team === 0 ? 940 : 20;
     for (const p of m.players) { if (p.role === 'gk') { p.x = gx + (team === 0 ? -150 : 150); p.y = 10; p.noControlT = 99; } }
     const sh = m.players.find((p) => p.team === team && p.role !== 'gk');
-    sh.x = gx + (team === 0 ? -40 : 40); sh.y = 80; Object.assign(m.ball, { x: gx + (team === 0 ? -30 : 30), y: 80, z: 0, vx: team === 0 ? 500 : -500, vy: 0, state: 'free', owner: null });
+    sh.x = gx + (team === 0 ? -40 : 40); sh.y = 200; Object.assign(m.ball, { x: gx + (team === 0 ? -30 : 30), y: 200, z: 0, vx: team === 0 ? 500 : -500, vy: 0, state: 'free', owner: null });
     m.ball.lastTouch = { player: sh.id, team, t: m.t };
   }, who);
   await page.waitForFunction(() => window.__futbol.match.phase === 'goal', null, { timeout: 8000 });
@@ -32,7 +32,7 @@ for (const who of ['family', 'rival']) {
   const { page, ctx } = await openGame(b, srv.url, 'mode=quick&half=60&seed=5&cine=full&controls=full', { viewport: { width: 1280, height: 720 } });
   await page.waitForFunction(() => window.__futbol?.match?.phase === 'play', null, { timeout: 20000 });
   await page.evaluate(() => { const m = window.__futbol.match; for (const p of m.players) if (p.role === 'gk') { p.x = 800; p.y = 10; p.noControlT = 99; }
-    const sh = m.players.find((p) => p.team === 0 && p.role !== 'gk'); sh.x = 900; sh.y = 80; Object.assign(m.ball, { x: 910, y: 80, z: 0, vx: 500, vy: 0, state: 'free', owner: null }); m.ball.lastTouch = { player: sh.id, team: 0, t: m.t }; });
+    const sh = m.players.find((p) => p.team === 0 && p.role !== 'gk'); sh.x = 900; sh.y = 200; Object.assign(m.ball, { x: 910, y: 200, z: 0, vx: 500, vy: 0, state: 'free', owner: null }); m.ball.lastTouch = { player: sh.id, team: 0, t: m.t }; });
   await page.waitForFunction(() => window.__futbol.match.phase === 'goal', null, { timeout: 8000 });
   await page.waitForFunction(() => window.__futbol.match.phaseT >= 1.1, null, { timeout: 8000 });
   await page.mouse.click(640, 360);

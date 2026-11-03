@@ -11,7 +11,7 @@ export interface SimResult {
 
 /** Plays a whole match without a browser. `bot` drives the human seats (the family player 1), nothing else is scripted. */
 export function playMatch(opts: MatchOptions, bot?: BotKind, maxSeconds = 900): SimResult {
-  const humans = bot ? [{ team: 0 as const, slot: 3, humanSlot: 0, controls: bot === 'nina5' ? ('easy' as const) : ('full' as const) }] : [];
+  const humans = bot ? [{ team: 0 as const, slot: 4, humanSlot: 0, controls: bot === 'nina5' ? ('easy' as const) : ('full' as const) }] : [];
   const m = createMatch({ ai: 'brain', humans, ...opts });
   const st = bot ? newBot(bot) : null;
   const kinds: Record<string, number> = {}, restarts: Record<string, number> = {}, maxPhase: Record<string, number> = {};

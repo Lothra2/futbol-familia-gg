@@ -39,10 +39,10 @@ describe('XP, niveles y premios (B24)', () => {
     const r = applyMatch(save, m); expect(r.win).toBe(false); expect(save.characters.sophie.xp).toBe(15); expect(save.records.biggestWin).toBe(0);
     m.score = [2, 2]; expect(applyMatch(save, m).draw).toBe(true);
   });
-  it('un equipo con Juandi lo cuenta, y el que descansa no recibe nada', () => {
-    const save = defaultSave(); const m = createMatch({ ai: 'none', skipKickoff: true, squad: ['papa', 'mama', 'sophie', 'juandi'] });
+  it('6 contra 6: los cinco de la familia juegan y todos ganan su XP', () => {
+    const save = defaultSave(); const m = createMatch({ ai: 'none', skipKickoff: true });
     applyMatch(save, m);
-    expect(save.characters.juandi.xp).toBe(15); expect(save.characters.alana.xp).toBe(0);
+    for (const c of ['papa', 'mama', 'sophie', 'alana', 'juandi'] as const) expect(save.characters[c].xp).toBe(15);
   });
   it('el guardado sin Juandi (de antes) se completa con su personaje', () => {
     const old = defaultSave(); delete (old.characters as any).juandi;
@@ -52,7 +52,7 @@ describe('XP, niveles y premios (B24)', () => {
     const r = playMatch({ seed: 9, halfLength: 25, difficulty: 'normales' }, 'nina5');
     const save = defaultSave(); const res = applyMatch(save, r.m);
     const goals = r.m.players.filter((p) => p.team === 0).reduce((s, p) => s + p.stats2.goals, 0);
-    expect(save.records.goals).toBe(goals); expect(res.chars.length).toBe(5);
+    expect(save.records.goals).toBe(goals); expect(res.chars.length).toBe(6);
     for (const c of res.chars) expect(c.xp).toBeGreaterThanOrEqual(15);
   });
 });

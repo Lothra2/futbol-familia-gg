@@ -10,7 +10,8 @@ import type { CharId } from '../core/types';
 import type { TeamKind } from '../core/teams';
 import { SPECIES } from '../core/types';
 import { cleanSquad, defaultConfig, type MatchConfig } from './controller';
-import { FIELD_CHARS, type FieldChar } from '../core/teams';
+import { showVs } from '../ui/vs';
+import { FIELD_CHARS, lineup, type FieldChar } from '../core/teams';
 import { services } from './services';
 import { T_ES } from '../data/text.es';
 import { Screens } from '../ui/screens';
@@ -68,16 +69,28 @@ export class App {
       const cr = q.get('crowd'); if (cr === 'auto' || cr === 'high' || cr === 'low') c.crowd = cr;
       const fc = Number(q.get('fpsCap')); if (fc > 0) c.fpsCap = fc;
       const sq = (q.get('squad') ?? '').split(',').filter(Boolean); if (sq.length) c.squad = cleanSquad(sq);
+      const fo = q.get('formation'); if (fo === '2-1-2' || fo === '1-2-2' || fo === '2-2-1') c.formation = fo;
+      const wx = q.get('weather'); if (wx === 'sol' || wx === 'lluvia' || wx === 'viento') c.weather = wx;
       this.startMatch(c);
-    } else { this.cfg.squad = ['mama', 'sophie', 'alana', 'juandi']; this.cfg.cine = s.cinematics; this.showMenu(q.get('menu') === 'main' ? 'main' : 'title'); }   // in the menu Juandi plays and Papá rests; one tap changes it
+    } else { this.cfg.cine = s.cinematics; this.showMenu(q.get('menu') === 'main' ? 'main' : 'title'); }
   }
 
   /** Matches that start from the menu show the tour of the controls the first time. */
   private coachNext = false;
   private menuCfg: MatchConfig | null = null;
 
-  startMatch(cfg0: MatchConfig, fromMenu = false): void {
-    this.coachNext = fromMenu;
+  startMatch(cfg0: MatchConfig, fromMenu = false, coach = fromMenu): void {
+    // a match picked in the menu (not the practice) opens with the VS screen of Nintendo World Cup
+    if (fromMenu && !this.test && !cfg0.training && !document.getElementById('vs')) {
+      const k = KINGDOMS.find((q) => q.species === cfg0.rival), sq = lineup(cleanSquad(cfg0.squad));
+      if (k) {
+        this.screens.close();
+        showVs({ us: T_ES.teams.family, them: k.team, place: k.name, style: k.style, color: k.color, ours: ['thor', ...sq], theirs: [`riv_${k.species}_gk`, ...[1, 2, 3, 4, 5].map((i) => `riv_${k.species}_${i}`)], avatar: (id, s) => this.screens.avatar(id, s) }, () => this.startMatch(cfg0, false, true));
+        services.audio?.play('whistle');
+        return;
+      }
+    }
+    this.coachNext = coach;
     const cfg = this.test ? { ...cfg0, ...this.test } : { ...cfg0 };
     const st = this.store.data.settings; cfg.reducedMotion = st.reducedMotion; cfg.narrator = st.narrator && !st.muted; cfg.narratorVolume = st.sfx; cfg.replay = st.replay; cfg.fastForward = cfg.ff > 1;
     const ch = this.store.data.characters;
@@ -108,7 +121,7 @@ export class App {
     this.shell?.setEnabled(false);
     this.touch.show(false);
     this.kb.active = false;
-    const k = KINGDOMS[(Date.now() >> 12) % KINGDOMS.length];
+    const k = KINGDOMS[Math.floor(Date.now() / 4096) % KINGDOMS.length];   // (a shift would overflow 32 bits and give a negative index)
     if (!this.game.scene.isActive('Menu')) this.game.scene.start('Menu', { stadium: k.stadium });
     this.screens.show(first, false);
   }

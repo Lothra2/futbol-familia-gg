@@ -3,11 +3,11 @@ import { createMatch, step } from '../../src/core/match';
 import { setHumanInput } from '../../src/core/control';
 import { PEN, decided, spot, startPenalties, tally } from '../../src/core/penalties';
 import { T } from '../../src/core/tuning';
-import { goalX } from '../../src/core/field';
+import { goalX, MID } from '../../src/core/field';
 import { inp, secs } from './helpers';
 import type { Match, Pen } from '../../src/core/state';
 
-const pen = (a: (0 | 1)[], b: (0 | 1)[], turn: 0 | 1 = 0): Pen => ({ turn, first: 0, kicks: [a, b], round: 0, step: 'ready', t: 0, aimY: 80, aimZ: 0.4, shotZ: 8, decisive: null, aim: { zone: 1, y: 80 }, shooter: 0, keeper: 0, outcome: null, shotY: 80, diveY: 80, winner: null, seed: 0 });
+const pen = (a: (0 | 1)[], b: (0 | 1)[], turn: 0 | 1 = 0): Pen => ({ turn, first: 0, kicks: [a, b], round: 0, step: 'ready', t: 0, aimY: MID, aimZ: 0.4, shotZ: 8, decisive: null, aim: { zone: 1, y: MID }, shooter: 0, keeper: 0, outcome: null, shotY: MID, diveY: MID, winner: null, seed: 0 });
 function shootout(seed: number, difficulty: 'tranquilos' | 'normales' | 'campeones' = 'normales'): { m: Match; kicks: number; sudden: boolean; steps: number } {
   const m = createMatch({ seed, ai: 'none', difficulty, knockout: true, skipKickoff: true, firstKick: (seed % 2) as 0 | 1 });
   startPenalties(m);
@@ -46,21 +46,21 @@ describe('penales y gol de oro (B25)', () => {
     const m = createMatch({ seed: 3, ai: 'none', knockout: true, skipKickoff: true, firstKick: 1 });
     startPenalties(m);
     const p = m.pen!, sh = m.players.find((q) => q.id === p.shooter)!, gk = m.players.find((q) => q.id === p.keeper)!;
-    expect(p.turn).toBe(0); expect(m.ball.x).toBe(spot(0).x); expect(m.ball.y).toBe(80);
+    expect(p.turn).toBe(0); expect(m.ball.x).toBe(spot(0).x); expect(m.ball.y).toBe(MID);
     expect(sh.team).toBe(0); expect(gk.team).toBe(1); expect(gk.role).toBe('gk'); expect(Math.abs(gk.x - goalX(0))).toBeLessThan(8);
   });
   it('un humano apunta con el joystick y patea con Tiro: el tiro va donde apuntó', () => {
     const goals = (aim: number): number => {
       let g = 0;
       for (let s = 1; s <= 30; s++) {
-        const m = createMatch({ seed: s, ai: 'none', knockout: true, skipKickoff: true, firstKick: 1, humans: [{ team: 0, slot: 3, humanSlot: 0, controls: 'full' }] });
+        const m = createMatch({ seed: s, ai: 'none', knockout: true, skipKickoff: true, firstKick: 1, humans: [{ team: 0, slot: 4, humanSlot: 0, controls: 'full' }] });
         startPenalties(m);
         while (m.pen!.step !== 'aim') step(m);
         for (let i = 0; i < 40; i++) { setHumanInput(m, 0, inp({ mx: aim })); step(m); }
         const aimY = m.pen!.aimY;
         setHumanInput(m, 0, inp({ shootPressed: true })); step(m); setHumanInput(m, 0, null);
         expect(m.pen!.step).toBe('fly'); expect(Math.abs(m.pen!.shotY - aimY)).toBeLessThan(8);
-        if (aim > 0) expect(aimY).toBeGreaterThan(80); else expect(aimY).toBeLessThan(80);
+        if (aim > 0) expect(aimY).toBeGreaterThan(MID); else expect(aimY).toBeLessThan(MID);
         while ((m.pen!.step as string) === 'fly') step(m);
         if (m.pen!.outcome === 'goal') g++;
       }
@@ -69,7 +69,7 @@ describe('penales y gol de oro (B25)', () => {
     expect(goals(0.55)).toBeGreaterThan(5); expect(goals(-0.55)).toBeGreaterThan(5);
   });
   it('un humano que no hace nada patea solo a los 4,5 s', () => {
-    const m = createMatch({ seed: 4, ai: 'none', knockout: true, skipKickoff: true, firstKick: 1, humans: [{ team: 0, slot: 3, humanSlot: 0, controls: 'easy' }] });
+    const m = createMatch({ seed: 4, ai: 'none', knockout: true, skipKickoff: true, firstKick: 1, humans: [{ team: 0, slot: 4, humanSlot: 0, controls: 'easy' }] });
     startPenalties(m); secs(m, PEN.ready + 0.2); expect(m.pen!.step).toBe('aim');
     secs(m, PEN.aimAuto + 0.2); expect(m.pen!.step).toBe('fly');
   });
@@ -80,7 +80,7 @@ describe('penales y gol de oro (B25)', () => {
     expect(m.golden).toBe(true); expect(m.halfLength).toBe(T.goldenT); expect(m.clock).toBeLessThan(1);
     for (let i = 0; i < 60 * 5; i++) step(m);                 // play on until the kickoff is over
     m.phase = 'play'; m.restart = null; m.ball.state = 'free';
-    Object.assign(m.ball, { x: 968, y: 80, z: 6, vx: 0, vy: 0, vz: 0, inNet: true, scored: 0 }); step(m);
+    Object.assign(m.ball, { x: 968, y: MID, z: 6, vx: 0, vy: 0, vz: 0, inNet: true, scored: 0 }); step(m);
     expect(m.phase).toBe('goal'); secs(m, T.goalT + 0.2);
     expect(m.phase).toBe('over'); expect(m.score).toEqual([2, 1]); expect(m.penWinner).toBeNull();
   });
@@ -114,9 +114,9 @@ describe('penales y gol de oro (B25)', () => {
     const run = (aimZ: number, seeds = 120): { goal: number; miss: number } => {
       let goal = 0, miss = 0;
       for (let s = 1; s <= seeds; s++) {
-        const m = createMatch({ seed: s, ai: 'none', knockout: true, skipKickoff: true, firstKick: 1, humans: [{ team: 0, slot: 3, humanSlot: 0, controls: 'full' }] });
+        const m = createMatch({ seed: s, ai: 'none', knockout: true, skipKickoff: true, firstKick: 1, humans: [{ team: 0, slot: 4, humanSlot: 0, controls: 'full' }] });
         startPenalties(m); while (m.pen!.step !== 'aim') step(m);
-        m.pen!.aimY = 80 + 16; m.pen!.aimZ = aimZ;
+        m.pen!.aimY = MID + 16; m.pen!.aimZ = aimZ;
         setHumanInput(m, 0, inp({ shootPressed: true })); step(m); setHumanInput(m, 0, null);
         if (m.pen!.outcome === 'goal') goal++; if (m.pen!.outcome === 'miss' || m.pen!.outcome === 'post') miss++;   // over the bar or off the crossbar
       }

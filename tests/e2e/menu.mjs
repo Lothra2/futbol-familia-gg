@@ -28,16 +28,18 @@ for (const [w, h] of [[667, 375], [844, 390], [926, 428], [1024, 768], [1180, 82
     await page.screenshot({ path: `docs/qa/shots/m7_${act}_${w}x${h}.png` });
     await page.keyboard.press('Escape'); await page.waitForSelector('#s-main');
   }
-  // quick match with chosen options: 2 players, easy controls, easy rival, 1:00, Juandi plays and Papa rests, Tiburoncitos
+  // quick match with chosen options: 2 players, easy controls, easy rival, 1:00, Tiburoncitos, and the Waiting Room: Papá and Juandi swap places, 2-2-1, rain
   await page.click('#s-main [data-act=quick]'); await page.waitForSelector('#s-quick');
   await page.click('#players .chip-o[data-i="1"]');
-  await page.click('#squad .card[data-i="0"]');
+  await page.click('#squad .spot[data-slot="1"]'); await page.click('#squad .spot[data-slot="3"]');
+  await page.click('#form .chip-o[data-i="2"]'); await page.click('#wx .chip-o[data-i="1"]');
   await page.click('#kingdoms .card[data-i="1"]');
   await page.click('#c0 .chip-o[data-i="0"]'); await page.click('#diff .chip-o[data-i="0"]'); await page.click('#half .chip-o[data-i="0"]');
   await page.click('.go');
+  ok(`${w}x${h}: sale la pantalla VS antes del partido`, await page.waitForSelector('#vs', { timeout: 3000 }).then(() => true, () => false));
   await page.waitForFunction(() => window.__futbol.match?.phase, null, { timeout: 10000 });
-  const m = await page.evaluate(() => { const m = window.__futbol.match; const sc = window.__futbol.scene; return { humans: m.humans.length, diff: m.difficulty, half: m.halfLength, controls: m.humans[0].controls, juandi: m.players.some((p) => p.team === 0 && p.charId === 'juandi'), papa: m.players.some((p) => p.team === 0 && p.charId === 'papa'), species: m.players.find((p) => p.team === 1).species, stadium: sc.stadium.theme.name, pause: !document.getElementById('pause').classList.contains('hidden'), menu: !!document.querySelector('.menu2'), menuScene: window.__futbol.game.scene.isActive('Menu') }; });
-  ok(`${w}x${h}: A jugar empieza con lo elegido`, m.humans === 2 && m.diff === 'tranquilos' && m.half === 60 && m.controls === 'easy' && m.juandi && !m.papa && m.species === 'tiburon' && /Arrecife/.test(m.stadium) && m.pause && !m.menu && !m.menuScene, JSON.stringify(m));
+  const m = await page.evaluate(() => { const m = window.__futbol.match; const sc = window.__futbol.scene; return { humans: m.humans.length, diff: m.difficulty, half: m.halfLength, controls: m.humans[0].controls, juandi: m.players.find((p) => p.team === 0 && p.charId === 'juandi').slot, papa: m.players.find((p) => p.team === 0 && p.charId === 'papa').slot, form: m.form[0], weather: m.weather, n: m.players.length, species: m.players.find((p) => p.team === 1).species, stadium: sc.stadium.world.name, pause: !document.getElementById('pause').classList.contains('hidden'), menu: !!document.querySelector('.menu2'), menuScene: window.__futbol.game.scene.isActive('Menu') }; });
+  ok(`${w}x${h}: A jugar empieza con lo elegido`, m.humans === 2 && m.diff === 'tranquilos' && m.half === 60 && m.controls === 'easy' && m.juandi === 1 && m.papa === 3 && m.form === '2-2-1' && m.weather === 'lluvia' && m.n === 12 && m.species === 'tiburon' && /Arrecife/.test(m.stadium) && m.pause && !m.menu && !m.menuScene, JSON.stringify(m));
   await page.evaluate(() => window.__futbol.shell.pauseNow()); await page.waitForTimeout(200);
   const q = await page.locator('#quit').boundingBox();
   ok(`${w}x${h}: Salir al menu cabe en la pausa`, q.y + q.height <= h && q.y >= 0, JSON.stringify(q));

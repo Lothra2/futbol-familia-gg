@@ -1,0 +1,169 @@
+Sprites generados con PixelForja (motor de Lothra2/pixel_forja) usando piezas del Universal LPC Spritesheet Character Generator.
+
+Arte del personaje: piezas del proyecto LPC (Liberated Pixel Cup), recoloreadas y armadas con PixelForja.
+Fuente: Universal LPC Spritesheet Character Generator, https://github.com/LiberatedPixelCup/Universal-LPC-Spritesheet-Character-Generator
+Estas piezas exigen dar crédito a sus autores. Si las modificas y las compartes, respeta su licencia (CC-BY-SA o GPL comparten igual).
+
+head/heads/human/male/idle.png: bluecarrot16,Benjamin K. Smith (BenCreating),Stephen Challener (Redshrike). OGA-BY 3.0,CC-BY-SA 3.0,GPL 3.0. https://opengameart.org/content/liberated-pixel-cup-lpc-base-assets-sprites-map-tiles,https://opengameart.org/content/lpc-character-bases
+head/faces/male/neutral/idle.png: JaidynReiman,ElizaWy,Stephen Challener (Redshrike). OGA-BY 3.0. https://github.com/ElizaWy/LPC/tree/main/Characters/Head,https://opengameart.org/content/ulpc-expanded-expressions
+hair/parted2/adult/idle.png: Skorpio,bluecarrot16. CC-BY-SA 3.0,GPL 3.0. https://opengameart.org/content/lpc-skorpios-scifi-sprite-pack,https://opengameart.org/content/lpc-hair
+eyes/eyebrows/thick/adult/idle.png: ElizaWy. OGA-BY 3.0. https://github.com/ElizaWy/LPC/tree/main/Characters/Hair,https://opengameart.org/content/lpc-expanded-sit-run-jump-more
+head/nose/straight/adult/idle.png: Thane Brimhall (pennomi),laetissima,Matthew Krohn (makrohn). GPL 3.0,CC-BY-SA 3.0. https://opengameart.org/content/lpc-base-character-expressions
+beards/beard/trimmed/idle.png: ElizaWy. OGA-BY 3.0. https://github.com/ElizaWy/LPC/tree/main/Characters/Hair,https://opengameart.org/content/lpc-expanded-sit-run-jump-more
+
+head/heads/human/female/idle.png: bluecarrot16,Benjamin K. Smith (BenCreating),Stephen Challener (Redshrike). OGA-BY 3.0,CC-BY-SA 3.0,GPL 3.0. https://opengameart.org/content/,https://opengameart.org/content/lpc-character-bases
+head/faces/female/neutral/idle.png: JaidynReiman,ElizaWy,Stephen Challener (Redshrike). OGA-BY 3.0. https://github.com/ElizaWy/LPC/tree/main/Characters/Head,https://opengameart.org/content/ulpc-expanded-expressions
+hair/xlong_wavy/adult/fg/idle.png: JaidynReiman,Nila122. OGA-BY 3.0. https://opengameart.org/content/lpc-expanded-xlong-hair
+hair/xlong_wavy/adult/bg/idle.png: JaidynReiman,Nila122. OGA-BY 3.0. https://opengameart.org/content/lpc-expanded-xlong-hair
+eyes/eyebrows/thin/adult/idle.png: ElizaWy. OGA-BY 3.0. https://github.com/ElizaWy/LPC/tree/main/Characters/Hair,https://opengameart.org/content/lpc-expanded-sit-run-jump-more
+
+head/heads/human/female/idle.png: bluecarrot16,Benjamin K. Smith (BenCreating),Stephen Challener (Redshrike). OGA-BY 3.0,CC-BY-SA 3.0,GPL 3.0. https://opengameart.org/content/,https://opengameart.org/content/lpc-character-bases
+head/faces/female/neutral/idle.png: JaidynReiman,ElizaWy,Stephen Challener (Redshrike). OGA-BY 3.0. https://github.com/ElizaWy/LPC/tree/main/Characters/Head,https://opengameart.org/content/ulpc-expanded-expressions
+hair/long_straight/adult/idle.png: JaidynReiman,thecilekli,bluecarrot16. CC0. https://opengameart.org/content/lpc-long-straight-hair-with-12-colors,https://opengameart.org/content/lpc-hair,https://opengameart.org/content/lpc-expanded-hair
+eyes/eyebrows/thin/adult/idle.png: ElizaWy. OGA-BY 3.0. https://github.com/ElizaWy/LPC/tree/main/Characters/Hair,https://opengameart.org/content/lpc-expanded-sit-run-jump-more
+hat/headband/tied/adult/idle.png: Nila122. OGA-BY 3.0,CC-BY-SA 3.0,GPL 3.0. https://opengameart.org/content/lpc-lizard-headgear,https://opengameart.org/content/lpc-expanded-hats-facial-helmets
+
+head/heads/human/female/idle.png: bluecarrot16,Benjamin K. Smith (BenCreating),Stephen Challener (Redshrike). OGA-BY 3.0,CC-BY-SA 3.0,GPL 3.0. https://opengameart.org/content/,https://opengameart.org/content/lpc-character-bases
+head/faces/female/neutral/idle.png: JaidynReiman,ElizaWy,Stephen Challener (Redshrike). OGA-BY 3.0. https://github.com/ElizaWy/LPC/tree/main/Characters/Head,https://opengameart.org/content/ulpc-expanded-expressions
+hair/pigtails/adult/idle.png: Radomir Dopieralski,bluecarrot16. CC-BY-SA 3.0,GPL 3.0. https://opengameart.org/content/one-more-lpc-alternate-character,https://opengameart.org/content/lpc-hair
+eyes/eyebrows/thin/adult/idle.png: ElizaWy. OGA-BY 3.0. https://github.com/ElizaWy/LPC/tree/main/Characters/Hair,https://opengameart.org/content/lpc-expanded-sit-run-jump-more
+hat/headband/hairtie/adult/idle.png: JaidynReiman. OGA-BY 3.0+,CC-BY 3.0+,GPL 3.0. https://opengameart.org/content/lpc-relm-hair-xlong-ponytail,https://opengameart.org/content/lpc-expanded-hats-facial-helmets
+
+head/heads/human/male/idle.png: bluecarrot16,Benjamin K. Smith (BenCreating),Stephen Challener (Redshrike). OGA-BY 3.0,CC-BY-SA 3.0,GPL 3.0. https://opengameart.org/content/liberated-pixel-cup-lpc-base-assets-sprites-map-tiles,https://opengameart.org/content/lpc-character-bases
+head/faces/male/neutral/idle.png: JaidynReiman,ElizaWy,Stephen Challener (Redshrike). OGA-BY 3.0. https://github.com/ElizaWy/LPC/tree/main/Characters/Head,https://opengameart.org/content/ulpc-expanded-expressions
+hair/messy2/adult/idle.png: JaidynReiman,Manuel Riecke (MrBeast). CC-BY-SA 3.0,GPL 3.0. https://opengameart.org/content/liberated-pixel-cup-lpc-base-assets-sprites-map-tiles,https://opengameart.org/content/lpc-expanded-hair
+eyes/eyebrows/thin/adult/idle.png: ElizaWy. OGA-BY 3.0. https://github.com/ElizaWy/LPC/tree/main/Characters/Hair,https://opengameart.org/content/lpc-expanded-sit-run-jump-more
+
+head/heads/human/male/idle.png: bluecarrot16,Benjamin K. Smith (BenCreating),Stephen Challener (Redshrike). OGA-BY 3.0,CC-BY-SA 3.0,GPL 3.0. https://opengameart.org/content/liberated-pixel-cup-lpc-base-assets-sprites-map-tiles,https://opengameart.org/content/lpc-character-bases
+head/faces/male/neutral/idle.png: JaidynReiman,ElizaWy,Stephen Challener (Redshrike). OGA-BY 3.0. https://github.com/ElizaWy/LPC/tree/main/Characters/Head,https://opengameart.org/content/ulpc-expanded-expressions
+head/ears/dragon/adult/idle.png: JaidynReiman. OGA-BY 3.0+,CC-BY 3.0+,GPL 3.0. https://opengameart.org/content/lpc-new-elven-ear-variants
+hair/curly_short/adult/idle.png: ElizaWy. OGA-BY 3.0. https://opengameart.org/content/lpc-hair,https://opengameart.org/content/lpc-expanded-sit-run-jump-more
+eyes/eyebrows/thin/adult/idle.png: ElizaWy. OGA-BY 3.0. https://github.com/ElizaWy/LPC/tree/main/Characters/Hair,https://opengameart.org/content/lpc-expanded-sit-run-jump-more
+
+head/heads/human/male/idle.png: bluecarrot16,Benjamin K. Smith (BenCreating),Stephen Challener (Redshrike). OGA-BY 3.0,CC-BY-SA 3.0,GPL 3.0. https://opengameart.org/content/liberated-pixel-cup-lpc-base-assets-sprites-map-tiles,https://opengameart.org/content/lpc-character-bases
+head/faces/male/neutral/idle.png: JaidynReiman,ElizaWy,Stephen Challener (Redshrike). OGA-BY 3.0. https://github.com/ElizaWy/LPC/tree/main/Characters/Head,https://opengameart.org/content/ulpc-expanded-expressions
+head/ears/dragon/adult/idle.png: JaidynReiman. OGA-BY 3.0+,CC-BY 3.0+,GPL 3.0. https://opengameart.org/content/lpc-new-elven-ear-variants
+hair/plain/adult/idle.png: JaidynReiman,Manuel Riecke (MrBeast),Joe White. OGA-BY 3.0,CC-BY-SA 3.0,GPL 3.0. https://opengameart.org/content/liberated-pixel-cup-lpc-base-assets-sprites-map-tiles,https://opengameart.org/content/ponytail-and-plain-hairstyles,https://opengameart.org/content/lpc-expanded-hair
+eyes/eyebrows/thin/adult/idle.png: ElizaWy. OGA-BY 3.0. https://github.com/ElizaWy/LPC/tree/main/Characters/Hair,https://opengameart.org/content/lpc-expanded-sit-run-jump-more
+
+head/heads/human/male/idle.png: bluecarrot16,Benjamin K. Smith (BenCreating),Stephen Challener (Redshrike). OGA-BY 3.0,CC-BY-SA 3.0,GPL 3.0. https://opengameart.org/content/liberated-pixel-cup-lpc-base-assets-sprites-map-tiles,https://opengameart.org/content/lpc-character-bases
+head/faces/male/neutral/idle.png: JaidynReiman,ElizaWy,Stephen Challener (Redshrike). OGA-BY 3.0. https://github.com/ElizaWy/LPC/tree/main/Characters/Head,https://opengameart.org/content/ulpc-expanded-expressions
+head/ears/dragon/adult/idle.png: JaidynReiman. OGA-BY 3.0+,CC-BY 3.0+,GPL 3.0. https://opengameart.org/content/lpc-new-elven-ear-variants
+hair/bedhead/adult/idle.png: JaidynReiman,Manuel Riecke (MrBeast). CC-BY-SA 3.0,GPL 3.0. https://opengameart.org/content/liberated-pixel-cup-lpc-base-assets-sprites-map-tiles,https://opengameart.org/content/lpc-expanded-hair
+eyes/eyebrows/thin/adult/idle.png: ElizaWy. OGA-BY 3.0. https://github.com/ElizaWy/LPC/tree/main/Characters/Hair,https://opengameart.org/content/lpc-expanded-sit-run-jump-more
+
+head/heads/human/male/idle.png: bluecarrot16,Benjamin K. Smith (BenCreating),Stephen Challener (Redshrike). OGA-BY 3.0,CC-BY-SA 3.0,GPL 3.0. https://opengameart.org/content/liberated-pixel-cup-lpc-base-assets-sprites-map-tiles,https://opengameart.org/content/lpc-character-bases
+head/faces/male/neutral/idle.png: JaidynReiman,ElizaWy,Stephen Challener (Redshrike). OGA-BY 3.0. https://github.com/ElizaWy/LPC/tree/main/Characters/Head,https://opengameart.org/content/ulpc-expanded-expressions
+head/ears/dragon/adult/idle.png: JaidynReiman. OGA-BY 3.0+,CC-BY 3.0+,GPL 3.0. https://opengameart.org/content/lpc-new-elven-ear-variants
+hair/buzzcut/adult/idle.png: ElizaWy. OGA-BY 3.0. https://opengameart.org/content/lpc-hair
+eyes/eyebrows/thin/adult/idle.png: ElizaWy. OGA-BY 3.0. https://github.com/ElizaWy/LPC/tree/main/Characters/Hair,https://opengameart.org/content/lpc-expanded-sit-run-jump-more
+
+head/heads/human/male/idle.png: bluecarrot16,Benjamin K. Smith (BenCreating),Stephen Challener (Redshrike). OGA-BY 3.0,CC-BY-SA 3.0,GPL 3.0. https://opengameart.org/content/liberated-pixel-cup-lpc-base-assets-sprites-map-tiles,https://opengameart.org/content/lpc-character-bases
+head/faces/male/neutral/idle.png: JaidynReiman,ElizaWy,Stephen Challener (Redshrike). OGA-BY 3.0. https://github.com/ElizaWy/LPC/tree/main/Characters/Head,https://opengameart.org/content/ulpc-expanded-expressions
+head/ears/dragon/adult/idle.png: JaidynReiman. OGA-BY 3.0+,CC-BY 3.0+,GPL 3.0. https://opengameart.org/content/lpc-new-elven-ear-variants
+hair/bangs/adult/idle.png: JaidynReiman,Manuel Riecke (MrBeast). CC-BY-SA 3.0,GPL 3.0. https://opengameart.org/content/liberated-pixel-cup-lpc-base-assets-sprites-map-tiles,https://opengameart.org/content/lpc-expanded-hair
+eyes/eyebrows/thin/adult/idle.png: ElizaWy. OGA-BY 3.0. https://github.com/ElizaWy/LPC/tree/main/Characters/Hair,https://opengameart.org/content/lpc-expanded-sit-run-jump-more
+
+head/heads/human/male/idle.png: bluecarrot16,Benjamin K. Smith (BenCreating),Stephen Challener (Redshrike). OGA-BY 3.0,CC-BY-SA 3.0,GPL 3.0. https://opengameart.org/content/liberated-pixel-cup-lpc-base-assets-sprites-map-tiles,https://opengameart.org/content/lpc-character-bases
+head/faces/male/neutral/idle.png: JaidynReiman,ElizaWy,Stephen Challener (Redshrike). OGA-BY 3.0. https://github.com/ElizaWy/LPC/tree/main/Characters/Head,https://opengameart.org/content/ulpc-expanded-expressions
+head/ears/dragon/adult/idle.png: JaidynReiman. OGA-BY 3.0+,CC-BY 3.0+,GPL 3.0. https://opengameart.org/content/lpc-new-elven-ear-variants
+hair/ponytail/adult/fg/idle.png: JaidynReiman,Manuel Riecke (MrBeast). CC-BY-SA 3.0,GPL 3.0. https://opengameart.org/content/liberated-pixel-cup-lpc-base-assets-sprites-map-tiles,https://opengameart.org/content/lpc-expanded-hair
+hair/ponytail/adult/bg/idle.png: JaidynReiman,Manuel Riecke (MrBeast). CC-BY-SA 3.0,GPL 3.0. https://opengameart.org/content/liberated-pixel-cup-lpc-base-assets-sprites-map-tiles,https://opengameart.org/content/lpc-expanded-hair
+eyes/eyebrows/thin/adult/idle.png: ElizaWy. OGA-BY 3.0. https://github.com/ElizaWy/LPC/tree/main/Characters/Hair,https://opengameart.org/content/lpc-expanded-sit-run-jump-more
+
+head/heads/human/male/idle.png: bluecarrot16,Benjamin K. Smith (BenCreating),Stephen Challener (Redshrike). OGA-BY 3.0,CC-BY-SA 3.0,GPL 3.0. https://opengameart.org/content/liberated-pixel-cup-lpc-base-assets-sprites-map-tiles,https://opengameart.org/content/lpc-character-bases
+head/faces/male/neutral/idle.png: JaidynReiman,ElizaWy,Stephen Challener (Redshrike). OGA-BY 3.0. https://github.com/ElizaWy/LPC/tree/main/Characters/Head,https://opengameart.org/content/ulpc-expanded-expressions
+hair/pixie/adult/idle.png: JaidynReiman,Manuel Riecke (MrBeast). CC-BY-SA 3.0,GPL 3.0. https://opengameart.org/content/liberated-pixel-cup-lpc-base-assets-sprites-map-tiles,https://opengameart.org/content/lpc-expanded-hair
+eyes/eyebrows/thin/adult/idle.png: ElizaWy. OGA-BY 3.0. https://github.com/ElizaWy/LPC/tree/main/Characters/Hair,https://opengameart.org/content/lpc-expanded-sit-run-jump-more
+
+head/heads/human/male/idle.png: bluecarrot16,Benjamin K. Smith (BenCreating),Stephen Challener (Redshrike). OGA-BY 3.0,CC-BY-SA 3.0,GPL 3.0. https://opengameart.org/content/liberated-pixel-cup-lpc-base-assets-sprites-map-tiles,https://opengameart.org/content/lpc-character-bases
+head/faces/male/neutral/idle.png: JaidynReiman,ElizaWy,Stephen Challener (Redshrike). OGA-BY 3.0. https://github.com/ElizaWy/LPC/tree/main/Characters/Head,https://opengameart.org/content/ulpc-expanded-expressions
+hair/curly_short/adult/idle.png: ElizaWy. OGA-BY 3.0. https://opengameart.org/content/lpc-hair,https://opengameart.org/content/lpc-expanded-sit-run-jump-more
+eyes/eyebrows/thin/adult/idle.png: ElizaWy. OGA-BY 3.0. https://github.com/ElizaWy/LPC/tree/main/Characters/Hair,https://opengameart.org/content/lpc-expanded-sit-run-jump-more
+
+head/heads/human/male/idle.png: bluecarrot16,Benjamin K. Smith (BenCreating),Stephen Challener (Redshrike). OGA-BY 3.0,CC-BY-SA 3.0,GPL 3.0. https://opengameart.org/content/liberated-pixel-cup-lpc-base-assets-sprites-map-tiles,https://opengameart.org/content/lpc-character-bases
+head/faces/male/neutral/idle.png: JaidynReiman,ElizaWy,Stephen Challener (Redshrike). OGA-BY 3.0. https://github.com/ElizaWy/LPC/tree/main/Characters/Head,https://opengameart.org/content/ulpc-expanded-expressions
+hair/plain/adult/idle.png: JaidynReiman,Manuel Riecke (MrBeast),Joe White. OGA-BY 3.0,CC-BY-SA 3.0,GPL 3.0. https://opengameart.org/content/liberated-pixel-cup-lpc-base-assets-sprites-map-tiles,https://opengameart.org/content/ponytail-and-plain-hairstyles,https://opengameart.org/content/lpc-expanded-hair
+eyes/eyebrows/thin/adult/idle.png: ElizaWy. OGA-BY 3.0. https://github.com/ElizaWy/LPC/tree/main/Characters/Hair,https://opengameart.org/content/lpc-expanded-sit-run-jump-more
+
+head/heads/human/male/idle.png: bluecarrot16,Benjamin K. Smith (BenCreating),Stephen Challener (Redshrike). OGA-BY 3.0,CC-BY-SA 3.0,GPL 3.0. https://opengameart.org/content/liberated-pixel-cup-lpc-base-assets-sprites-map-tiles,https://opengameart.org/content/lpc-character-bases
+head/faces/male/neutral/idle.png: JaidynReiman,ElizaWy,Stephen Challener (Redshrike). OGA-BY 3.0. https://github.com/ElizaWy/LPC/tree/main/Characters/Head,https://opengameart.org/content/ulpc-expanded-expressions
+hair/messy1/adult/idle.png: JaidynReiman,Manuel Riecke (MrBeast). CC-BY-SA 3.0,GPL 3.0. https://opengameart.org/content/liberated-pixel-cup-lpc-base-assets-sprites-map-tiles,https://opengameart.org/content/lpc-expanded-hair
+eyes/eyebrows/thin/adult/idle.png: ElizaWy. OGA-BY 3.0. https://github.com/ElizaWy/LPC/tree/main/Characters/Hair,https://opengameart.org/content/lpc-expanded-sit-run-jump-more
+
+head/heads/human/male/idle.png: bluecarrot16,Benjamin K. Smith (BenCreating),Stephen Challener (Redshrike). OGA-BY 3.0,CC-BY-SA 3.0,GPL 3.0. https://opengameart.org/content/liberated-pixel-cup-lpc-base-assets-sprites-map-tiles,https://opengameart.org/content/lpc-character-bases
+head/faces/male/neutral/idle.png: JaidynReiman,ElizaWy,Stephen Challener (Redshrike). OGA-BY 3.0. https://github.com/ElizaWy/LPC/tree/main/Characters/Head,https://opengameart.org/content/ulpc-expanded-expressions
+hair/parted/adult/idle.png: JaidynReiman,Joe White,Manuel Riecke (MrBeast). CC-BY-SA 3.0,GPL 3.0. https://opengameart.org/content/liberated-pixel-cup-lpc-base-assets-sprites-map-tiles,https://github.com/jrconway3/Universal-LPC-spritesheet/commit/46ddcf05a0e43e7aa6ffd47d350eef0eb529ac24,https://opengameart.org/content/lpc-expanded-hair
+eyes/eyebrows/thin/adult/idle.png: ElizaWy. OGA-BY 3.0. https://github.com/ElizaWy/LPC/tree/main/Characters/Hair,https://opengameart.org/content/lpc-expanded-sit-run-jump-more
+
+head/heads/human/male/idle.png: bluecarrot16,Benjamin K. Smith (BenCreating),Stephen Challener (Redshrike). OGA-BY 3.0,CC-BY-SA 3.0,GPL 3.0. https://opengameart.org/content/liberated-pixel-cup-lpc-base-assets-sprites-map-tiles,https://opengameart.org/content/lpc-character-bases
+head/faces/male/neutral/idle.png: JaidynReiman,ElizaWy,Stephen Challener (Redshrike). OGA-BY 3.0. https://github.com/ElizaWy/LPC/tree/main/Characters/Head,https://opengameart.org/content/ulpc-expanded-expressions
+hair/bangs/adult/idle.png: JaidynReiman,Manuel Riecke (MrBeast). CC-BY-SA 3.0,GPL 3.0. https://opengameart.org/content/liberated-pixel-cup-lpc-base-assets-sprites-map-tiles,https://opengameart.org/content/lpc-expanded-hair
+eyes/eyebrows/thin/adult/idle.png: ElizaWy. OGA-BY 3.0. https://github.com/ElizaWy/LPC/tree/main/Characters/Hair,https://opengameart.org/content/lpc-expanded-sit-run-jump-more
+
+head/heads/human/female/idle.png: bluecarrot16,Benjamin K. Smith (BenCreating),Stephen Challener (Redshrike). OGA-BY 3.0,CC-BY-SA 3.0,GPL 3.0. https://opengameart.org/content/,https://opengameart.org/content/lpc-character-bases
+head/faces/female/neutral/idle.png: JaidynReiman,ElizaWy,Stephen Challener (Redshrike). OGA-BY 3.0. https://github.com/ElizaWy/LPC/tree/main/Characters/Head,https://opengameart.org/content/ulpc-expanded-expressions
+hair/bedhead/adult/idle.png: JaidynReiman,Manuel Riecke (MrBeast). CC-BY-SA 3.0,GPL 3.0. https://opengameart.org/content/liberated-pixel-cup-lpc-base-assets-sprites-map-tiles,https://opengameart.org/content/lpc-expanded-hair
+eyes/eyebrows/thin/adult/idle.png: ElizaWy. OGA-BY 3.0. https://github.com/ElizaWy/LPC/tree/main/Characters/Hair,https://opengameart.org/content/lpc-expanded-sit-run-jump-more
+
+head/heads/human/female/idle.png: bluecarrot16,Benjamin K. Smith (BenCreating),Stephen Challener (Redshrike). OGA-BY 3.0,CC-BY-SA 3.0,GPL 3.0. https://opengameart.org/content/,https://opengameart.org/content/lpc-character-bases
+head/faces/female/neutral/idle.png: JaidynReiman,ElizaWy,Stephen Challener (Redshrike). OGA-BY 3.0. https://github.com/ElizaWy/LPC/tree/main/Characters/Head,https://opengameart.org/content/ulpc-expanded-expressions
+hair/cowlick/adult/idle.png: ElizaWy,bluecarrot16. CC0. https://opengameart.org/content/lpc-hair,https://github.com/ElizaWy/LPC/blob/main/Characters/Hair,https://opengameart.org/content/lpc-expanded-sit-run-jump-more
+eyes/eyebrows/thin/adult/idle.png: ElizaWy. OGA-BY 3.0. https://github.com/ElizaWy/LPC/tree/main/Characters/Hair,https://opengameart.org/content/lpc-expanded-sit-run-jump-more
+
+head/heads/human/female/idle.png: bluecarrot16,Benjamin K. Smith (BenCreating),Stephen Challener (Redshrike). OGA-BY 3.0,CC-BY-SA 3.0,GPL 3.0. https://opengameart.org/content/,https://opengameart.org/content/lpc-character-bases
+head/faces/female/neutral/idle.png: JaidynReiman,ElizaWy,Stephen Challener (Redshrike). OGA-BY 3.0. https://github.com/ElizaWy/LPC/tree/main/Characters/Head,https://opengameart.org/content/ulpc-expanded-expressions
+hair/bob/adult/idle.png: ElizaWy,bluecarrot16. CC0. https://opengameart.org/content/lpc-hair,https://github.com/ElizaWy/LPC/blob/main/Characters/Hair,https://opengameart.org/content/lpc-expanded-sit-run-jump-more
+eyes/eyebrows/thin/adult/idle.png: ElizaWy. OGA-BY 3.0. https://github.com/ElizaWy/LPC/tree/main/Characters/Hair,https://opengameart.org/content/lpc-expanded-sit-run-jump-more
+
+head/heads/human/male/idle.png: bluecarrot16,Benjamin K. Smith (BenCreating),Stephen Challener (Redshrike). OGA-BY 3.0,CC-BY-SA 3.0,GPL 3.0. https://opengameart.org/content/liberated-pixel-cup-lpc-base-assets-sprites-map-tiles,https://opengameart.org/content/lpc-character-bases
+head/faces/male/neutral/idle.png: JaidynReiman,ElizaWy,Stephen Challener (Redshrike). OGA-BY 3.0. https://github.com/ElizaWy/LPC/tree/main/Characters/Head,https://opengameart.org/content/ulpc-expanded-expressions
+hair/pigtails/adult/idle.png: Radomir Dopieralski,bluecarrot16. CC-BY-SA 3.0,GPL 3.0. https://opengameart.org/content/one-more-lpc-alternate-character,https://opengameart.org/content/lpc-hair
+eyes/eyebrows/thin/adult/idle.png: ElizaWy. OGA-BY 3.0. https://github.com/ElizaWy/LPC/tree/main/Characters/Hair,https://opengameart.org/content/lpc-expanded-sit-run-jump-more
+
+head/heads/human/male/idle.png: bluecarrot16,Benjamin K. Smith (BenCreating),Stephen Challener (Redshrike). OGA-BY 3.0,CC-BY-SA 3.0,GPL 3.0. https://opengameart.org/content/liberated-pixel-cup-lpc-base-assets-sprites-map-tiles,https://opengameart.org/content/lpc-character-bases
+head/faces/male/neutral/idle.png: JaidynReiman,ElizaWy,Stephen Challener (Redshrike). OGA-BY 3.0. https://github.com/ElizaWy/LPC/tree/main/Characters/Head,https://opengameart.org/content/ulpc-expanded-expressions
+hair/natural/adult/idle.png: ElizaWy,bluecarrot16. CC0. https://opengameart.org/content/lpc-hair,https://github.com/ElizaWy/LPC/blob/main/Characters/Hair,https://opengameart.org/content/lpc-expanded-sit-run-jump-more
+eyes/eyebrows/thin/adult/idle.png: ElizaWy. OGA-BY 3.0. https://github.com/ElizaWy/LPC/tree/main/Characters/Hair,https://opengameart.org/content/lpc-expanded-sit-run-jump-more
+
+head/heads/human/male/idle.png: bluecarrot16,Benjamin K. Smith (BenCreating),Stephen Challener (Redshrike). OGA-BY 3.0,CC-BY-SA 3.0,GPL 3.0. https://opengameart.org/content/liberated-pixel-cup-lpc-base-assets-sprites-map-tiles,https://opengameart.org/content/lpc-character-bases
+head/faces/male/neutral/idle.png: JaidynReiman,ElizaWy,Stephen Challener (Redshrike). OGA-BY 3.0. https://github.com/ElizaWy/LPC/tree/main/Characters/Head,https://opengameart.org/content/ulpc-expanded-expressions
+head/ears/cat/adult/fg/idle.png: JaidynReiman. OGA-BY 3.0+,CC-BY 3.0+,GPL 3.0. https://opengameart.org/content/lpc-furry-ears-tails-for-rpg-sprites
+head/ears/cat/adult/bg/idle.png: JaidynReiman. OGA-BY 3.0+,CC-BY 3.0+,GPL 3.0. https://opengameart.org/content/lpc-furry-ears-tails-for-rpg-sprites
+hair/pixie/adult/idle.png: JaidynReiman,Manuel Riecke (MrBeast). CC-BY-SA 3.0,GPL 3.0. https://opengameart.org/content/liberated-pixel-cup-lpc-base-assets-sprites-map-tiles,https://opengameart.org/content/lpc-expanded-hair
+eyes/eyebrows/thin/adult/idle.png: ElizaWy. OGA-BY 3.0. https://github.com/ElizaWy/LPC/tree/main/Characters/Hair,https://opengameart.org/content/lpc-expanded-sit-run-jump-more
+
+head/heads/human/male/idle.png: bluecarrot16,Benjamin K. Smith (BenCreating),Stephen Challener (Redshrike). OGA-BY 3.0,CC-BY-SA 3.0,GPL 3.0. https://opengameart.org/content/liberated-pixel-cup-lpc-base-assets-sprites-map-tiles,https://opengameart.org/content/lpc-character-bases
+head/faces/male/neutral/idle.png: JaidynReiman,ElizaWy,Stephen Challener (Redshrike). OGA-BY 3.0. https://github.com/ElizaWy/LPC/tree/main/Characters/Head,https://opengameart.org/content/ulpc-expanded-expressions
+head/ears/cat/adult/fg/idle.png: JaidynReiman. OGA-BY 3.0+,CC-BY 3.0+,GPL 3.0. https://opengameart.org/content/lpc-furry-ears-tails-for-rpg-sprites
+head/ears/cat/adult/bg/idle.png: JaidynReiman. OGA-BY 3.0+,CC-BY 3.0+,GPL 3.0. https://opengameart.org/content/lpc-furry-ears-tails-for-rpg-sprites
+hair/curly_short/adult/idle.png: ElizaWy. OGA-BY 3.0. https://opengameart.org/content/lpc-hair,https://opengameart.org/content/lpc-expanded-sit-run-jump-more
+eyes/eyebrows/thin/adult/idle.png: ElizaWy. OGA-BY 3.0. https://github.com/ElizaWy/LPC/tree/main/Characters/Hair,https://opengameart.org/content/lpc-expanded-sit-run-jump-more
+
+head/heads/human/male/idle.png: bluecarrot16,Benjamin K. Smith (BenCreating),Stephen Challener (Redshrike). OGA-BY 3.0,CC-BY-SA 3.0,GPL 3.0. https://opengameart.org/content/liberated-pixel-cup-lpc-base-assets-sprites-map-tiles,https://opengameart.org/content/lpc-character-bases
+head/faces/male/neutral/idle.png: JaidynReiman,ElizaWy,Stephen Challener (Redshrike). OGA-BY 3.0. https://github.com/ElizaWy/LPC/tree/main/Characters/Head,https://opengameart.org/content/ulpc-expanded-expressions
+head/ears/cat/adult/fg/idle.png: JaidynReiman. OGA-BY 3.0+,CC-BY 3.0+,GPL 3.0. https://opengameart.org/content/lpc-furry-ears-tails-for-rpg-sprites
+head/ears/cat/adult/bg/idle.png: JaidynReiman. OGA-BY 3.0+,CC-BY 3.0+,GPL 3.0. https://opengameart.org/content/lpc-furry-ears-tails-for-rpg-sprites
+hair/plain/adult/idle.png: JaidynReiman,Manuel Riecke (MrBeast),Joe White. OGA-BY 3.0,CC-BY-SA 3.0,GPL 3.0. https://opengameart.org/content/liberated-pixel-cup-lpc-base-assets-sprites-map-tiles,https://opengameart.org/content/ponytail-and-plain-hairstyles,https://opengameart.org/content/lpc-expanded-hair
+eyes/eyebrows/thin/adult/idle.png: ElizaWy. OGA-BY 3.0. https://github.com/ElizaWy/LPC/tree/main/Characters/Hair,https://opengameart.org/content/lpc-expanded-sit-run-jump-more
+
+head/heads/human/male/idle.png: bluecarrot16,Benjamin K. Smith (BenCreating),Stephen Challener (Redshrike). OGA-BY 3.0,CC-BY-SA 3.0,GPL 3.0. https://opengameart.org/content/liberated-pixel-cup-lpc-base-assets-sprites-map-tiles,https://opengameart.org/content/lpc-character-bases
+head/faces/male/neutral/idle.png: JaidynReiman,ElizaWy,Stephen Challener (Redshrike). OGA-BY 3.0. https://github.com/ElizaWy/LPC/tree/main/Characters/Head,https://opengameart.org/content/ulpc-expanded-expressions
+head/ears/cat/adult/fg/idle.png: JaidynReiman. OGA-BY 3.0+,CC-BY 3.0+,GPL 3.0. https://opengameart.org/content/lpc-furry-ears-tails-for-rpg-sprites
+head/ears/cat/adult/bg/idle.png: JaidynReiman. OGA-BY 3.0+,CC-BY 3.0+,GPL 3.0. https://opengameart.org/content/lpc-furry-ears-tails-for-rpg-sprites
+hair/messy1/adult/idle.png: JaidynReiman,Manuel Riecke (MrBeast). CC-BY-SA 3.0,GPL 3.0. https://opengameart.org/content/liberated-pixel-cup-lpc-base-assets-sprites-map-tiles,https://opengameart.org/content/lpc-expanded-hair
+eyes/eyebrows/thin/adult/idle.png: ElizaWy. OGA-BY 3.0. https://github.com/ElizaWy/LPC/tree/main/Characters/Hair,https://opengameart.org/content/lpc-expanded-sit-run-jump-more
+
+head/heads/human/male/idle.png: bluecarrot16,Benjamin K. Smith (BenCreating),Stephen Challener (Redshrike). OGA-BY 3.0,CC-BY-SA 3.0,GPL 3.0. https://opengameart.org/content/liberated-pixel-cup-lpc-base-assets-sprites-map-tiles,https://opengameart.org/content/lpc-character-bases
+head/faces/male/neutral/idle.png: JaidynReiman,ElizaWy,Stephen Challener (Redshrike). OGA-BY 3.0. https://github.com/ElizaWy/LPC/tree/main/Characters/Head,https://opengameart.org/content/ulpc-expanded-expressions
+head/ears/cat/adult/fg/idle.png: JaidynReiman. OGA-BY 3.0+,CC-BY 3.0+,GPL 3.0. https://opengameart.org/content/lpc-furry-ears-tails-for-rpg-sprites
+head/ears/cat/adult/bg/idle.png: JaidynReiman. OGA-BY 3.0+,CC-BY 3.0+,GPL 3.0. https://opengameart.org/content/lpc-furry-ears-tails-for-rpg-sprites
+hair/parted/adult/idle.png: JaidynReiman,Joe White,Manuel Riecke (MrBeast). CC-BY-SA 3.0,GPL 3.0. https://opengameart.org/content/liberated-pixel-cup-lpc-base-assets-sprites-map-tiles,https://github.com/jrconway3/Universal-LPC-spritesheet/commit/46ddcf05a0e43e7aa6ffd47d350eef0eb529ac24,https://opengameart.org/content/lpc-expanded-hair
+eyes/eyebrows/thin/adult/idle.png: ElizaWy. OGA-BY 3.0. https://github.com/ElizaWy/LPC/tree/main/Characters/Hair,https://opengameart.org/content/lpc-expanded-sit-run-jump-more
+
+head/heads/human/male/idle.png: bluecarrot16,Benjamin K. Smith (BenCreating),Stephen Challener (Redshrike). OGA-BY 3.0,CC-BY-SA 3.0,GPL 3.0. https://opengameart.org/content/liberated-pixel-cup-lpc-base-assets-sprites-map-tiles,https://opengameart.org/content/lpc-character-bases
+head/faces/male/neutral/idle.png: JaidynReiman,ElizaWy,Stephen Challener (Redshrike). OGA-BY 3.0. https://github.com/ElizaWy/LPC/tree/main/Characters/Head,https://opengameart.org/content/ulpc-expanded-expressions
+head/ears/cat/adult/fg/idle.png: JaidynReiman. OGA-BY 3.0+,CC-BY 3.0+,GPL 3.0. https://opengameart.org/content/lpc-furry-ears-tails-for-rpg-sprites
+head/ears/cat/adult/bg/idle.png: JaidynReiman. OGA-BY 3.0+,CC-BY 3.0+,GPL 3.0. https://opengameart.org/content/lpc-furry-ears-tails-for-rpg-sprites
+hair/bangs/adult/idle.png: JaidynReiman,Manuel Riecke (MrBeast). CC-BY-SA 3.0,GPL 3.0. https://opengameart.org/content/liberated-pixel-cup-lpc-base-assets-sprites-map-tiles,https://opengameart.org/content/lpc-expanded-hair
+eyes/eyebrows/thin/adult/idle.png: ElizaWy. OGA-BY 3.0. https://github.com/ElizaWy/LPC/tree/main/Characters/Hair,https://opengameart.org/content/lpc-expanded-sit-run-jump-more

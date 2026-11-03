@@ -1,5 +1,5 @@
 import { T } from './tuning';
-import { CENTER, ESCAPE, GOAL, PITCH, attackDir, goalX, ownGoalX, slotPos } from './field';
+import { CENTER, ESCAPE, GOAL, MID, PITCH, SY, attackDir, goalX, ownGoalX, slotPos } from './field';
 import { emit } from './events';
 import { addBar, stepCinematic } from './specials';
 import { startPenalties } from './penalties';
@@ -17,7 +17,7 @@ export const movesIn = (m: Match): boolean => m.phase === 'play' || m.phase === 
 
 function resetPlayers(m: Match): void {
   for (const p of m.players) {
-    const s = slotPos(p.team, p.slot);
+    const s = slotPos(p.team, p.slot, m.form[p.team]);
     p.x = s.x; p.y = s.y; p.z = 0; p.vx = p.vy = p.vz = 0; p.state = 'idle'; p.act = null; p.dirX = attackDir(p.team); p.dirY = 0; p.facing = attackDir(p.team);
     p.shoot.down = false; p.pass.down = false; p.cd = { slide: 0, steal: 0, bump: 0 }; p.holdT = 0;
   }
@@ -72,12 +72,12 @@ function ballOut(m: Match, prevX: number, prevY: number): void {
   if (crossedX || (b.x < 0 || b.x > PITCH.w)) {
     const atRight = b.x > PITCH.w;
     const attacker: Team = atRight ? 0 : 1;
-    if (m.training && !atRight) { startRestart(m, 'goalkick', 0, 32, 80); return; }   // the cones never take a corner
+    if (m.training && !atRight) { startRestart(m, 'goalkick', 0, 32, MID); return; }   // the cones never take a corner
     if (lastTeam === attacker) {
       const defender = other(attacker);
-      startRestart(m, 'goalkick', defender, defender === 0 ? 32 : PITCH.w - 32, 80);
+      startRestart(m, 'goalkick', defender, defender === 0 ? 32 : PITCH.w - 32, MID);
     } else {
-      startRestart(m, 'corner', attacker, atRight ? PITCH.w - 4 : 4, b.y < 80 ? 4 : PITCH.d - 4);
+      startRestart(m, 'corner', attacker, atRight ? PITCH.w - 4 : 4, b.y < MID ? 4 : PITCH.d - 4);
     }
   } else {
     startRestart(m, 'throwin', m.training ? 0 : other(lastTeam), clamp(b.x, 8, PITCH.w - 8), b.y < 0 ? 0 : PITCH.d);
@@ -146,13 +146,13 @@ function doRestartKick(m: Match, r: Restart): void {
   } else if (r.kind === 'goalkick') {
     const c = choosePass(m, t, inp.mx, inp.my, T.lobMaxD);
     if (c) { m.lastPass = { from: t.id, to: c.id, t: m.t, team: t.team }; restartKick(m, t, c.x, c.y, true); }
-    else restartKick(m, t, b.x + dir * 200, clamp(m.rng.range(40, 120), 8, PITCH.d - 8), true);
+    else restartKick(m, t, b.x + dir * 200, clamp(m.rng.range(MID - 40 * SY, MID + 40 * SY), 8, PITCH.d - 8), true);
   } else if (r.kind === 'freekick') {
     takeFreeKick(m, r, t);
     t.input = { ...t.input, shoot: false, pass: false, shootPressed: false, passPressed: false };   // the press that took the kick must not also start a slide in the same step
   } else {
     const gx = goalX(r.team);
-    restartKick(m, t, gx - dir * T.cornerBox, 80 + m.rng.range(-14, 14), true);
+    restartKick(m, t, gx - dir * T.cornerBox, MID + m.rng.range(-21, 21), true);
   }
   r.kicked = true; m.restart = null; m.phase = 'play'; m.phaseT = 0;
 }

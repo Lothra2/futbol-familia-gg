@@ -1,5 +1,5 @@
 import { DIFFICULTY, T } from '../tuning';
-import { ownGoalX } from '../field';
+import { GOAL, MID, ownGoalX } from '../field';
 import { choosePass, restartKick, setTouch, startDive } from '../actions';
 import { emit } from '../events';
 import { addBar } from '../specials';
@@ -55,7 +55,9 @@ function catchBall(m: Match, p: Player): void {
 function punchBall(m: Match, p: Player, inward: 1 | -1): void {
   const b = m.ball;
   b.state = 'free'; b.owner = null;
-  b.vx = inward * T.gk.punch.vx; b.vy = m.rng.range(-T.gk.punch.vy, T.gk.punch.vy); b.vz = T.gk.punch.vz; b.spin = 0;
+  if (m.rng.chance(T.gk.tipOver)) { b.vx = -inward * 90; b.vy = m.rng.range(-60, 60); b.vz = 300; }   // tipped over the bar: a corner, like the keepers of Nintendo World Cup
+  else { b.vx = inward * T.gk.punch.vx; b.vy = m.rng.range(-T.gk.punch.vy, T.gk.punch.vy); b.vz = T.gk.punch.vz; }
+  b.spin = 0;
   p.noControlT = 0.3; setTouch(m, p);
   p.stats2.saves++; m.stats.saves[p.team]++;
   if (p.team === 0) addBar(m, 0, T.bar.save);
@@ -69,7 +71,7 @@ export function throwFromKeeper(m: Match, p: Player, to: Player | null): void {
   if (to) { tx = to.x + to.vx * 0.3; ty = to.y + to.vy * 0.3; id = to.id; }
   else {
     const c = choosePass(m, p, 0, 0, 200);
-    if (c) { tx = c.x; ty = c.y; id = c.id; } else { tx = p.x + inward * 220; ty = 80 + m.rng.range(-30, 30); }
+    if (c) { tx = c.x; ty = c.y; id = c.id; } else { tx = p.x + inward * 220; ty = MID + m.rng.range(-120, 120); }
   }
   p.immuneT = 0; p.state = 'idle'; p.ai.armedAt = 0; p.holdT = 0;
   if (id >= 0) m.lastPass = { from: p.id, to: id, t: m.t, team: p.team };
@@ -106,22 +108,22 @@ export function keeperThink(m: Match, p: Player): InputFrame {
 
   const fast = b.state === 'free' && Math.hypot(b.vx, b.vy) > 100 && b.vx * inward < 0;
   const cr = fast ? crossing(m, x0, inward) : null;
-  const shot = !!cr && cr.y > 44 && cr.y < 116 && cr.t < 1.2 && cr.z < 40;
+  const shot = !!cr && cr.y > GOAL.y0 - 18 && cr.y < GOAL.y1 + 18 && cr.t < 1.2 && cr.z < 40;
   if (shot) {
     if (!A.threat) { A.threat = true; A.rolled = false; A.armedAtThreat = m.t; A.diveT = p.y; m.data.threats = ((m.data.threats as number) ?? 0) + 1; }
-    const ty = clamp(cr!.y, 52, 108);
+    const ty = clamp(cr!.y, GOAL.y0 - 6, GOAL.y1 + 6);
     if (m.t - A.armedAtThreat >= K.reaction + (incoming(m, p)?.first ? T.chance.firstReact : 0)) {
       const dy = ty - p.y;
-      if (Math.abs(dy) > 10 && cr!.t < 0.7) { startDive(m, p, ty); return f; }
+      if (Math.abs(dy) > 14 && cr!.t < 0.7) { startDive(m, p, ty); return f; }
       if (Math.abs(dy) > 2) f.my = Math.sign(dy);
     }
     tryRoll(m, p, K, inward);
     return f;
   }
   A.threat = false;
-  const looseNear = b.state === 'free' && b.z < 16 && Math.hypot(b.vx, b.vy) < T.gk.looseV && Math.abs(b.x - x0) < T.gk.area && Math.abs(b.y - 80) < 56 && p.noControlT <= 0;
+  const looseNear = b.state === 'free' && b.z < 16 && Math.hypot(b.vx, b.vy) < T.gk.looseV && Math.abs(b.x - x0) < T.gk.area && Math.abs(b.y - MID) < 84 && p.noControlT <= 0;
   if (looseNear) { go(b.x, b.y); return f; }
   const out = clamp(Math.abs(b.x - x0) * T.gk.out, T.gk.outMin, T.gk.outMax);
-  go(x0 + inward * out, clamp(80 + (b.y - 80) * 0.5, 60, 100));
+  go(x0 + inward * out, clamp(MID + (b.y - MID) * 0.35, MID - 30, MID + 30));
   return f;
 }

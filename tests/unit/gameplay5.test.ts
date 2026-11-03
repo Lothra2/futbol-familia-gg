@@ -40,7 +40,7 @@ describe('mejora 5: cada reino juega distinto', () => {
     expect(r3).toBeCloseTo(r0 - ARC.react[3], 5); expect(r3).toBeGreaterThanOrEqual(0.08);
   });
   it('con controles fáciles los estilos se sienten a la mitad', () => {
-    const m = createMatch({ ai: 'none', skipKickoff: true, seed: 1, away: 'buho', humans: [{ team: 0, slot: 3, humanSlot: 0, controls: 'easy' }] });
+    const m = createMatch({ ai: 'none', skipKickoff: true, seed: 1, away: 'buho', humans: [{ team: 0, slot: 4, humanSlot: 0, controls: 'easy' }] });
     const easy = aiParams(m, rival(m, 3)), full = aiParams(mk('buho'), rival(mk('buho'), 3));
     expect(easy.passBias - 1).toBeCloseTo((full.passBias - 1) / 2, 5);
   });

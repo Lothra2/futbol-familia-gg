@@ -1,8 +1,8 @@
 import { Rng } from './rng';
-import { ARC, DIFFICULTY, MATES, STYLE, T } from './tuning';
+import { ARC, DIFFICULTY, MATES, STYLE, T, WEATHER } from './tuning';
 import { DT } from './step';
 import { newBall, stepBall } from './ball';
-import { slotPos, attackDir, ESCAPE } from './field';
+import { slotPos, attackDir, ESCAPE, type FormationId } from './field';
 import { roster, type FieldChar, type TeamKind } from './teams';
 import { emptyInput } from './types';
 import { emit, drainEvents } from './events';
@@ -15,14 +15,18 @@ import { applyRubber } from './ai/difficulty';
 import { updateControl } from './control';
 import { stepFlight, trySpecials, updateBar } from './specials';
 import { stepPenalties } from './penalties';
-import type { ControlMode, DifficultyId, Match, Player, Team } from './state';
+import type { ControlMode, DifficultyId, Match, Player, Strategy, Team, Weather } from './state';
 
 export interface HumanSeat { team: Team; slot: number; humanSlot: number; controls: ControlMode }
 export interface MatchOptions {
   seed?: number; halfLength?: number; home?: TeamKind; away?: TeamKind; humans?: HumanSeat[];
   ai?: 'dumb' | 'none' | 'brain'; difficulty?: DifficultyId; firstKick?: Team; cine?: 'full' | 'short' | 'off';
-  /** The four family field players (Thor is always the keeper). Default Papá, Mamá, Sophie and Alana. */
+  /** The order of the five family field players in the formation (Thor is always the keeper). */
   squad?: FieldChar[];
+  /** The formation of each team (Nintendo World Cup): 2-1-2, 1-2-2 or 2-2-1. */
+  formation?: [FormationId, FormationId];
+  /** The Waiting Room: the weather and how the AI mates of the family play. */
+  weather?: Weather; strategy?: Strategy;
   /** The Cup: a tie at the end goes to a golden goal (60 s) and then to penalties. */
   knockout?: boolean;
   /** Practice with Thor: no clock, the rival field players stand still like cones, the special is always ready (src/app/training.ts has the challenges). */
@@ -34,13 +38,13 @@ export interface MatchOptions {
 }
 
 function makePlayer(m: Match, team: Team, seat: ReturnType<typeof roster>[number], human: HumanSeat | undefined): Player {
-  const pos = slotPos(team, seat.slot);
+  const pos = slotPos(team, seat.slot, m.form[team]);
   const control = human ? 'human' : 'ai';
   const diff = DIFFICULTY[m.difficulty];
   // the speed of a rival: the difficulty, the style of his kingdom and the date of the Cup
   const rivalSpeed = diff.speed * (seat.species ? STYLE[seat.species].speed : 1) * (ARC.speed[Math.max(0, Math.min(3, (m.data.arc as number) ?? 0))] ?? 1);
   return {
-    id: m.nextId++, team, slot: seat.slot, role: seat.role, stats: seat.stats, charId: seat.charId, species: seat.species, name: seat.stats.name,
+    id: m.nextId++, team, slot: seat.slot, role: seat.role, stats: seat.stats, charId: seat.charId, species: seat.species, name: seat.stats.name, art: seat.art,
     control, humanSlot: human ? human.humanSlot : null, controls: human ? human.controls : 'full',
     x: pos.x, y: pos.y, z: 0, vx: 0, vy: 0, vz: 0, facing: attackDir(team), dirX: attackDir(team), dirY: 0,
     state: 'idle', stateT: 0, act: null, input: emptyInput(), stamina: T.staminaMax, sprintLock: false, noSprintT: 0,
@@ -58,13 +62,16 @@ export function createMatch(o: MatchOptions = {}): Match {
     score: [0, 0], firstKick: o.firstKick ?? 0, restart: null, players: [], ball: newBall(), events: [], nextId: 1,
     ai: o.ai ?? 'brain', difficulty: o.difficulty ?? 'normales', lastPass: null, lastGoal: null,
     humans: [], hin: [null, null], bar: [0, 0], special: null, flight: null, knockout: o.knockout ?? false, training: o.training ?? false, golden: false, pen: null, penWinner: null, cine: o.cine ?? 'full', specialsUsed: [0, 0],
-    stats: { goals: [0, 0], shots: [0, 0], saves: [0, 0], specials: [0, 0] }, data: { arc: Math.max(0, Math.min(3, o.arc ?? 0)) },
+    stats: { goals: [0, 0], shots: [0, 0], saves: [0, 0], specials: [0, 0] }, form: o.formation ?? ['2-1-2', '2-1-2'], weather: o.weather ?? 'sol', strat: o.strategy ?? { atk: 'mixto', def: 'mixto' }, data: { arc: Math.max(0, Math.min(3, o.arc ?? 0)) },
   };
   for (const [team, kind] of [[0, o.home ?? 'family'], [1, o.away ?? 'dragon']] as [Team, TeamKind][]) {
-    for (const seat of roster(kind, o.squad)) m.players.push(makePlayer(m, team, seat, o.humans?.find((h) => h.team === team && h.slot === seat.slot)));
+    for (const seat of roster(kind, o.squad, m.form[team])) m.players.push(makePlayer(m, team, seat, o.humans?.find((h) => h.team === team && h.slot === seat.slot)));
   }
   for (const h of o.humans ?? []) { const pl = m.players.find((q) => q.team === h.team && q.slot === h.slot)!; m.humans.push({ slot: h.humanSlot, team: h.team, id: pl.id, since: 0, controls: h.controls }); }
   for (const p of m.players) p.ai.nextThink = m.rng.range(0, 0.1);
+  // the weather lives on the ball: rain makes it roll less, wind pushes it while it flies (its side is drawn once per match)
+  if (m.weather === 'lluvia') m.ball.wet = WEATHER.rainRoll;
+  if (m.weather === 'viento') m.ball.wind = WEATHER.wind * (m.rng.chance(0.5) ? 1 : -1);
   setupKickoff(m, m.firstKick);
   if (o.training) { placeCones(m); m.halfLength = 1e9; }
   if (o.skipKickoff || o.training) { m.restart = null; m.phase = 'play'; m.ball.state = 'free'; m.events = []; }
@@ -78,7 +85,7 @@ function separate(m: Match, dt: number): void {
     const a = m.players[i], b = m.players[j];
     if (Math.abs(a.z - b.z) > 14) continue;
     const dx = b.x - a.x, dy = b.y - a.y;
-    if (Math.abs(dx) < 8 && Math.abs(dy) < 3) { const s = (dy >= 0 ? 1 : -1) * 40 * dt; b.y += s; a.y -= s; }
+    if (Math.abs(dx) < 8 && Math.abs(dy) < 6) { const s = (dy >= 0 ? 1 : -1) * 40 * dt; b.y += s; a.y -= s; }
   }
 }
 

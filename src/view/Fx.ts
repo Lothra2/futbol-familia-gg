@@ -1,6 +1,8 @@
 import Phaser from 'phaser';
 import type { MatchEvent } from '../core/types';
 import { KIND_INDEX } from '../core/specials';
+import { sx, sy } from '../core/proj';
+import { MID } from '../core/field';
 
 interface P { img: Phaser.GameObjects.Image; vx: number; vy: number; g: number; life: number; max: number; spin: number }
 const MAX = 80;
@@ -28,14 +30,14 @@ export class Fx {
     for (let i = 0; i < n; i++) this.spawn('dust', x + (Math.random() - 0.5) * 4, y - 1, vx * (0.6 + Math.random() * 0.6), -8 - Math.random() * 10, 14, 0.28, undefined, 198);
   }
 
-  /** `top` is the screen y of world y = 0. */
-  event(e: MatchEvent, top: number, rnd: () => number, gold = false): void {
-    const x = e.x, y = top + e.y - e.z;
+  /** Effects of the events of the core, placed with the projection of the pitch (core/proj.ts). */
+  event(e: MatchEvent, rnd: () => number, gold = false): void {
+    const x = sx(e.x), y = sy(e.y, e.z), gy = sy(e.y);
     switch (e.k) {
-      case 'slide': case 'bump': for (let i = 0; i < 4; i++) this.spawn('dust', x + (rnd() - 0.5) * 8, top + e.y - 2, (rnd() - 0.5) * 40, -10 - rnd() * 20, 20, 0.35); break;
-      case 'bounce': if ((e.v ?? 0) > 120) this.spawn('dust', x, top + e.y - 1, 0, -8, 10, 0.25); break;
+      case 'slide': case 'bump': for (let i = 0; i < 4; i++) this.spawn('dust', x + (rnd() - 0.5) * 8, gy - 2, (rnd() - 0.5) * 40, -10 - rnd() * 20, 20, 0.35); break;
+      case 'bounce': if ((e.v ?? 0) > 120) this.spawn('dust', x, gy - 1, 0, -8, 10, 0.25); break;
       case 'post': case 'bar': for (let i = 0; i < 4; i++) this.spawn('spark', x, y, (rnd() - 0.5) * 120, -40 - rnd() * 40, 160, 0.3); break;
-      case 'zas': for (let i = 0; i < 8; i++) { const a = (i / 8) * Math.PI * 2; this.spawn('dust', x, top + e.y - 4, Math.cos(a) * 50, Math.sin(a) * 30, 0, 0.35); } break;
+      case 'zas': for (let i = 0; i < 8; i++) { const a = (i / 8) * Math.PI * 2; this.spawn('dust', x, gy - 4, Math.cos(a) * 50, Math.sin(a) * 30, 0, 0.35); } break;
       case 'kick': {
         const v = e.v ?? 0;
         if (v > 420) for (let i = 0; i < 3; i++) this.spawn('spark', x, y, (rnd() - 0.5) * 60, -20 - rnd() * 20, 100, 0.2);
@@ -44,8 +46,8 @@ export class Fx {
       }
       case 'pass': this.spawn('ring', x, y, 0, 0, 0, 0.16, 0xbff3ff, 610); break;
       case 'goal': {
-        const gx = e.x < 480 ? -4 : 964;
-        for (let i = 0; i < 46; i++) this.spawn('confetti', gx + (rnd() - 0.5) * 120, top - 30 - rnd() * 50, (rnd() - 0.5) * 70, 10 + rnd() * 50, 90, 2.6 + rnd(), CONF[i % CONF.length], 900);
+        const gx = sx(e.x < 480 ? -4 : 964);
+        for (let i = 0; i < 46; i++) this.spawn('confetti', gx + (rnd() - 0.5) * 120, sy(MID) - 90 - rnd() * 50, (rnd() - 0.5) * 70, 10 + rnd() * 50, 90, 2.6 + rnd(), CONF[i % CONF.length], 900);
         break;
       }
       case 'trail': {

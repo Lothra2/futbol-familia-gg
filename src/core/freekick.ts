@@ -1,5 +1,5 @@
 import { T } from './tuning';
-import { GOAL, PITCH, attackDir, goalX } from './field';
+import { GOAL, MID, PITCH, attackDir, goalX } from './field';
 import { emit } from './events';
 import { placeCones } from './rules';
 import { curveDrift, freeKickShot } from './actions';
@@ -84,7 +84,7 @@ export function takeFreeKick(m: Match, r: Restart, t: Player): void {
     err = T.free.err * (timing === 1 ? 0.5 : timing === 0.5 ? 1 : 2.2); q = T.free.q[timing * 2];
     if (easy) curve = Math.min(curve, 0.7);
   } else {
-    aimY = PITCH.d / 2 + sgn(m.rng.range(-1, 1)) * m.rng.range(10, 20); curve = m.rng.range(0.35, 0.9);
+    aimY = PITCH.d / 2 + sgn(m.rng.range(-1, 1)) * m.rng.range(15, 30); curve = m.rng.range(0.35, 0.9);
     const roll = m.rng.range(0, 1);
     timing = roll < T.free.aiBad ? 0 : roll < T.free.aiBad + T.free.aiSweet ? 1 : 0.5;
     err = Math.max(T.free.aiErrMin, t.aiErr * T.free.aiErrK); q = T.free.q[timing * 2] * T.free.aiQ;
@@ -100,6 +100,6 @@ export function takeFreeKick(m: Match, r: Restart, t: Player): void {
 export function startTrainingFreeKick(m: Match): void {
   placeCones(m);
   const n = ((m.data.fkTries as number) ?? 0); m.data.fkTries = n + 1;
-  const ys = [80, 50, 110, 38, 122];
+  const ys = [MID, MID - 90, MID + 90, MID - 126, MID + 126];
   startFreeKick(m, 0, PITCH.w - 190, ys[n % ys.length], -1);
 }

@@ -1,3 +1,8 @@
+import { PITCH, MID, SY, GY } from '../../src/core/field';
+const PITCH_D = PITCH.d;
+/** The y of the old 160-deep side-view pitch on the new deep one: Y for places on the field, A for places across the goal mouth. */
+export const Y = (old: number): number => MID + (old - 80) * SY;
+export const A = (old: number): number => MID + (old - 80) * GY;
 import { createMatch, step, type MatchOptions } from '../../src/core/match';
 import { DT } from '../../src/core/step';
 import { emptyInput, type CharId, type InputFrame } from '../../src/core/types';
@@ -21,7 +26,7 @@ export const ball = (m: Match, x: number, y: number, z = 0, vx = 0, vy = 0, vz =
 export const give = (m: Match, p: Player): void => { m.ball.state = 'owned'; m.ball.owner = p.id; m.ball.inNet = false; m.ball.scored = null; p.immuneT = 0; m.ball.x = p.x + 8; m.ball.y = p.y; m.ball.z = 0; };
 /** Everybody far from the middle of the pitch, so nobody touches a test ball. */
 export function clear(m: Match, except: Player[] = []): void {
-  m.players.forEach((p, i) => { if (!except.includes(p)) put(p, 780 + i * 20, 170); });
+  m.players.forEach((p, i) => { if (!except.includes(p)) put(p, 780 + i * 20, PITCH_D + 10); });
 }
 /** Steps until the next kick or pass event and returns the velocity of the ball in that same step. */
 export function untilKick(m: Match, max = 60): { vx: number; vy: number; vz: number; v: number } | null {

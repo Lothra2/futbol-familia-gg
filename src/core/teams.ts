@@ -1,44 +1,50 @@
 import { FAMILY, FIELD_RIVAL, KEEPERS, STYLE } from './tuning';
 import type { CharId, Species } from './types';
+import { slotRole, type FormationId } from './field';
 import type { PStats, Role } from './state';
 
 export type TeamKind = 'family' | Species;
-export interface Seat { slot: number; role: Role; stats: PStats; charId?: CharId; species?: Species }
+export interface Seat { slot: number; role: Role; stats: PStats; charId?: CharId; species?: Species; art: string }
 
 export const SPECIES_NAME: Record<Species, string> = { dragon: 'Dragoncitos del Volcán', tiburon: 'Tiburoncitos del Arrecife', buho: 'Búhos de las Nubes', mapache: 'Mapachitos del Bosque' };
-const SPECIES_SINGLE: Record<Species, string> = { dragon: 'Dragoncito', tiburon: 'Tiburoncito', buho: 'Búho', mapache: 'Mapachito' };
+/** The six kids of every rival team (the keeper first), the same names as tools/nwc/nwc_gen.ts. */
+export const RIVAL_NAMES: Record<Species, string[]> = {
+  dragon: ['Chispa', 'Brasa', 'Lava', 'Fogón', 'Ceniza', 'Volcán'],
+  tiburon: ['Ola', 'Coral', 'Marea', 'Aleta', 'Arrecife', 'Tiburón'],
+  buho: ['Pluma', 'Luna', 'Roble', 'Sabio', 'Noche', 'Búho'],
+  mapache: ['Pillo', 'Bandido', 'Mancha', 'Cola', 'Nube', 'Mapache'],
+};
 
-/** The five seats of a team. Slot 0 keeper, 1 and 2 defenders, 3 and 4 forwards (FORMATION in field.ts). */
-export function roster(kind: TeamKind, squad: readonly FieldChar[] = DEFAULT_SQUAD): Seat[] {
+/** The six seats of a team (Nintendo World Cup): slot 0 keeper and five in the field, placed by the formation. */
+export function roster(kind: TeamKind, squad: readonly FieldChar[] = DEFAULT_SQUAD, form: FormationId = '2-1-2'): Seat[] {
   if (kind === 'family') {
-    const field = (c: FieldChar, slot: number, role: Role): Seat => {
-      const f = FAMILY[c];
-      return { slot, role, charId: c, stats: { name: f.name, run: f.run, sprint: f.sprint, stamina: f.stamina, power: f.power, passAcc: f.passAcc, control: f.control, resist: f.resist, stolen: f.stolen } };
-    };
-    const seats = squadSeats(squad);
-    const four = (Object.keys(seats) as FieldChar[]).sort((a, b) => seats[a]! - seats[b]!);
+    const order = lineup(squad);
     return [
-      { slot: 0, role: 'gk', charId: 'thor', stats: { name: 'Thor', ...FIELD_RIVAL, keeper: { ...KEEPERS.thor } } },
-      ...four.map((c) => field(c, seats[c]!, seats[c]! <= 2 ? 'def' : 'fwd')),
+      { slot: 0, role: 'gk', charId: 'thor', art: 'thor', stats: { name: 'Thor', ...FIELD_RIVAL, keeper: { ...KEEPERS.thor } } },
+      ...order.map((c, i): Seat => {
+        const f = FAMILY[c];
+        return { slot: i + 1, role: slotRole(i + 1, form), charId: c, art: c, stats: { name: f.name, run: f.run, sprint: f.sprint, stamina: f.stamina, power: f.power, passAcc: f.passAcc, control: f.control, resist: f.resist, stolen: f.stolen } };
+      }),
     ];
   }
-  const n = SPECIES_SINGLE[kind];
-  return [0, 1, 2, 3, 4].map((slot): Seat => ({
-    slot, role: slot === 0 ? 'gk' : slot < 3 ? 'def' : 'fwd', species: kind,
-    stats: { name: slot === 0 ? `${n} portero` : n, ...FIELD_RIVAL, ...(slot === 0 ? { keeper: { ...KEEPERS[kind] } } : { steal: STYLE[kind].steal, resist: FIELD_RIVAL.resist * STYLE[kind].resist }) },
+  return [0, 1, 2, 3, 4, 5].map((slot): Seat => ({
+    slot, role: slotRole(slot, form), species: kind, art: slot === 0 ? `riv_${kind}_gk` : `riv_${kind}_${slot}`,
+    stats: { name: RIVAL_NAMES[kind][slot], ...FIELD_RIVAL, ...(slot === 0 ? { keeper: { ...KEEPERS[kind] } } : { steal: STYLE[kind].steal, resist: FIELD_RIVAL.resist * STYLE[kind].resist }) },
   }));
 }
 
-/** Who starts in the field. Thor is always the keeper. The five field characters share four seats: one rests (menu "Descansa"). */
+/** The five of the family all play: the order is the slots 1 to 5 of the formation (defenders first, then the middle, then the forwards). */
 export const FIELD_CHARS = ['papa', 'mama', 'sophie', 'alana', 'juandi'] as const;
 export type FieldChar = typeof FIELD_CHARS[number];
-export const DEFAULT_SQUAD: FieldChar[] = ['papa', 'mama', 'sophie', 'alana'];
-/** Slots 1 and 2 are the defenders and 3 and 4 the forwards (FORMATION). The order below decides who defends. With the default squad it is
- *  Papá and Mamá at the back and Sophie and Alana in front, as always. */
-const DEFEND_FIRST: FieldChar[] = ['papa', 'mama', 'juandi', 'sophie', 'alana'];
+export const DEFAULT_SQUAD: FieldChar[] = ['papa', 'mama', 'juandi', 'sophie', 'alana'];
+/** The slot order of the five: the ones in `squad` first (in that order), then the rest, so all five always play. */
+export function lineup(squad: readonly FieldChar[]): FieldChar[] {
+  const out = squad.filter((c, i) => FIELD_CHARS.includes(c) && squad.indexOf(c) === i);
+  for (const c of DEFAULT_SQUAD) if (!out.includes(c)) out.push(c);
+  return out.slice(0, 5);
+}
 export function squadSeats(squad: readonly FieldChar[]): Partial<Record<FieldChar, number>> {
-  const four = DEFEND_FIRST.filter((c) => squad.includes(c)).slice(0, 4);
   const out: Partial<Record<FieldChar, number>> = {};
-  four.forEach((c, i) => { out[c] = i + 1; });
+  lineup(squad).forEach((c, i) => { out[c] = i + 1; });
   return out;
 }

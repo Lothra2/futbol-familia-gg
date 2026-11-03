@@ -1,3 +1,4 @@
+import { MID } from '../../src/core/field';
 import { describe, expect, it } from 'vitest';
 import { createMatch, step } from '../../src/core/match';
 import { setHumanInput } from '../../src/core/control';
@@ -7,9 +8,9 @@ import { clear, fam, give, inp, put, rival } from './helpers';
 import type { Match } from '../../src/core/state';
 
 const mkH = (controls: 'full' | 'easy', seed = 1, cine: 'full' | 'short' | 'off' = 'full'): Match => {
-  const m = createMatch({ ai: 'none', skipKickoff: true, seed, cine, humans: [{ team: 0, slot: 3, humanSlot: 0, controls }] });
+  const m = createMatch({ ai: 'none', skipKickoff: true, seed, cine, humans: [{ team: 0, slot: 4, humanSlot: 0, controls }] });
   for (const p of m.players) p.speedMult = 1; clear(m);
-  const s = fam(m, 'sophie'); put(s, 700, 80); give(m, s); m.bar[0] = 100; step(m);
+  const s = fam(m, 'sophie'); put(s, 700, MID); give(m, s); m.bar[0] = 100; step(m);
   return m;
 };
 /** Runs the cinematic; `press` is the time of the press of Tiro (null = never). Returns the state of the ring and the outcome at the end. */
@@ -45,14 +46,14 @@ describe('mejora 4: el anillo ¡AHORA!', () => {
     const m = mkH('full', 1, 'off'); launchSpecial(m, fam(m, 'sophie'));
     expect(m.special!.ring).toBeUndefined();
     const a = createMatch({ ai: 'none', skipKickoff: true, seed: 1 }); for (const p of a.players) p.speedMult = 1; clear(a);
-    const s = fam(a, 'sophie'); put(s, 700, 80); give(a, s); a.bar[0] = 100; step(a);
+    const s = fam(a, 'sophie'); put(s, 700, MID); give(a, s); a.bar[0] = 100; step(a);
     launchSpecial(a, s);
     expect(a.special!.ring).toBeUndefined();
   });
   it('defendiendo contra un especial de la IA hay anillo sobre Thor, y no resta nada si no aprietas', () => {
-    const m = createMatch({ ai: 'none', skipKickoff: true, seed: 1, firstKick: 1, humans: [{ team: 0, slot: 3, humanSlot: 0, controls: 'full' }] });
+    const m = createMatch({ ai: 'none', skipKickoff: true, seed: 1, firstKick: 1, humans: [{ team: 0, slot: 4, humanSlot: 0, controls: 'full' }] });
     for (const p of m.players) p.speedMult = 1; clear(m);
-    const r = rival(m, 3); put(r, 300, 80); give(m, r); m.bar[1] = 100; step(m);
+    const r = rival(m, 3); put(r, 300, MID); give(m, r); m.bar[1] = 100; step(m);
     launchSpecial(m, r);
     const rg = m.special!.ring!;
     expect(rg.who).toBe('def'); expect(rg.p).toBeCloseTo(specialChance(m, r, r), 5);   // the base of the AI is not reduced
