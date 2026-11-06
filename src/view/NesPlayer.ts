@@ -87,12 +87,15 @@ export class NesPlayer {
   private dir = 0;
   private lastFrame = -1;
   private isThor: boolean;
+  /** How tall the drawing is over the feet: 30 px in the sheets drawn in code, about 42 in the ones from pixel art. */
+  private tall: number;
   gold = false; private goldT = 0; private flashT = 0;
   /** A direction the scene imposes (the penalty shootout: the shooter from behind, the keeper facing us). */
   forceDir: number | null = null;
 
   constructor(private scene: Phaser.Scene, public p: Player, private key: string, private meta: NesMeta, private fx?: Fx) {
     this.isThor = p.art === 'thor';
+    this.tall = meta.cell[1] >= 48 ? 42 : 30;
     this.shadow = scene.add.image(0, 0, 'shadow').setOrigin(0.5, 0.5);
     this.sprite = scene.add.sprite(0, 0, key, 0).setOrigin(meta.pivot[0] / meta.cell[0], meta.pivot[1] / meta.cell[1]);
     this.mark = scene.add.image(0, 0, 'mark_1').setOrigin(0.5, 1).setVisible(false);
@@ -147,12 +150,12 @@ export class NesPlayer {
     this.shadow.setPosition(x, gy).setScale(k * 1.15, 1).setDepth(depthAt(p.y) - 0.5);
     const mine = humanSlot !== null;
     this.mark.setVisible(mine);
-    if (mine) this.mark.setTexture(`mark_${humanSlot + 1}`).setPosition(x, y - 33).setTint(jColor).setDepth(1000 + p.y);
+    if (mine) this.mark.setTexture(`mark_${humanSlot + 1}`).setPosition(x, y - this.tall - 3).setTint(jColor).setDepth(1000 + p.y);
     this.bar.clear();
     // the cartoon stars of Nekketsu over the head of a player who is out cold (K.O.) or dizzy after a slide
     const ko = p.state === 'tumble' && (p.act?.dur ?? 0) >= T.hit.ko * 0.9 && (p.act?.t ?? 0) > TUMBLE_T;
     if (ko || p.state === 'dizzy') {
-      const hx = ko ? x + (mirrored ? -9 : 9) : x, hy = ko ? y - 12 : y - 32, a0 = (m?.t ?? 0) * 6;
+      const hx = ko ? x + (mirrored ? -9 : 9) : x, hy = ko ? y - Math.round(this.tall * 0.4) : y - this.tall - 2, a0 = (m?.t ?? 0) * 6;
       for (let i = 0; i < 3; i++) {
         const a = a0 + (i * Math.PI * 2) / 3, sx = Math.round(hx + Math.cos(a) * 7), sy2 = Math.round(hy + Math.sin(a) * 2.5);
         this.bar.fillStyle(i === 1 ? 0xffffff : 0xffe45c).fillRect(sx - 1, sy2, 3, 1).fillRect(sx, sy2 - 1, 1, 3);

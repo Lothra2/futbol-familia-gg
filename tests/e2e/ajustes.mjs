@@ -39,7 +39,7 @@ const later = (page, sec) => page.evaluate(async (sec) => { const m = window.__f
   ok('al volver al menú la configuración ya no es de práctica', !cfg.training, JSON.stringify(cfg));
   await page.click('#s-main [data-act=quick]'); await page.waitForSelector('#s-quick');
   await page.click('#s-quick .go');
-  await page.waitForSelector('#coach', { timeout: 5000 }).then(() => page.click('#cskip')).catch(() => {});   // the tour of the first match
+  await page.waitForSelector('#coach', { timeout: 10000 }).then(() => page.click('#cskip')).catch(() => {});   // the tour of the first match (after the VS screen of about 4 s)
   await page.waitForFunction(() => window.__futbol.match?.phase === 'play' || window.__futbol.match?.phase === 'kickoff', null, { timeout: 15000 });
   const m0 = await page.evaluate(() => ({ training: window.__futbol.match.training, pos: window.__futbol.match.players.filter((p) => p.team === 1 && p.role !== 'gk').map((p) => [p.x, p.y]) }));
   ok('partida rápida después de practicar: no es práctica', m0.training === false);

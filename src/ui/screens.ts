@@ -72,7 +72,7 @@ export class Screens {
     const nid = /^riv_[a-z]+$/.test(id) ? `${id}_1` : id;
     const nm = this.d.game.cache.json.get(`nes_${nid}_meta`) as { cols: number; cell: [number, number]; anims: Record<string, { start: number }> } | undefined;
     if (nm) {
-      const c = nm.cell[0], k = scale <= 1 ? 1 : 3, st = nm.anims.idle_down?.start ?? 0, col = st % nm.cols, row = Math.floor(st / nm.cols), s = c * k;
+      const c = nm.cell[0], k = scale <= 1 ? 1 : c >= 48 ? 2 : 3, st = nm.anims.idle_down?.start ?? 0, col = st % nm.cols, row = Math.floor(st / nm.cols), s = c * k;
       return `<i class="av ${extra}" style="width:${s}px;height:${s}px;background-image:url(assets/nes/${nid}.png);background-size:${nm.cols * s}px auto;background-position:-${col * s}px -${row * s}px"></i>`;
     }
     const meta = this.d.game.cache.json.get(`${id}_meta`) as { anims: Record<string, { start: number }> } | undefined;

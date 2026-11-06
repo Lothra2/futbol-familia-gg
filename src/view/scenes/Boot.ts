@@ -30,8 +30,12 @@ export class BootScene extends Phaser.Scene {
     for (const k of FX) this.load.image(`cine_fx_${k}`, `assets/cine/fx_${k}.png`);
     for (const c of OUTFIT_CHARS) for (const o of ['arcoiris', 'estrellas']) this.load.spritesheet(`${c}_${o}`, `assets/sprites/${c}_${o}.png`, { frameWidth: 48, frameHeight: 48 });
     // the footballers in the Nekketsu style of PixelForja (tools/nes): 32 x 32 cells, five directions drawn and three by mirror
+    // the size of the cell is in each JSON (32 for the sheets drawn in code, 56 for the ones made from Higgsfield pixel art): the
+    // picture is queued once its JSON is in
     for (const k of NES) {
-      this.load.spritesheet(`nes_${k}`, `assets/nes/${k}.png`, { frameWidth: 32, frameHeight: 32 });
+      this.load.once(`filecomplete-json-nes_${k}_meta`, (_key: string, _type: string, meta: { cell: [number, number] }) => {
+        this.load.spritesheet(`nes_${k}`, `assets/nes/${k}.png`, { frameWidth: meta.cell[0], frameHeight: meta.cell[1] });
+      });
       this.load.json(`nes_${k}_meta`, `assets/nes/${k}.json`);
     }
     for (const k of SHEETS) {

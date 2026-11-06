@@ -163,6 +163,16 @@ export class TopPitch {
       if (d === 1) arc(spot, MIDY, 48, -a, a, 16); else arc(spot, MIDY, 48, Math.PI - a, Math.PI + a, 16);
     }
     for (const [x, y, a0] of [[0, 0, 0], [PITCH.w, 0, Math.PI / 2], [PITCH.w, PITCH.d, Math.PI], [0, PITCH.d, -Math.PI / 2]] as const) arc(x, y, 8, a0, a0 + Math.PI / 2, 6);
+    // the corner flags of Nintendo World Cup: a white pole and a red and yellow flag that flutters
+    const flap = Math.floor(this.clock * 4) % 2;
+    for (const [x, y] of [[0, 0], [PITCH.w, 0], [PITCH.w, PITCH.d], [0, PITCH.d]] as const) {
+      const [fx, fy] = P(x, y), X = Math.round(fx), Y = Math.round(fy);
+      g.fillStyle(0x1a1020, 1).fillRect(X - 1, Y - 15, 3, 16);
+      g.fillStyle(0xffffff, 1).fillRect(X, Y - 14, 1, 14);
+      g.fillStyle(0x1a1020, 1).fillRect(X + 1, Y - 15, 7, 6 + flap);
+      g.fillStyle(0xe8423a, 1).fillRect(X + 1, Y - 14, 5, 2 + flap);
+      g.fillStyle(0xffd447, 1).fillRect(X + 1, Y - 12 + flap, 5, 2);
+    }
     // the goals: the net box behind the line (under the players) and the white frame, both with the same lean
     const n = this.netG.clear(), f = this.frameG.clear(), H = GOAL.bar * PZ;
     for (const [gx, d] of [[0, -1], [PITCH.w, 1]] as const) {
