@@ -65,7 +65,7 @@ export const T = Object.freeze({
   ring: { mult: 0.69, perfect: 0.22, good: 0.10, defPerfect: 0.15, defGood: 0.07, wPerfect: 0.12, wGood: 0.30, easyMult: 3, centerFull: 0.42, centerShort: 0.38, early: 0.5 },
   special: { zone: 0.7, own: 0.85, ayuda: 0.10, cap: 0.92, skipAfter: 0.3, keeperMult: { tranquilos: 1.15, normales: 1.0, campeones: 0.9 } as Record<string, number>, aiRange: 400, aiDelayMin: 1, aiDelayMax: 3 },
   // ---- keepers (6.7)
-  gk: { out: 0.12, outMin: 6, outMax: 28, area: 96, moveV: 150, diveV: 330, diveT: 0.6, land: 0.5, holdMin: 1.0, holdMax: 1.5, catchV: 380, looseV: 120,
+  gk: { humanHold: 4, humanLock: 0.3, punt: 260, out: 0.12, outMin: 6, outMax: 28, area: 96, moveV: 150, diveV: 330, diveT: 0.6, land: 0.5, holdMin: 1.0, holdMax: 1.5, catchV: 380, looseV: 120,
         contact: 20, zReach: 30, punch: { vx: 160, vy: 230, vz: 120 }, tipOver: 0.25, speedPen: 300, speedPenSpan: 500, highPen: 0.8, farPen: 0.8, farFree: 6, rebound: 42 },
 });
 export const SPECIAL_BASE = { arcoiris: 0.70, burbuja: 0.75, canonazo: 0.72, estrellas: 0.70, carrera: 0.72, relampago: 0.72 } as const;

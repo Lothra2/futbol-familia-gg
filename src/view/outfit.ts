@@ -1,7 +1,7 @@
 import Phaser from 'phaser';
 
-/** The shirt colour of each family atlas (tools/nes/elenco.json "camisa"): the pixels of that hue are the ones an outfit repaints. */
-export const SHIRT: Record<string, string> = { papa: '#d8202a', mama: '#7a3cc8', sophie: '#80c020', alana: '#ff70b0', juandi: '#1450c8' };
+/** The shirt colour of each family atlas (the athletes of the Nekketsu Olympic GG, base tone of their top; Juandi from the previous version): the pixels of that hue are the ones an outfit repaints. */
+export const SHIRT: Record<string, string> = { papa: '#2a5bd7', mama: '#f4a5b5', sophie: '#3bb35a', alana: '#e8508f', juandi: '#0a47af' };
 
 const hsv = (r: number, g: number, b: number): [number, number, number] => {
   const mx = Math.max(r, g, b), mn = Math.min(r, g, b), d = mx - mn;

@@ -21,7 +21,6 @@ import { Narrator } from '../../audio/narrator';
 import { Recorder, ReplayOverlay, ReplayPlayer, type Snap } from '../Replay';
 import { Training } from '../../app/training';
 import { TrainingPanel } from '../../ui/trainingPanel';
-import { GoalCine, type GoalInfo } from '../GoalCine';
 import { Hud } from '../../ui/hud';
 import { T_ES } from '../../data/text.es';
 import type { Match, Player } from '../../core/state';
@@ -43,7 +42,6 @@ export class MatchScene extends Phaser.Scene {
   private fx!: Fx;
   private weather!: WeatherView; private lastCam = { x: 0, y: 0 };
   cine!: Cinematic;
-  goalCine!: GoalCine;
   private aim!: Aim;
   private fkView?: FreeKickView;
   private pen!: PenView;
@@ -91,7 +89,6 @@ export class MatchScene extends Phaser.Scene {
     }
     this.ballView = new BallView(this, m.ball);
     this.cine = new Cinematic(this);
-    this.goalCine = new GoalCine(this);
     this.aim = new Aim(this);
     this.fkView?.destroy(); this.fkView = new FreeKickView(this);
     this.pen = new PenView(this, [T_ES.teams.family, T_ES.teams[this.cfg.rival] ?? '']);
@@ -141,7 +138,7 @@ export class MatchScene extends Phaser.Scene {
       const B = T_ES.banners;
       if (!this.cfg.reducedMotion && !this.cfg.fastForward) this.hitStopFor(e);
       switch (e.k) {
-        case 'goal': if (this.ctl.m.phase !== 'penalties') this.pending = this.rec.clip(2.8); if (this.cfg.cine === 'off' && this.ctl.m.phase !== 'penalties') this.hud.banner(B.goal, 2200); this.hud.flash(); shakeCamera(this.cam, 0.35); this.stadium.goal(); break;
+        case 'goal': if (this.ctl.m.phase !== 'penalties') this.pending = this.rec.clip(2.8); if (this.ctl.m.phase !== 'penalties') this.hud.banner(B.goal, 2200); this.hud.flash(); shakeCamera(this.cam, 0.35); this.stadium.goal(); break;
         case 'throwin': this.hud.banner(B.throwin, 900); break;
         case 'goalkick': this.hud.banner(B.goalkick, 900); break;
         case 'corner': this.hud.banner(B.corner, 900); break;
@@ -150,7 +147,12 @@ export class MatchScene extends Phaser.Scene {
         case 'whistle': if (e.v === 2) this.hud.banner(B.halftime, 1600); else if (e.v === 1 && this.ctl.m.phase === 'kickoff' && this.cfg.cine !== 'off') this.hud.banner(B.kickoff, 1100); break;
         case 'special': this.stadium.gasp(); if (this.cfg.cine === 'off') this.hud.banner(T_ES.specials[KIND_INDEX[e.v ?? 0]] ?? '', 1500); this.hud.flash(180); shakeCamera(this.cam, 0.3); break;
         case 'special_far': this.hud.hint(B.far); break;
-        case 'save': if (e.v !== 2 && this.ctl.m.phase !== 'penalties') this.hud.banner(B.save, 700); this.stadium.gasp(); break;
+        case 'save': {
+          if (e.v !== 2 && this.ctl.m.phase !== 'penalties') this.hud.banner(B.save, 700); this.stadium.gasp();
+          // Thor barks when he stops one
+          const k = this.ctl.m.players.find((q) => q.id === e.who); if (k?.art === 'thor') this.pow(k.x, k.y, '¡GUAU!', '#ffe45c');
+          break;
+        }
         case 'post': case 'bar': if (this.ctl.m.phase !== 'penalties') this.hud.banner(B.post, 600); shakeCamera(this.cam, 0.1); this.stadium.gasp(); break;
         case 'starfull': if (e.v === 0) this.hud.hint(T_ES.hints.star, 1500); break;
         case 'super': this.hud.banner(T_ES.specials[KIND_INDEX[e.v ?? 0]] ?? '¡SÚPER PATADA!', 1000); this.hud.flash(120); shakeCamera(this.cam, 0.3); this.stadium.gasp(); break;
@@ -181,7 +183,9 @@ export class MatchScene extends Phaser.Scene {
       this.applyCamera();
       for (const v of this.views) {
         const p = v.p;
-        const slot = p.control === 'human' ? p.humanSlot : null;
+        // Thor holding the ball is driven by the person of the family (ai/keeper.ts): he wears the marker of the first one
+        const thorHolds = p.role === 'gk' && p.team === 0 && m.ball.state === 'held' && m.ball.owner === p.id ? m.humans.find((h) => h.team === 0) : undefined;
+        const slot = p.control === 'human' ? p.humanSlot : thorHolds ? thorHolds.slot : null;
         v.forceDir = m.phase === 'penalties' && m.pen ? (p.id === m.pen.shooter ? 6 : p.id === m.pen.keeper ? 2 : null) : null;
         v.update(dt * this.ctl.pace, m, slot, slot === null ? 0 : J_COLORS[slot] ?? COLORS[p.charId ?? 'sophie']);
       }
@@ -223,20 +227,6 @@ export class MatchScene extends Phaser.Scene {
       if (!this.cine.active && this.cfg.cine !== 'off') { this.cine.start(sp, this.cineInfo(sp.shooter, sp.keeper)); this.hud.cinema(true); }
       if (this.cine.active) this.cine.update(sp, this.scale.width, this.scale.height, dt);
     } else if (this.cine.active) { this.cine.stop(); this.hud.cinema(false); }
-    // the goal: a cutscene of its own (not in the "sin cinemáticas" mode, which keeps the banner)
-    if (m.phase === 'goal' && m.lastGoal && this.cfg.cine !== 'off') {
-      if (!this.goalCine.active) { this.goalCine.start(this.goalInfo(m)); this.hud.cinema(true); }
-      this.goalCine.update(m, this.scale.width, this.scale.height, m.phaseT >= T.goalSkip);
-    } else if (this.goalCine.active) { this.goalCine.stop(); if (!this.cine.active) this.hud.cinema(false); }
-  }
-
-  private goalInfo(m: Match): GoalInfo {
-    const lg = m.lastGoal!, mine = lg.team === 0;
-    const byId = (id: number | null): Player | undefined => m.players.find((q) => q.id === id);
-    const sc = byId(lg.scorer) ?? m.players.find((q) => q.team === lg.team && q.role !== 'gk')!;
-    const base = this.cineInfo(sc.id, null);
-    return { ...base, scorer: lg.scorer === null ? (mine ? T_ES.teams.family : T_ES.teams[this.cfg.rival] ?? '') : sc.name, assist: byId(lg.assist)?.name ?? null,
-      us: T_ES.teams.family, them: T_ES.teams[this.cfg.rival] ?? '', mine };
   }
 
   private startReplay(clip: Snap[]): void {

@@ -25,6 +25,10 @@ export class BallView {
   private fx: Phaser.GameObjects.Graphics;
   /** The last screen positions of a super shot, for its trail. */
   private trail: { x: number; y: number }[] = [];
+  /** Afterimages of the ball behind a super shot (Nekketsu): copies of the ball itself, fading, in the colours of the power. */
+  private ghosts: Phaser.GameObjects.Image[] = [];
+  private wasKind: SpecialKind | null = null;
+  private burst = 0;
   /** The replay shows the ball of the recording instead of the live one. */
   setBall(b: Ball): void { this.ball = b; }
   constructor(scene: Phaser.Scene, private ball: Ball) {
@@ -32,6 +36,7 @@ export class BallView {
     this.land = scene.add.image(0, 0, 'land').setOrigin(0.5, 0.5).setVisible(false).setAlpha(0.8);
     this.sprite = scene.add.image(0, 0, 'ballbig', 0).setOrigin(0.5, 0.5);
     this.fx = scene.add.graphics();
+    for (let i = 0; i < 6; i++) this.ghosts.push(scene.add.image(0, 0, 'ballbig', 0).setOrigin(0.5, 0.5).setVisible(false));
   }
   update(kind: SpecialKind | null = null, t = 0): void {
     const b = this.ball;
@@ -45,16 +50,28 @@ export class BallView {
     this.fx.clear().setDepth(depthAt(b.y) + 0.6);
     const tint = kind ? TINT[kind] : undefined;
     if (tint !== undefined) this.sprite.setTint(tint); else this.sprite.clearTint();
-    // a super shot (Nekketsu): the ball grows, leaves a trail of afterimages and takes the shape of its power
-    this.sprite.setScale(kind ? 1.5 : 1);
-    if (!kind) { this.trail.length = 0; return; }
-    this.trail.unshift({ x, y }); if (this.trail.length > 9) this.trail.length = 9;
+    // a super shot (Nekketsu): the ball grows and throbs, flickers through the colours of its power (the palette cycling of the NES),
+    // and leaves afterimages of itself; at the kick a star of impact bursts where it leaves the foot
     const g = this.fx;
-    this.trail.forEach((q, i) => {
-      if (i === 0) return;
-      const r = Math.max(2, 9 - i), col = kind === 'arcoiris' ? RAINBOW[i % RAINBOW.length] : TRAIL[kind];
-      g.fillStyle(col, 0.75 - i * 0.07).fillCircle(q.x, q.y, r);
+    if (!kind) { this.trail.length = 0; this.wasKind = null; this.sprite.setScale(1); for (const o of this.ghosts) o.setVisible(false); return; }
+    if (this.wasKind !== kind) { this.wasKind = kind; this.burst = 0.22; }
+    const pulse = 1.7 + Math.sin(t * 30) * 0.15;
+    this.sprite.setScale(pulse);
+    const cyc = kind === 'arcoiris' ? RAINBOW : [TRAIL[kind], 0xffffff, TINT[kind] ?? 0xffe45c];
+    this.sprite.setTint(cyc[Math.floor(t * 24) % cyc.length]);
+    this.trail.unshift({ x, y }); if (this.trail.length > 13) this.trail.length = 13;
+    this.ghosts.forEach((o, i) => {
+      const q = this.trail[(i + 1) * 2];
+      if (!q) { o.setVisible(false); return; }
+      o.setVisible(true).setPosition(q.x, q.y).setFrame(this.sprite.frame.name).setScale(pulse * (1 - i * 0.1)).setAlpha(0.7 - i * 0.1)
+        .setTint(kind === 'arcoiris' ? RAINBOW[(i + Math.floor(t * 20)) % RAINBOW.length] : TRAIL[kind]).setDepth(depthAt(b.y) + 0.4 - i * 0.01);
     });
+    if (this.burst > 0) {
+      // the star of impact at the kick: eight spikes in white and the colour of the power
+      const r = 26 * (1 - this.burst / 0.22) + 6, q = this.trail[this.trail.length - 1];
+      for (let i = 0; i < 8; i++) { const a = i * Math.PI / 4 + 0.2, c = i % 2 ? 0xffffff : TRAIL[kind]; g.lineStyle(i % 2 ? 2 : 3, c, 1).lineBetween(q.x + Math.cos(a) * r * 0.35, q.y + Math.sin(a) * r * 0.35, q.x + Math.cos(a) * r, q.y + Math.sin(a) * r); }
+      this.burst = Math.max(0, this.burst - 1 / 60);
+    }
     const dx = this.trail.length > 1 ? x - this.trail[1].x : 1, dy = this.trail.length > 1 ? y - this.trail[1].y : 0, n = Math.hypot(dx, dy) || 1, ux = dx / n, uy = dy / n;
     if (kind === 'llamarada' || kind === 'canonazo') {
       // a fireball: flames licking back from the ball

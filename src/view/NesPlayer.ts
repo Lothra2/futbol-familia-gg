@@ -64,7 +64,7 @@ export function nesAnim(p: Player, m: Match | null, isThor: boolean): { name: st
       if (dur - t < GETUP_T) return { name: 'fall_getup', loop: false, t: t - (dur - GETUP_T) };
       return { name: 'lie', loop: true, t };
     }
-    case 'getup': return { name: 'fall_getup', loop: false, t: t + 0.3 };
+    case 'getup': return { name: 'fall_getup', loop: false, t };
     case 'celebrate': return { name: p.team === 0 ? 'dance' : 'celebrate', loop: true, t };
     case 'sad': return { name: 'sad', loop: true, t };
     case 'dive': return { name: gk ? 'keeper_dive' : 'jump', loop: false, t };
@@ -83,6 +83,9 @@ export class NesPlayer {
   readonly shadow: Phaser.GameObjects.Image;
   readonly mark: Phaser.GameObjects.Image;
   readonly bar: Phaser.GameObjects.Graphics;
+  /** The ring of the team colour under the feet (the athletes wear their own clothes: this says whose side they are on). */
+  readonly ring: Phaser.GameObjects.Graphics;
+  private wasState = ''; private hitT = 0; private landT = 0; private wasAir = false;
   private loops = new LoopClock();
   private dir = 0;
   private lastFrame = -1;
@@ -100,9 +103,10 @@ export class NesPlayer {
     this.sprite = scene.add.sprite(0, 0, key, 0).setOrigin(meta.pivot[0] / meta.cell[0], meta.pivot[1] / meta.cell[1]);
     this.mark = scene.add.image(0, 0, 'mark_1').setOrigin(0.5, 1).setVisible(false);
     this.bar = scene.add.graphics();
+    this.ring = scene.add.graphics();
     this.dir = p.team === 0 ? 0 : 4;
   }
-  destroy(): void { this.sprite.destroy(); this.shadow.destroy(); this.mark.destroy(); this.bar.destroy(); }
+  destroy(): void { this.sprite.destroy(); this.shadow.destroy(); this.mark.destroy(); this.bar.destroy(); this.ring.destroy(); }
 
   /** Which way the drawing looks: where he runs, else where he aims, else at the ball (keepers and anybody standing). */
   private face(m: Match | null): number {
@@ -136,7 +140,22 @@ export class NesPlayer {
       if (rel === 0 || rel === 4) this.fx.puff(x - Math.sign(p.vx || 1) * 5, gy, -p.vx * 0.15, p.state === 'sprint' ? 2 : 1);
     }
     this.lastFrame = frame;
-    this.sprite.setFrame(frame).setPosition(x, y).setFlipX(!!mirrored).setDepth(depthAt(p.y));
+    // the cartoon of Nekketsu: a shake and a white flash when a blow lands, stretched in the air and squashed on landing, hops when
+    // celebrating, and Thor bounces when he runs
+    if ((p.state === 'tumble' || p.state === 'stagger') && this.wasState !== p.state) this.hitT = 0.28;
+    this.wasState = p.state;
+    const air = p.z > 3;
+    if (this.wasAir && !air) this.landT = 0.14;
+    this.wasAir = air;
+    this.hitT = Math.max(0, this.hitT - dt); this.landT = Math.max(0, this.landT - dt);
+    let ox = 0, oy = 0, sxk = 1, syk = 1;
+    if (this.hitT > 0) ox = (Math.floor(this.hitT * 60) % 2 ? 2 : -2);
+    if (air && p.state !== 'tumble') { sxk = 0.92; syk = 1.08; }
+    if (this.landT > 0) { sxk = 1.14; syk = 0.86; }
+    if (p.state === 'celebrate') oy = -Math.round(Math.abs(Math.sin((m?.t ?? 0) * 9 + p.id)) * 4);
+    if (this.isThor && st.name === 'run') oy = -Math.round(Math.abs(Math.sin((m?.t ?? 0) * 16)) * 2);
+    this.sprite.setFrame(frame).setPosition(x + ox, y + oy).setFlipX(!!mirrored).setDepth(depthAt(p.y)).setScale(sxk, syk);
+    this.sprite.setAlpha(this.hitT > 0 && Math.floor(this.hitT * 30) % 2 ? 0.35 : 1);   // the blink of a sprite that has just been hit
     // the moment of the súper patada: the carrier flashes white and gold (Nekketsu), shoot now
     const flash = !!m && !!p.sup && p.sup.until > 0 && m.t <= p.sup.until && m.ball.owner === p.id;
     if (flash) { this.flashT += dt; this.sprite.setTint(Math.floor(this.flashT * 14) % 2 ? 0xffffff : 0xffe45c); if (this.fx && Math.floor(this.flashT * 10) !== Math.floor((this.flashT - dt) * 10)) this.fx.sparkle(x + (Math.random() - 0.5) * 18, y - 8 - Math.random() * 24); }
@@ -151,6 +170,10 @@ export class NesPlayer {
     const mine = humanSlot !== null;
     this.mark.setVisible(mine);
     if (mine) this.mark.setTexture(`mark_${humanSlot + 1}`).setPosition(x, y - this.tall - 3).setTint(jColor).setDepth(1000 + p.y);
+    // the team ring over the shadow: sky blue for the family, red for the rivals (the squares of the bottom bar), so the athletes in
+    // their own clothes are told apart at a glance
+    this.ring.clear().setDepth(depthAt(p.y) - 0.45);
+    if (m && p.state !== 'tumble' && p.state !== 'dive') this.ring.lineStyle(2, p.team === 0 ? 0x5ab4ff : 0xff4a4a, 1).strokeEllipse(x, gy, 22 * k, 8);
     this.bar.clear();
     // the cartoon stars of Nekketsu over the head of a player who is out cold (K.O.) or dizzy after a slide
     const ko = p.state === 'tumble' && (p.act?.dur ?? 0) >= T.hit.ko * 0.9 && (p.act?.t ?? 0) > TUMBLE_T;

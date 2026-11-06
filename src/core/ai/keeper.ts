@@ -98,10 +98,24 @@ export function keeperThink(m: Match, p: Player): InputFrame {
   const go = (x: number, y: number): void => { const dx = x - p.x, dy = y - p.y, d = Math.hypot(dx, dy); if (d > 2.5) { f.mx = dx / d; f.my = dy / d; } };
 
   if (b.state === 'held' && b.owner === p.id) {
-    if (A.armedAt === 0) A.armedAt = m.t + m.rng.range(T.gk.holdMin, T.gk.holdMax);
-    const asked = m.humans.find((h) => h.team === p.team && m.hin[h.slot]?.passPressed);
-    if (asked) throwFromKeeper(m, p, m.players.find((q) => q.id === asked.id) ?? null);
-    else if (m.t >= A.armedAt) throwFromKeeper(m, p, null);
+    // a person on his team drives him while he holds it (Thor is ours): the stick aims, Pass throws to the mate it points at,
+    // Shot kicks it long that way; if nobody does anything he lets it go by himself after a while
+    const h = m.humans.find((q) => q.team === p.team), fr = h ? m.hin[h.slot] : null;
+    if (A.armedAt === 0) A.armedAt = m.t + (h ? T.gk.humanHold : m.rng.range(T.gk.holdMin, T.gk.holdMax));
+    if (fr && p.holdT >= T.gk.humanLock) {
+      const st = Math.hypot(fr.mx, fr.my), ax = st > 0.3 ? fr.mx / st : inward, ay = st > 0.3 ? fr.my / st : 0;
+      if (fr.passPressed) {
+        const c = choosePass(m, p, ax, ay, 260);
+        throwFromKeeper(m, p, c ? m.players.find((q) => q.id === c.id) ?? null : null);
+        return f;
+      }
+      if (fr.shootPressed) {
+        p.immuneT = 0; p.state = 'idle'; A.armedAt = 0; p.holdT = 0;
+        restartKick(m, p, p.x + (ax * inward < 0.2 ? inward : ax) * T.gk.punt, Math.max(12, Math.min(388, p.y + ay * T.gk.punt * 0.6)), true);
+        return f;
+      }
+    }
+    if (m.t >= A.armedAt) throwFromKeeper(m, p, null);
     return f;
   }
   if (b.owner === p.id) { go(x0 + inward * 24, p.y); if (p.holdT > 0.6) f.passPressed = true; return f; }

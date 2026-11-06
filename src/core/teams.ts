@@ -9,10 +9,11 @@ export interface Seat { slot: number; role: Role; stats: PStats; charId?: CharId
 export const SPECIES_NAME: Record<Species, string> = { dragon: 'Dragoncitos del Volcán', tiburon: 'Tiburoncitos del Arrecife', buho: 'Búhos de las Nubes', mapache: 'Mapachitos del Bosque' };
 /** The six kids of every rival team (the keeper first), the same names as tools/nes/elenco.json. */
 export const RIVAL_NAMES: Record<Species, string[]> = {
-  dragon: ['Chispa', 'Brasa', 'Lava', 'Fogón', 'Ceniza', 'Volcán'],
-  tiburon: ['Ola', 'Coral', 'Marea', 'Aleta', 'Arrecife', 'Tiburón'],
-  buho: ['Pluma', 'Luna', 'Roble', 'Sabio', 'Noche', 'Búho'],
-  mapache: ['Pillo', 'Bandido', 'Mancha', 'Cola', 'Nube', 'Mapache'],
+  // the athletes of the Nekketsu Olympic GG who play for each kingdom (tools/nes/olimpico.py), the keeper first
+  dragon: ['Ba Hoa', 'Minh', 'Lan', 'Tuan', 'Ryu', 'Tetsu'],
+  tiburon: ['Nerva', 'Ender', 'Yusmary', 'Jhonder', 'Goro', 'Tetsu'],
+  buho: ['Carmen', 'Gabo', 'Yuli', 'Toto', 'Kenji', 'Goro'],
+  mapache: ['Hernando', 'Andrés', 'Camila', 'Pipe', 'Kenji', 'Ryu'],
 };
 
 /** The six seats of a team (Nintendo World Cup): slot 0 keeper and five in the field, placed by the formation. */
