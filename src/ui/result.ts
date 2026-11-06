@@ -8,6 +8,7 @@ import { LEVEL_XP, levelForXp } from '../save/save';
 import { T_ES } from '../data/text.es';
 import { kingdomOf } from '../data/kingdoms';
 import type { CharId } from '../core/types';
+import { asset } from '../asset';
 
 const NAMES: Record<string, string> = { papa: 'Papá', mama: 'Mamá', sophie: 'Sophie', alana: 'Alana', juandi: 'Juandi', thor: 'Thor' };
 const FACE_CHARS = ['sophie', 'alana', 'papa', 'mama', 'juandi', 'thor'];
@@ -48,13 +49,13 @@ export function showResult(m: Match, cfg: MatchConfig, res: MatchResult | null, 
   const next = cup?.kind === 'advance' && cup.next ? `Siguiente: ${cup.next.name}` : cup?.kind === 'rematch' ? 'Revancha' : '';
   const box = document.createElement('div');
   box.className = `screen dim result2${champion ? ' champion' : ''}`; box.id = 'result';
-  box.innerHTML = `<div class="panel rpanel">${champion ? `<div class="bigtrophy"><img class="tpx" src="assets/ui/trofeo_copa.png" alt="" onerror="this.outerHTML=this.dataset.fb" data-fb='${CUP}'></div><div class="confetti">${Array.from({ length: 28 }, (_, i) => `<i style="left:${(i * 37) % 100}%;animation-delay:${(i % 9) * 0.25}s;background:${['#ff5e7e', '#ffb23f', '#ffe45c', '#5ddb43', '#4cc9e8', '#b98cff'][i % 6]}"></i>`).join('')}</div>` : ''}
-    ${cup?.kind === 'advance' && cup.trophy ? `<div class="bigtrophy small"><img class="tpx" src="assets/ui/trofeo_${cup.trophy}.png" alt=""></div>` : ''}
+  box.innerHTML = `<div class="panel rpanel">${champion ? `<div class="bigtrophy"><img class="tpx" src="${asset(`assets/ui/trofeo_copa.png`)}" alt="" onerror="this.outerHTML=this.dataset.fb" data-fb='${CUP}'></div><div class="confetti">${Array.from({ length: 28 }, (_, i) => `<i style="left:${(i * 37) % 100}%;animation-delay:${(i % 9) * 0.25}s;background:${['#ff5e7e', '#ffb23f', '#ffe45c', '#5ddb43', '#4cc9e8', '#b98cff'][i % 6]}"></i>`).join('')}</div>` : ''}
+    ${cup?.kind === 'advance' && cup.trophy ? `<div class="bigtrophy small"><img class="tpx" src="${asset(`assets/ui/trofeo_${cup.trophy}.png`)}" alt=""></div>` : ''}
     <h2>${head}</h2>
     <div class="big-score"><span>${T_ES.teams.family}</span><b>${a} : ${b}</b><span>${T_ES.teams[cfg.rival] ?? ''}</span></div>
     ${pens ? `<div class="pens">${pens}</div>` : ''}
     <p class="msg">${msg}</p>
-    ${fam && fam.stats2.goals > 0 ? `<p class="mvp">${fam.charId && FACE_CHARS.includes(fam.charId) ? `<i class="faceb" style="background-image:url(assets/cine/caras_${fam.charId}.png);background-position:${won ? -240 : draw ? 0 : -160}px 0"></i>` : ''}<span>${T_ES.result.mvp}: <b>${fam.name}</b> · ${T_ES.result.goals(fam.stats2.goals)}</span></p>` : ''}
+    ${fam && fam.stats2.goals > 0 ? `<p class="mvp">${fam.charId && FACE_CHARS.includes(fam.charId) ? `<i class="faceb" style="background-image:url(${asset(`assets/cine/caras_${fam.charId}.png`)});background-position:${won ? -240 : draw ? 0 : -160}px 0"></i>` : ''}<span>${T_ES.result.mvp}: <b>${fam.name}</b> · ${T_ES.result.goals(fam.stats2.goals)}</span></p>` : ''}
     ${recs}
     ${dl}
     ${tiles ? `<div class="xgrid">${tiles}</div>` : ''}
@@ -62,7 +63,7 @@ export function showResult(m: Match, cfg: MatchConfig, res: MatchResult | null, 
   if (won && !draw) {      // the victory poster of the best of the family stands next to the panel (only where there is room, see .rposter in ui.css)
     const who = (fam?.charId ?? res?.chars[0]?.id ?? 'sophie') as string;
     const poster = document.createElement('img');
-    poster.className = 'rposter'; poster.alt = ''; poster.src = `assets/cine/win_${who}.png`; poster.onerror = () => poster.remove();
+    poster.className = 'rposter'; poster.alt = ''; poster.src = asset(`assets/cine/win_${who}.png`); poster.onerror = () => poster.remove();
     box.appendChild(poster);
   }
   box.querySelector('#again')?.addEventListener('click', d.onAgain);

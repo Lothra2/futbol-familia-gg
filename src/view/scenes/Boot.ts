@@ -1,5 +1,6 @@
 import Phaser from 'phaser';
 import { makeTextures } from '../textures';
+import { asset } from '../../asset';
 
 /** Cinematic illustrations (tools/build_cine.py). The kingdoms add theirs as they are made. */
 export const CINE = ['sophie', 'alana', 'papa', 'mama', 'juandi', 'thor_a', 'thor_b', 'riv_dragon_a', 'riv_dragon_b', 'riv_tiburon_a', 'riv_tiburon_b', 'riv_buho_a', 'riv_buho_b', 'riv_mapache_a', 'riv_mapache_b'];
@@ -19,28 +20,28 @@ export class BootScene extends Phaser.Scene {
   preload(): void {
     const bar = document.getElementById('loadbar');
     this.load.on('progress', (v: number) => { if (bar) bar.style.width = `${Math.round(v * 100)}%`; });
-    this.load.json('cine_meta', 'assets/cine/meta.json');
+    this.load.json('cine_meta', asset('assets/cine/meta.json'));
     for (const id of STADIUMS) {
-      this.load.image(`bg_${id}`, `assets/stadium/bg_${id}.png`);
-      this.load.image(`bg2_${id}`, `assets/stadium/bg2_${id}.png`);
-      this.load.spritesheet(`props_${id}`, `assets/stadium/props_${id}.png`, { frameWidth: 48, frameHeight: 48 });
+      this.load.image(`bg_${id}`, asset(`assets/stadium/bg_${id}.png`));
+      this.load.image(`bg2_${id}`, asset(`assets/stadium/bg2_${id}.png`));
+      this.load.spritesheet(`props_${id}`, asset(`assets/stadium/props_${id}.png`), { frameWidth: 48, frameHeight: 48 });
     }
-    for (const k of CINE) this.load.image(`cine_${k}`, `assets/cine/${k}.png`);
-    for (const c of FACES) this.load.spritesheet(`caras_${c}`, `assets/cine/caras_${c}.png`, { frameWidth: 80, frameHeight: 80 });
-    for (const k of FX) this.load.image(`cine_fx_${k}`, `assets/cine/fx_${k}.png`);
-    for (const c of OUTFIT_CHARS) for (const o of ['arcoiris', 'estrellas']) this.load.spritesheet(`${c}_${o}`, `assets/sprites/${c}_${o}.png`, { frameWidth: 48, frameHeight: 48 });
+    for (const k of CINE) this.load.image(`cine_${k}`, asset(`assets/cine/${k}.png`));
+    for (const c of FACES) this.load.spritesheet(`caras_${c}`, asset(`assets/cine/caras_${c}.png`), { frameWidth: 80, frameHeight: 80 });
+    for (const k of FX) this.load.image(`cine_fx_${k}`, asset(`assets/cine/fx_${k}.png`));
+    for (const c of OUTFIT_CHARS) for (const o of ['arcoiris', 'estrellas']) this.load.spritesheet(`${c}_${o}`, asset(`assets/sprites/${c}_${o}.png`), { frameWidth: 48, frameHeight: 48 });
     // the footballers in the Nekketsu style of PixelForja (tools/nes): 32 x 32 cells, five directions drawn and three by mirror
     // the size of the cell is in each JSON (32 for the sheets drawn in code, 56 for the ones made from Higgsfield pixel art): the
     // picture is queued once its JSON is in
     for (const k of NES) {
       this.load.once(`filecomplete-json-nes_${k}_meta`, (_key: string, _type: string, meta: { cell: [number, number] }) => {
-        this.load.spritesheet(`nes_${k}`, `assets/nes/${k}.png`, { frameWidth: meta.cell[0], frameHeight: meta.cell[1] });
+        this.load.spritesheet(`nes_${k}`, asset(`assets/nes/${k}.png`), { frameWidth: meta.cell[0], frameHeight: meta.cell[1] });
       });
-      this.load.json(`nes_${k}_meta`, `assets/nes/${k}.json`);
+      this.load.json(`nes_${k}_meta`, asset(`assets/nes/${k}.json`));
     }
     for (const k of SHEETS) {
-      this.load.spritesheet(k, `assets/sprites/${k}.png`, { frameWidth: 48, frameHeight: 48 });
-      this.load.json(`${k}_meta`, `assets/sprites/${k}.json`);
+      this.load.spritesheet(k, asset(`assets/sprites/${k}.png`), { frameWidth: 48, frameHeight: 48 });
+      this.load.json(`${k}_meta`, asset(`assets/sprites/${k}.json`));
     }
   }
   create(): void {

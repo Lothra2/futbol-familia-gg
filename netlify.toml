@@ -6,10 +6,18 @@
   NODE_VERSION = "22"
 
 # El juego no usa rutas del servidor: todo es estático y relativo.
+# Lo que arma Vite lleva un hash en el nombre (build/): se guarda un año.
+[[headers]]
+  for = "/build/*"
+  [headers.values]
+    Cache-Control = "public, max-age=31536000, immutable"
+
+# Los sprites, caras y canchas de public/assets tienen nombre fijo: el navegador pregunta si cambiaron (304 si no).
+# El juego además les pone ?v=<versión> (src/asset.ts) para que un deploy nuevo nunca muestre los viejos.
 [[headers]]
   for = "/assets/*"
   [headers.values]
-    Cache-Control = "public, max-age=31536000, immutable"
+    Cache-Control = "public, max-age=0, must-revalidate"
 
 [[headers]]
   for = "/index.html"

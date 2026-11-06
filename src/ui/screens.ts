@@ -13,6 +13,7 @@ import { bindGuide, defaultTab, guideHtml, type Tab } from './guide';
 import { services } from '../app/services';
 import type { TouchUI } from '../input/touch';
 import type { CharId } from '../core/types';
+import { asset } from '../asset';
 
 type Name = 'title' | 'main' | 'quick' | 'cup' | 'vitrina' | 'settings' | 'training' | 'daily' | 'guide';
 export interface ScreenDeps {
@@ -73,11 +74,11 @@ export class Screens {
     const nm = this.d.game.cache.json.get(`nes_${nid}_meta`) as { cols: number; cell: [number, number]; anims: Record<string, { start: number }> } | undefined;
     if (nm) {
       const c = nm.cell[0], k = scale <= 1 ? 1 : c >= 48 ? 2 : 3, st = nm.anims.idle_down?.start ?? 0, col = st % nm.cols, row = Math.floor(st / nm.cols), s = c * k;
-      return `<i class="av ${extra}" style="width:${s}px;height:${s}px;background-image:url(assets/nes/${nid}.png);background-size:${nm.cols * s}px auto;background-position:-${col * s}px -${row * s}px"></i>`;
+      return `<i class="av ${extra}" style="width:${s}px;height:${s}px;background-image:url(${asset(`assets/nes/${nid}.png`)});background-size:${nm.cols * s}px auto;background-position:-${col * s}px -${row * s}px"></i>`;
     }
     const meta = this.d.game.cache.json.get(`${id}_meta`) as { anims: Record<string, { start: number }> } | undefined;
     const st = meta?.anims.idle?.start ?? 0, col = st % 8, row = Math.floor(st / 8), s = 48 * scale;
-    return `<i class="av ${extra}" style="width:${s}px;height:${s}px;background-image:url(assets/sprites/${id}.png);background-size:${384 * scale}px auto;background-position:-${col * s}px -${row * s}px"></i>`;
+    return `<i class="av ${extra}" style="width:${s}px;height:${s}px;background-image:url(${asset(`assets/sprites/${id}.png`)});background-size:${384 * scale}px auto;background-position:-${col * s}px -${row * s}px"></i>`;
   }
   avatar(id: string, scale: number): string { return this.av(id, scale); }
   private level(id: CharId): number { return this.d.store.data.characters[id].level; }
@@ -191,13 +192,13 @@ export class Screens {
       const ob = c === 'thor' ? '' : (['base', 'arcoiris', 'estrellas'] as const).map((o) => `<button class="chip-o${cs.outfit === o ? ' sel' : ''}${outs.includes(o) ? '' : ' off'}" data-outfit="${c}:${o}" ${outs.includes(o) ? '' : 'disabled'}>${o === 'base' ? 'Normal' : o === 'arcoiris' ? 'Arcoíris' : 'Estrellas'}</button>`).join('');
       return `<div class="vc">${this.av(c, 2)}<div class="vt"><b>${NAMES[c]} <span class="lv">Nv ${cs.level}</span></b><div class="xp"><i style="width:${pct}%"></i></div><small>${nx ? `${cs.xp} XP, faltan ${nx.need - nx.into} para Nv ${nx.level + 1}` : `${cs.xp} XP, ¡nivel máximo!`}</small><div class="chips">${ob}</div></div></div>`;
     }).join('');
-    const tro = KINGDOMS.map((k) => `<div class="tro${s.trophies[k.id] ? ' got' : ''}" style="--kc:${k.color}"><img class="tpx${s.trophies[k.id] ? '' : ' lk'}" src="assets/ui/trofeo_${k.id}.png" alt="">${s.trophies[k.id] ? '' : ICON.lock}<b>${k.trophy}</b></div>`).join('');
+    const tro = KINGDOMS.map((k) => `<div class="tro${s.trophies[k.id] ? ' got' : ''}" style="--kc:${k.color}"><img class="tpx${s.trophies[k.id] ? '' : ' lk'}" src="${asset(`assets/ui/trofeo_${k.id}.png`)}" alt="">${s.trophies[k.id] ? '' : ICON.lock}<b>${k.trophy}</b></div>`).join('');
     const r = s.records;
     const prizes = Object.entries(PRIZES).map(([l, p]) => `<span>Nv ${l}: ${p}</span>`).join('');
     void LEVEL_XP;
     return `${this.head('Vitrina', 'Tus copas, trajes y récords')}
       <div class="vgrid"><div class="vleft">${chars}</div><div class="vright"><div class="lbl">Copas de los reinos</div><div class="tros">${tro}</div>
-      <div class="bigcup"><img class="tpx big${s.trophies.copa > 0 ? '' : ' lk'}" src="assets/ui/trofeo_copa.png" alt=""><b>Gran Copa x${s.trophies.copa}</b></div>
+      <div class="bigcup"><img class="tpx big${s.trophies.copa > 0 ? '' : ' lk'}" src="${asset(`assets/ui/trofeo_copa.png`)}" alt=""><b>Gran Copa x${s.trophies.copa}</b></div>
       <div class="lbl">Récords</div><div class="recs"><div><b>${r.matches}</b>partidos</div><div><b>${r.goals}</b>goles</div><div><b>${r.specialGoals}</b>goles especiales</div><div><b>${r.thorSaves}</b>atajadas de Thor</div><div><b>${r.biggestWin}</b>mayor goleada</div></div>
       <div class="lbl">Premios por nivel</div><div class="prizes">${prizes}</div></div></div>`;
   }
