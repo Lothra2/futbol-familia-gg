@@ -87,6 +87,49 @@ export function launchSpecial(m: Match, s: Player): void {
   emit(m, 'special', s.x, s.y, 0, s.id, KIND_INDEX.indexOf(kind));
 }
 
+// ------------------------------------------------------------------------------------------------ súper patada (Nekketsu)
+/** Whether the flash of the súper patada is on for this player right now. */
+export const superOpen = (m: Match, p: Player): boolean => !!p.sup && p.sup.until > 0 && m.t <= p.sup.until && m.ball.owner === p.id;
+
+/** Counts the dribble without stopping and opens the moment of the súper patada (call once per step for the carrier). */
+export function trackSuper(m: Match, p: Player, dt: number): void {
+  if (m.ball.owner !== p.id || m.phase !== 'play' || p.role === 'gk') { p.sup = null; return; }
+  if (p.sup && m.t - p.sup.last > 0.1) p.sup = null;   // a new possession starts the count again
+  const sup = (p.sup ??= { run: 0, still: 0, until: 0, last: m.t }), sp = Math.hypot(p.vx, p.vy);
+  sup.last = m.t;
+  if (sup.until > 0) { if (m.t > sup.until) { sup.until = 0; sup.run = 0; } return; }
+  if (sp < 40) { sup.still += dt; if (sup.still > T.super.still) sup.run = 0; return; }
+  sup.still = 0; sup.run += sp * dt;
+  if (sup.run >= T.super.at && Math.abs(goalX(p.team) - p.x) <= T.super.range) {
+    const easy = p.control === 'human' && p.controls === 'easy';
+    sup.until = m.t + (easy ? T.super.easyWindow : T.super.window);
+    emit(m, 'superready', p.x, p.y, 0, p.id);
+  }
+}
+
+/** The súper patada: no cinematic, the ball flies at once along the path of the power of the shooter, knocks down whoever is in the way and,
+ *  when it goes in, takes the keeper into the net with it. The result is rolled now (closer is better). */
+export function superShot(m: Match, s: Player): void {
+  const team = s.team, dir = attackDir(team), gx = goalX(team), b = m.ball;
+  const keeper = m.players.find((q) => q.team !== team && q.role === 'gk') ?? null;
+  const d = Math.abs(gx - s.x), kind = specialKind(s);
+  let p = T.super.base - T.super.fall * Math.min(1, d / T.super.range);
+  if (team === 1 && !humanTeam(m, 1)) p *= 0.75 + 0.25 * (DIFFICULTY[m.difficulty].special / 0.5);
+  if (s.control === 'human' && s.controls === 'easy') p += T.super.easyBonus;
+  const outcome = m.rng.chance(Math.min(T.super.cap, p)) ? 'goal' : 'save';
+  const x0 = s.x + dir * 8, y0 = s.y, goal = outcome === 'goal';
+  const x1 = goal ? gx + dir * 8 : gx - dir * (T.gk.rebound + m.rng.range(0, 14));
+  const y1 = goal ? MID + m.rng.range(-27, 27) : MID + m.rng.range(-45, 45);
+  const foes = m.players.filter((q) => q.team !== team && q.role !== 'gk');
+  const targets = kind === 'estrellas' ? foes.filter((o) => (o.x - s.x) * dir > -40).sort((a, c) => Math.hypot(a.x - s.x, a.y - s.y) - Math.hypot(c.x - s.x, c.y - s.y)).slice(0, 3).map((o) => o.id) : [];
+  const kindF = kind === 'carrera' ? 'canonazo' : kind;   // only Thor runs with the ball, and he never dribbles
+  m.flight = { kind: kindF, team, shooter: s.id, keeper: keeper ? keeper.id : null, outcome, t: 0, dur: flightDur(kindF, Math.hypot(x1 - x0, y1 - y0)) * T.super.durK, x0, y0, x1, y1, dived: false, targets, hit: [] };
+  Object.assign(b, { x: x0, y: y0, z: 4, vx: 0, vy: 0, vz: 0, spin: 0, owner: null, state: 'scripted', inNet: false, scored: null });
+  s.sup = null; s.state = 'special'; s.act = null; s.vx = s.vy = 0; s.stats2.shots++; m.stats.shots[team]++;
+  setTouch(m, s);
+  emit(m, 'super', s.x, s.y, 0, s.id, KIND_INDEX.indexOf(kindF));
+}
+
 /** Runs the fixed-length cinematic. Nothing moves in the match. Any button after 0.3 s skips it. */
 export function stepCinematic(m: Match, dt: number): void {
   const sp = m.special;
@@ -171,7 +214,11 @@ export function stepFlight(m: Match, dt: number): void {
     startDive(m, keeper, f.outcome === 'save' ? f.y1 : f.y1 + (f.y1 > MID ? -66 : 66));   // a goal means he guessed the wrong side
   }
   const foes = m.players.filter((q) => q.team !== f.team && q.role !== 'gk');
-  if (f.kind === 'canonazo') for (const o of foes) if (!f.hit.includes(o.id) && (b.x - o.x) * dir >= -4 && Math.abs(o.y - b.y) < 20) { f.hit.push(o.id); startTumble(m, o, 0.6, dir * T.fly.shot, Math.sign(o.y - b.y || 1) * T.fly.shot * 0.4, T.fly.shotVz); }
+  // a power shot goes through people: whoever it meets on its way (low enough to hit him) is sent flying
+  const hitR = f.kind === 'canonazo' ? 20 : T.super.hitR;
+  for (const o of foes) if (!f.hit.includes(o.id) && !f.targets.includes(o.id) && b.z < 40 && Math.abs(b.x - o.x) < 10 && Math.abs(o.y - b.y) < hitR) {
+    f.hit.push(o.id); startTumble(m, o, 0.6, dir * T.fly.shot, Math.sign(o.y - b.y || 1) * T.fly.shot * 0.4, T.fly.shotVz); emit(m, 'superhit', o.x, o.y, 0, o.id);
+  }
   if (f.kind === 'estrellas') for (const id of f.targets) { const o = playerById(m, id)!; if (!f.hit.includes(id) && (b.x - o.x) * dir >= -4) { f.hit.push(id); startStagger(m, o, 0.6); } }
   if (u >= 1) endFlight(m, f, s);
 }
@@ -185,7 +232,8 @@ function endFlight(m: Match, f: Flight, s: Player): void {
   setTouch(m, s);
   if (f.outcome === 'goal') {
     b.x = f.x1; b.y = f.y1; b.z = 6; b.inNet = true; b.scored = f.team; s.stats2.spGoals++;
-    if (keeper && f.kind === 'canonazo') startTumble(m, keeper, 0.8, dir * T.fly.shot * 0.6, 0, T.fly.shotVz);
+    // the keeper goes into the net with the ball (Nintendo World Cup)
+    if (keeper) { startTumble(m, keeper, 0.9, dir * T.fly.shot * 0.7, (f.y1 - keeper.y) * 2, T.fly.shotVz * 0.8); emit(m, 'superhit', keeper.x, keeper.y, 0, keeper.id); }
   } else {
     const inward = -dir as 1 | -1;
     b.x = f.x1; b.y = f.y1; b.vx = inward * 60; b.vy = m.rng.range(-40, 40); b.vz = 80; b.inNet = false;

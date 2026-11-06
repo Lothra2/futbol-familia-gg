@@ -5,7 +5,7 @@ import { PITCH, goalX } from '../core/field';
 import { choosePass, stealTarget } from '../core/actions';
 import { specialKind } from '../core/specials';
 import { J_COLORS } from './colors';
-import { sx, sy } from '../core/proj';
+import { wx, sy } from '../core/proj';
 import { services } from '../app/services';
 
 const INK = 0x2a1b3d;
@@ -45,16 +45,16 @@ export class Aim {
       // without the ball (full controls): an arc under the rival you can take the ball from at the front (the steal), and a line while you contain him
       if (p.controls !== 'full') continue;
       const c = stealTarget(m, p), col = J_COLORS[p.humanSlot ?? 0] ?? 0xffd447;
-      if (c) { const k = 0.5 + 0.5 * Math.sin(time * 14); this.gg.lineStyle(2, col, 0.6 + 0.4 * k); this.gg.strokeEllipse(Math.round(sx(c.x)), Math.round(sy(c.y)), 26, 10); }
+      if (c) { const k = 0.5 + 0.5 * Math.sin(time * 14); this.gg.lineStyle(2, col, 0.6 + 0.4 * k); this.gg.strokeEllipse(Math.round(wx(c.x, c.y)), Math.round(sy(c.y)), 26, 10); }
       if ((p.containT ?? 0) > 0) {
         const o = m.players.find((q) => q.id === m.ball.owner);
-        if (o) { this.gg.lineStyle(2, col, 0.7); this.gg.lineBetween(Math.round(sx(p.x)), Math.round(sy(p.y)), Math.round(sx(o.x)), Math.round(sy(o.y))); }
+        if (o) { this.gg.lineStyle(2, col, 0.7); this.gg.lineBetween(Math.round(wx(p.x, p.y)), Math.round(sy(p.y)), Math.round(wx(o.x, o.y)), Math.round(sy(o.y))); }
       }
     }
   }
 
   private one(m: Match, p: Player, time: number): void {
-    const g = this.g, ground = this.gg, x = Math.round(sx(p.x)), gy = Math.round(sy(p.y)), col = J_COLORS[p.humanSlot ?? 0] ?? 0xffd447;
+    const g = this.g, ground = this.gg, x = Math.round(wx(p.x, p.y)), gy = Math.round(sy(p.y)), col = J_COLORS[p.humanSlot ?? 0] ?? 0xffd447;
     const full = p.controls === 'full';
     const shooting = full && p.shoot.down, passing = full && p.pass.down;
     // the special is ready: a pulsing aura at the feet and a star over the head
@@ -75,13 +75,13 @@ export class Aim {
     const lob = passing && p.pass.t >= T.lobHold;
     if (lob && !this.lobCue) { this.lobCue = true; services.audio?.play('lob'); } else if (!passing) this.lobCue = false;
     if (c) {
-      const ty = Math.round(sy(c.y)), tx = Math.round(sx(c.x));
+      const ty = Math.round(sy(c.y)), tx = Math.round(wx(c.x, c.y));
       const a = passing ? 1 : 0.5;
       g.fillStyle(col, a).fillTriangle(tx - 4, ty - 46, tx + 4, ty - 46, tx, ty - 40);
       g.lineStyle(1, INK, a).strokeTriangle(tx - 4, ty - 46, tx + 4, ty - 46, tx, ty - 40);
       if (passing) {
         ground.lineStyle(2, lob ? 0x7be3ff : 0xffffff, 0.95).strokeEllipse(tx, ty, 18, 7);
-        const bx = Math.round(sx(m.ball.x)), by = Math.round(sy(m.ball.y) - 4);
+        const bx = Math.round(wx(m.ball.x, m.ball.y)), by = Math.round(sy(m.ball.y) - 4);
         const n = 12;
         let px = bx, py = by;
         for (let i = 1; i <= n; i++) {

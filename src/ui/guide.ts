@@ -60,6 +60,8 @@ export function touchHtml(easy: boolean, focus: Focus = null): string {
 type Btn = keyof typeof ICONS & ('shoot' | 'pass' | 'sprint' | 'special' | 'kick');
 
 const TIPS: [string, string, string][] = [
+  ['Súper patada', 'Corre con el balón <b>sin parar</b> hacia el arco. Cuando tu jugador <b>brille</b> y salga <b>¡YA!</b>, toca <b>Tiro</b>: sale su poder y tumba a todos los que estén en el camino. Si esperas mucho, se apaga y hay que volver a correr.', 'shoot'],
+  ['A pelear', 'Quitarle el balón a un rival lo tira al suelo. Correr fuerte contra el que lleva el balón también. Y la barrida manda a volar.', 'shoot'],
   ['Pase alto', 'Toca <b>Pase</b> para un pase raso. <b>Mantenlo</b> un momento y suéltalo: el balón vuela por arriba y pasa a los rivales.', 'pass'],
   ['Más potencia', 'Mantén <b>Tiro</b> y suéltalo cuando la barra se llene. Si te pasas, dispara solo.', 'shoot'],
   ['Tu poder', 'Pases, robos y paredes llenan la barra <b>★</b>. Con la barra llena y cerca del arco, toca <b>Especial</b>. En la película, toca <b>Tiro</b> cuando el anillo se cierre: más puntería, más gol.', 'special'],
@@ -112,12 +114,13 @@ export function showGuideWindow(onClose: () => void = () => undefined, start: Pa
 }
 
 interface Step { title: string; text: string; focus: Focus }
-/** The short tour of the first match (4 cards, or 3 with the easy controls). It runs over the paused match. */
+/** The short tour of the first match (5 cards, or 4 with the easy controls). It runs over the paused match. */
 export function runCoach(opt: { touch: boolean; easy: boolean }, onDone: () => void): HTMLElement {
   const steps: Step[] = [
     { title: 'Mueve a tu jugador', text: opt.touch ? 'Pon el pulgar izquierdo en la pantalla y arrástralo.' : 'Usa W A S D o las flechas.', focus: 'move' },
     { title: opt.easy ? '¡Patea!' : 'Tiro', text: opt.easy ? 'Toca ¡Patea! con el balón: tira al arco o pasa solo, lo mejor en el momento.' : opt.touch ? 'Toca Tiro para patear. Mantenlo para más potencia.' : 'Toca J (o Espacio) para patear. Mantenlo para más potencia.', focus: 'shoot' },
     ...(opt.easy ? [] : [{ title: 'Pase', text: opt.touch ? 'Toca Pase para un pase raso. Mantenlo y suéltalo para un pase alto.' : 'Toca K para un pase raso. Mantenlo y suéltalo para un pase alto.', focus: 'pass' as Focus }]),
+    { title: 'Súper patada', text: 'Corre con el balón sin parar hacia el arco. Cuando tu jugador brille y salga ¡YA!, ' + (opt.touch ? (opt.easy ? 'toca ¡Patea!' : 'toca Tiro') : 'toca J') + ': ¡sale su poder!', focus: 'shoot' },
     { title: 'Tu poder', text: 'Cuando se llene la barra ★ de arriba y estés cerca del arco, ' + (opt.touch ? 'toca Especial.' : 'toca I (o Enter).') + ' ¡Sale una película!', focus: 'special' },
   ];
   let i = 0;

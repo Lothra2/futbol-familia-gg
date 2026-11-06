@@ -279,7 +279,7 @@ export function tryFrontSteal(m: Match, p: Player, slack = false): boolean {
   const easyCarrier = c.control === 'human' && c.controls === 'easy' ? T.easy.stolen : 1;   // the ball sticks more to a child on easy controls
   const contained = (p.containT ?? 0) >= T.contain.after ? T.contain.stealBonus : 1;           // after half a second of holding him the steal is likelier
   if (m.rng.chance(Math.min(0.95, T.steal.p * (p.stats.steal ?? 1) * c.stats.stolen * easyCarrier * contained))) {
-    dropBall(m, c); startStagger(m, c, T.steal.fail);
+    { const d = Math.sign(c.x - p.x) || p.facing; startTumble(m, c, T.slide.tumble * 0.8, d * T.fly.steal, (c.y - p.y) * 3, T.fly.stealVz); }   // Nekketsu: the one who loses the ball goes down
     b.owner = p.id; b.state = 'owned'; p.immuneT = T.immune; p.stats2.steals++; setTouch(m, p); addBar(m, p.team, T.bar.steal + (contained > 1 ? T.bar.containSteal : 0));
     emit(m, 'steal', b.x, b.y, 0, p.id);
   } else {
@@ -302,7 +302,7 @@ export function checkBump(m: Match, p: Player): void {
     const n = Math.hypot(p.vx, p.vy) || 1;
     dropBall(m, c, (p.vx / n) * 70, (p.vy / n) * 70 + m.rng.range(-30, 30), 0);
     m.ball.state = 'free'; setTouch(m, p);
-    startStagger(m, c, T.bump.victim); c.holdT = 0;
+    startTumble(m, c, T.slide.tumble, (p.vx / n) * T.fly.bump, (p.vy / n) * T.fly.bump, T.fly.bumpVz); c.holdT = 0;   // a body check knocks him down
   }
   begin(p, { kind: 'bump', t: 0, dur: T.bump.self }, 'bump');
 }

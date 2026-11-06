@@ -1,7 +1,7 @@
 import Phaser from 'phaser';
 import type { MatchEvent } from '../core/types';
 import { KIND_INDEX } from '../core/specials';
-import { sx, sy } from '../core/proj';
+import { wx, sy } from '../core/proj';
 import { MID } from '../core/field';
 
 interface P { img: Phaser.GameObjects.Image; vx: number; vy: number; g: number; life: number; max: number; spin: number }
@@ -32,7 +32,7 @@ export class Fx {
 
   /** Effects of the events of the core, placed with the projection of the pitch (core/proj.ts). */
   event(e: MatchEvent, rnd: () => number, gold = false): void {
-    const x = sx(e.x), y = sy(e.y, e.z), gy = sy(e.y);
+    const x = wx(e.x, e.y), y = sy(e.y, e.z), gy = sy(e.y);
     switch (e.k) {
       case 'slide': case 'bump': for (let i = 0; i < 4; i++) this.spawn('dust', x + (rnd() - 0.5) * 8, gy - 2, (rnd() - 0.5) * 40, -10 - rnd() * 20, 20, 0.35); break;
       case 'bounce': if ((e.v ?? 0) > 120) this.spawn('dust', x, gy - 1, 0, -8, 10, 0.25); break;
@@ -46,7 +46,7 @@ export class Fx {
       }
       case 'pass': this.spawn('ring', x, y, 0, 0, 0, 0.16, 0xbff3ff, 610); break;
       case 'goal': {
-        const gx = sx(e.x < 480 ? -4 : 964);
+        const gx = wx(e.x < 480 ? -4 : 964, e.y);
         for (let i = 0; i < 46; i++) this.spawn('confetti', gx + (rnd() - 0.5) * 120, sy(MID) - 90 - rnd() * 50, (rnd() - 0.5) * 70, 10 + rnd() * 50, 90, 2.6 + rnd(), CONF[i % CONF.length], 900);
         break;
       }
@@ -70,6 +70,8 @@ export class Fx {
         break;
       }
       case 'steal': case 'slideball': this.spawn('spark', x, y, 0, -20, 60, 0.2); break;
+      case 'super': for (let i = 0; i < 10; i++) { const a = (i / 10) * Math.PI * 2; this.spawn('spark', x, y - 8, Math.cos(a) * 140, Math.sin(a) * 90, 0, 0.35, 0xffe45c, 640); } this.spawn('ring', x, y - 8, 0, 0, 0, 0.35, 0xffffff, 641); break;
+      case 'superhit': case 'slidehit': for (let i = 0; i < 6; i++) { const a = (i / 6) * Math.PI * 2; this.spawn('star', x, gy - 20, Math.cos(a) * 60, Math.sin(a) * 40 - 30, 120, 0.5, i % 2 ? 0xffe45c : 0xffffff, 640); } break;
     }
   }
 

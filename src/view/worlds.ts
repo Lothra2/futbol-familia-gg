@@ -27,7 +27,7 @@ export const WORLDS: Record<WorldId, World> = {
     boards: ['#ff8a2a', '#2a1b3d', '#ffd447'], boardText: ['VOLCÁN', 'FAMILIA GG', '¡FUEGO!'], time: 'night',
   },
   bosque: {
-    name: 'Bosque Arcoíris', stripe: ['#5cbd4c', '#52ad44'], patch: ['#7fd86a', '#74cc60'], out: '#4a9a3e', track: '#8a6a44', line: '#ffffff',
+    name: 'Bosque Arcoíris', stripe: ['#5fd23a', '#52c22e'], patch: ['#a6ec7c', '#98e06c'], out: '#4a9a3e', track: '#8a6a44', line: '#ffffff',
     deco: { kind: 'flores', colors: ['#ffffff', '#ffe45c', '#ff9ac8'], density: 6 }, patchCover: 0.32, patchSize: 30,
     wall: '#2f5a3a', seats: ['#4a7a50', '#3e6a44'], fans: ['#8aa0a8', '#c8d0d8', '#5ddb43', '#ffd447', '#f4e3c4'],
     boards: ['#5ddb43', '#2a1b3d', '#ffd447'], boardText: ['BOSQUE', 'FAMILIA GG', 'JUGO DE MANGO'], time: 'sunset',

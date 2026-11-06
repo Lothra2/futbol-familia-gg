@@ -10,7 +10,7 @@ for (const [w, h] of [[667, 375], [844, 390], [926, 428], [1024, 768], [1180, 82
   await page.waitForSelector('#s-title', { timeout: 15000 });
   await page.evaluate(() => { window.__futbol.store.data.stats.guideSeen = true; });   // the tour of the first match has its own test (guide.mjs)
   await page.screenshot({ path: `docs/qa/shots/m7_title_${w}x${h}.png` });
-  ok(`${w}x${h}: la portada muestra el titulo y "Toca para empezar"`, await page.evaluate(() => !!document.querySelector('.logo .l1') && !!document.querySelector('.tap')));
+  ok(`${w}x${h}: la portada muestra el titulo y "PRESIONA START"`, await page.evaluate(() => !!document.querySelector('.nlogo .t1') && /PRESIONA START/.test(document.querySelector('.tap')?.textContent ?? '')));
   await page.click('#s-title');
   await page.waitForSelector('#s-main');
   const mb = await page.evaluate(() => [...document.querySelectorAll('#s-main .mbtn')].map((e) => { const r = e.getBoundingClientRect(); return { l: r.left, t: r.top, r: r.right, b: r.bottom }; }));

@@ -10,6 +10,7 @@ import type { WorldId } from '../worlds';
 import { BallView } from '../BallView';
 import { Fx } from '../Fx';
 import { WeatherView } from '../WeatherView';
+import { setView, wx, sy } from '../../core/proj';
 import { outfitAtlas } from '../outfit';
 import { Cinematic, type CineInfo } from '../Cinematic';
 import { Aim } from '../Aim';
@@ -95,7 +96,7 @@ export class MatchScene extends Phaser.Scene {
     this.fkView?.destroy(); this.fkView = new FreeKickView(this);
     this.pen = new PenView(this, [T_ES.teams.family, T_ES.teams[this.cfg.rival] ?? '']);
     this.penCine?.destroy(); this.penCine = new PenCine(this, this.cfg.stadium ?? 'volcan');
-    this.ceremony = false; this.ceremonyT = 0;
+    this.ceremony = false; this.ceremonyT = 0; this.pows = [];
     this.hitStop = 0; this.narrator.enabled = this.cfg.narrator !== false; this.narrator.volume = this.cfg.narratorVolume ?? 0.8; this.narrator.stop(); this.training = null; this.trainPanel?.destroy(); this.trainPanel = null;
     if (this.cfg.training) { this.training = new Training(m, m.humans.every((h) => h.controls === 'easy'), this.cfg.drill ?? 'todo'); this.trainPanel = new TrainingPanel(); }
     window.addEventListener('pointerdown', this.tapSkip); window.addEventListener('keydown', this.replayKey);
@@ -128,6 +129,7 @@ export class MatchScene extends Phaser.Scene {
   private applyCamera(): void {
     const sh = this.cam.shake > 0 ? Math.round(Math.sin(this.time.now * 0.09) * 2) : 0;
     this.cameras.main.setScroll(Math.round(this.cam.x) + sh, Math.round(this.cam.y));
+    setView(Math.round(this.cam.x) + this.scale.width / 2, Math.round(this.cam.y) + (this.scale.height - this.inset) / 2, this.scale.height);
   }
 
   private onEvents(evs: MatchEvent[]): void {
@@ -151,6 +153,10 @@ export class MatchScene extends Phaser.Scene {
         case 'save': if (e.v !== 2 && this.ctl.m.phase !== 'penalties') this.hud.banner(B.save, 700); this.stadium.gasp(); break;
         case 'post': case 'bar': if (this.ctl.m.phase !== 'penalties') this.hud.banner(B.post, 600); shakeCamera(this.cam, 0.1); this.stadium.gasp(); break;
         case 'starfull': if (e.v === 0) this.hud.hint(T_ES.hints.star, 1500); break;
+        case 'super': this.hud.banner(T_ES.specials[KIND_INDEX[e.v ?? 0]] ?? '¡SÚPER PATADA!', 1000); this.hud.flash(120); shakeCamera(this.cam, 0.3); this.stadium.gasp(); break;
+        case 'superready': { const p = this.ctl.m.players.find((q) => q.id === e.who); if (p?.control === 'human') this.pow(e.x, e.y, '¡YA!', '#ffe45c'); break; }
+        case 'superhit': case 'slidehit': this.pow(e.x, e.y, ['¡PUM!', '¡POW!', '¡ZAS!'][Math.floor(Math.random() * 3)], '#ffffff'); break;
+        case 'steal': this.pow(e.x, e.y, '¡PUM!', '#ffffff'); break;
       }
     }
   }
@@ -177,7 +183,7 @@ export class MatchScene extends Phaser.Scene {
         const p = v.p;
         const slot = p.control === 'human' ? p.humanSlot : null;
         v.forceDir = m.phase === 'penalties' && m.pen ? (p.id === m.pen.shooter ? 6 : p.id === m.pen.keeper ? 2 : null) : null;
-        v.update(dt, m, slot, slot === null ? 0 : J_COLORS[slot] ?? COLORS[p.charId ?? 'sophie']);
+        v.update(dt * this.ctl.pace, m, slot, slot === null ? 0 : J_COLORS[slot] ?? COLORS[p.charId ?? 'sophie']);
       }
       this.stadium.update(dt);
       this.weather.update(dt, this.scale.width, this.scale.height, this.cam.x - this.lastCam.x, this.cam.y - this.lastCam.y); this.lastCam = { x: this.cam.x, y: this.cam.y };
@@ -242,7 +248,7 @@ export class MatchScene extends Phaser.Scene {
   private stepReplay(dt: number): void {
     const rp = this.replay!, W = this.scale.width, H = this.scale.height;
     const f = rp.step(dt, W, H);
-    this.cameras.main.setScroll(Math.round(rp.camX), Math.round(rp.camY)); this.stadium.update(dt);
+    this.cameras.main.setScroll(Math.round(rp.camX), Math.round(rp.camY)); setView(Math.round(rp.camX) + W / 2, Math.round(rp.camY) + H / 2, H); this.stadium.update(dt);
     this.views.forEach((v, i) => { v.p = f.ps[i]; v.update(dt * rp.speed, null, null, 0); });
     this.ballView.setBall(f.ball); this.ballView.update(f.kind, f.rt);
     this.replayUi.draw(W, H, rp.t, rp.speed);
@@ -259,6 +265,15 @@ export class MatchScene extends Phaser.Scene {
     services.audio?.play('whoosh');
   }
 
+  /** The words of a hit, Nekketsu style: big pixel letters that jump out of the player and fade. */
+  private pows: Phaser.GameObjects.Text[] = [];
+  private pow(x: number, y: number, word: string, color: string): void {
+    const t = this.pows.find((o) => !o.visible) ?? (this.pows.length < 6 ? this.pows[this.pows.push(this.add.text(0, 0, '', { fontFamily: 'Pixelify, sans-serif', fontSize: '16px', fontStyle: 'bold', color: '#fff', stroke: '#2A1B3D', strokeThickness: 4 }).setOrigin(0.5, 1).setResolution(1).setDepth(1500)) - 1] : this.pows[0]);
+    this.tweens.killTweensOf(t);
+    t.setText(word).setColor(color).setVisible(true).setAlpha(1).setScale(0.6).setPosition(Math.round(wx(x, y)), Math.round(sy(y) - 34));
+    this.tweens.add({ targets: t, scale: 1.15, y: t.y - 14, duration: 180, ease: 'Back.Out', onComplete: () => this.tweens.add({ targets: t, alpha: 0, duration: 380, delay: 220, onComplete: () => t.setVisible(false) }) });
+  }
+
   /** A short freeze on the hardest moments: a power shot, a goal, a post, a bump. */
   private hitStopFor(e: MatchEvent): void {
     const m = this.ctl.m, v = e.v ?? 0;
@@ -267,6 +282,8 @@ export class MatchScene extends Phaser.Scene {
     else if (e.k === 'goal' && m.phase !== 'penalties') t = 0.12;
     else if ((e.k === 'post' || e.k === 'bar') && v > 300 && m.phase === 'play') t = 0.06;
     else if (e.k === 'bump') t = 0.06;
+    else if (e.k === 'super') t = 0.16;
+    else if (e.k === 'superhit' || e.k === 'slidehit') t = 0.08;
     else if (e.k === 'save' && v !== 2 && m.phase === 'play') t = 0.05;
     if (t > this.hitStop) this.hitStop = t;
   }

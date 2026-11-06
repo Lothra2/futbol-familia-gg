@@ -73,7 +73,9 @@ export class Hud {
 
   banner(text: string, ms = 1400): void {
     if (!text) return;
-    const b = this.el.banner; b.textContent = text; b.classList.add('show'); window.clearTimeout(this.bannerTimer);
+    // the NES letters have no accented capitals
+    const b = this.el.banner; b.textContent = text.toUpperCase().replace(/[ÁÉÍÓÚÜ]/g, (c) => 'AEIOUU'['ÁÉÍÓÚÜ'.indexOf(c)]);
+    b.classList.add('show'); window.clearTimeout(this.bannerTimer);
     this.bannerTimer = window.setTimeout(() => b.classList.remove('show'), ms);
   }
   hint(text: string, ms = 1200): void {

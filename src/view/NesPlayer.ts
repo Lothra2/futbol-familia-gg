@@ -1,7 +1,7 @@
 import Phaser from 'phaser';
 import type { AnimMeta } from './anim';
 import { LoopClock } from './anim';
-import { PX, PY, depthAt, sx, sy } from '../core/proj';
+import { PX, PY, depthAt, wx, sy } from '../core/proj';
 import type { Match, Player } from '../core/state';
 import type { Fx } from './Fx';
 
@@ -76,7 +76,7 @@ export class NesPlayer {
   private dir = 0;
   private lastFrame = -1;
   private isThor: boolean;
-  gold = false; private goldT = 0;
+  gold = false; private goldT = 0; private flashT = 0;
   /** A direction the scene imposes (the penalty shootout: the shooter from behind, the keeper facing us). */
   forceDir: number | null = null;
 
@@ -115,7 +115,7 @@ export class NesPlayer {
     const speed = Math.hypot(p.vx, p.vy);
     this.loops.ease(Math.max(0.6, Math.min(1.8, speed / 110)), dt);
     const frame = st.loop ? this.loops.frame(this.meta.anims, key, dt) : a.start + Math.min(a.frames - 1, Math.floor(Math.max(0, st.t) * a.fps));
-    const x = Math.round(sx(p.x)), gy = Math.round(sy(p.y)), y = Math.round(sy(p.y, p.z));
+    const x = Math.round(wx(p.x, p.y)), gy = Math.round(sy(p.y)), y = Math.round(sy(p.y, p.z));
     // a puff at the feet when a running stride lands (frames 0 and 4 of the cycle)
     if (st.loop && st.name.startsWith('run') && frame !== this.lastFrame && p.z < 2 && speed > 90 && this.fx) {
       const rel = frame - a.start;
@@ -123,6 +123,10 @@ export class NesPlayer {
     }
     this.lastFrame = frame;
     this.sprite.setFrame(frame).setPosition(x, y).setFlipX(!!mirrored).setDepth(depthAt(p.y));
+    // the moment of the súper patada: the carrier flashes white and gold (Nekketsu), shoot now
+    const flash = !!m && !!p.sup && p.sup.until > 0 && m.t <= p.sup.until && m.ball.owner === p.id;
+    if (flash) { this.flashT += dt; this.sprite.setTint(Math.floor(this.flashT * 14) % 2 ? 0xffffff : 0xffe45c); if (this.fx && Math.floor(this.flashT * 10) !== Math.floor((this.flashT - dt) * 10)) this.fx.sparkle(x + (Math.random() - 0.5) * 18, y - 8 - Math.random() * 24); }
+    else if (this.flashT > 0) { this.flashT = 0; this.sprite.clearTint(); }
     if (this.gold && p.state === 'celebrate') {
       this.goldT += dt;
       this.sprite.setTint(Math.sin(this.goldT * 14) > 0 ? 0xfff3b0 : 0xffd447);

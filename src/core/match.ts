@@ -13,7 +13,7 @@ import { dumbThink } from './ai/dumb';
 import { aiInput, newMind } from './ai/brain';
 import { applyRubber } from './ai/difficulty';
 import { updateControl } from './control';
-import { stepFlight, trySpecials, updateBar } from './specials';
+import { stepFlight, superOpen, superShot, trackSuper, trySpecials, updateBar } from './specials';
 import { stepPenalties } from './penalties';
 import type { ControlMode, DifficultyId, Match, Player, Strategy, Team, Weather } from './state';
 
@@ -102,6 +102,9 @@ export function step(m: Match, dt: number = DT): void {
       if (m.training) for (const p of m.players) if (p.team === 1 && p.role !== 'gk') p.input = emptyInput();
       if (m.tick % 30 === 0) applyRubber(m);
       trySpecials(m);
+      // the súper patada: Tiro while the carrier flashes
+      const o = m.phase === 'play' ? m.players.find((q) => q.id === m.ball.owner) : undefined;
+      if (o && o.input.shootPressed && superOpen(m, o)) superShot(m, o);
     }
     stepFlight(m, dt);
     const live = movesIn(m);
@@ -116,6 +119,7 @@ export function step(m: Match, dt: number = DT): void {
       bounce: (x, y, v) => emit(m, 'bounce', x, y, 0, undefined, v),
     });
     updatePossession(m, dt);
+    { const o = m.players.find((q) => q.id === m.ball.owner); if (o && m.ball.state === 'owned') trackSuper(m, o, dt); }
     if (m.training) {
       m.bar[0] = T.bar.max;
       // a cone never keeps the ball: it goes to the closest of the family

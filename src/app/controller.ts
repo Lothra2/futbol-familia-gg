@@ -3,6 +3,7 @@ import { setHumanInput } from '../core/control';
 import { launchSpecial } from '../core/specials';
 import { attackDir } from '../core/field';
 import { StepClock } from '../core/step';
+import { T } from '../core/tuning';
 import { botFrame, newBot, type BotKind } from '../core/ai/testbots';
 import type { InputRouter } from '../input/router';
 import type { CharId, MatchEvent } from '../core/types';
@@ -97,9 +98,12 @@ export class MatchController {
   }
 
   /** Runs the steps that `seconds` of real time are worth. Returns the events of those steps, in order. */
+  /** The match runs a little slower than real time, like Nintendo World Cup (tests that fast forward keep real time). */
+  get pace(): number { return this.cfg.ff > 1 || this.cfg.fastForward ? 1 : T.pace; }
+
   advance(seconds: number, ff = 1): MatchEvent[] {
     const out: MatchEvent[] = [];
-    const n = this.clock.steps(seconds, ff);
+    const n = this.clock.steps(seconds * this.pace, ff);
     for (let i = 0; i < n && this.m.phase !== 'over'; i++) {
       for (const h of this.m.humans) {
         const f = this.bots.length ? botFrame(this.m, h, this.bots[h.slot]) : this.router ? this.router.frame(h.slot) : null;

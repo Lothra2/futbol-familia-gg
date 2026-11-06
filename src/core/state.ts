@@ -51,6 +51,8 @@ export interface Player {
   containT?: number; slowT?: number;
   /** A button pressed a moment before the ball reaches him, kept until it does (first time shots and passes). */
   buf?: { kind: 'shoot' | 'pass'; until: number } | null;
+  /** The súper patada of Nekketsu: px dribbled without stopping, and until when the flash (the moment to shoot it) lasts. */
+  sup?: { run: number; still: number; until: number; last: number } | null;
 }
 
 export interface AIMind {

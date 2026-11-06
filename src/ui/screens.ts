@@ -45,7 +45,7 @@ export class Screens {
   private onKey = (e: KeyboardEvent): void => this.key(e);
   private gst: { tab: Tab; two: boolean; easy: boolean } = { tab: defaultTab(), two: false, easy: false };
 
-  constructor(private d: ScreenDeps) { window.addEventListener('keydown', this.onKey); }
+  constructor(private d: ScreenDeps) { window.addEventListener('keydown', this.onKey); this.ui.classList.add('nesui'); }
 
   get current(): Name | null { return this.cur; }
   close(): void { this.el?.remove(); this.el = null; this.cur = null; this.stack = []; }
@@ -86,23 +86,22 @@ export class Screens {
 
   // ------------------------------------------------------------------ screens
   private title(): string {
-    const word = (w: string, cls: string): string => `<div class="${cls}">${[...w].map((c, i) => `<span style="animation-delay:${i * 0.09}s">${c === ' ' ? '&nbsp;' : c}</span>`).join('')}</div>`;
-    return `<div class="logo">${word('FÚTBOL', 'l1')}${word('FAMILIA GG', 'l2')}<div class="ball-spin">${ICON.ball}</div></div>
-      <div class="tap" data-focus tabindex="0">¡Toca para empezar!</div><div class="ver">Hecho con cariño para Sophie, Alana y Juandi</div>`;
+    // the title of a NES cartridge: the logo over black, the spinning ball, the blinking START and the line of the makers
+    return `<div class="nlogo"><div class="nball"></div><div class="t1">FUTBOL</div><div class="t2">FAMILIA GG</div><div class="t3">COPA DE LOS CUATRO REINOS</div></div>
+      <div class="tap" data-focus tabindex="0">PRESIONA START</div><div class="ver">© 2026 FAMILIA GG · PARA SOPHIE, ALANA Y JUANDI</div>`;
   }
 
   private main(): string {
-    const s = this.d.store.data, cupSub = cupInProgress(s) ? `Sigue: ${cupKingdom(s).name}` : s.trophies.copa > 0 ? `Campeones x${s.trophies.copa}` : '4 reinos, 1 gran copa';
-    const b = (act: string, icon: string, label: string, sub: string, cls: string, focus = false): string => `<button class="mbtn ${cls}" data-act="${act}"${focus ? ' data-focus' : ''}><span class="ic">${icon}</span><span class="tx"><b>${label}</b><em>${sub}</em></span></button>`;
-    const fam = (['sophie', 'alana', 'papa', 'mama', 'juandi', 'thor'] as CharId[]).map((c) => `<div class="fchip" title="${NAMES[c]}">${this.av(c, 1)}<b>Nv ${this.level(c)}</b></div>`).join('');
-    return `<div class="side"><div class="mini-logo"><b>FÚTBOL</b><span>FAMILIA GG</span></div>
-      ${b('quick', ICON.ball, 'Partido rápido', 'Elige rival y a jugar', 'green', true)}
-      ${b('cup', ICON.cup, 'La Copa', cupSub, 'gold')}
-      ${b('training', ICON.target, 'Entrenamiento', 'Practica con Thor', 'pink')}
-      ${b('vitrina', ICON.medal, 'Vitrina', `${Object.values(s.trophies).slice(0, 4).filter(Boolean).length}/4 copas, trajes y récords`, 'blue')}
-      ${b('settings', ICON.gear, 'Ajustes', 'Sonido, controles y más', 'gray')}</div>
-      <div class="fam">${fam}</div>
-      <div class="corner"><div class="cbtns"><button class="chip-o" data-act="guide">Cómo se juega</button><button class="chip-o" data-act="fs">Pantalla completa</button></div>${this.dailyCard()}</div>`;
+    const s = this.d.store.data, cupSub = cupInProgress(s) ? `SIGUE: ${cupKingdom(s).name.normalize('NFD').replace(/[\u0300-\u036f]/g, '').toUpperCase()}` : s.trophies.copa > 0 ? `CAMPEONES X${s.trophies.copa}` : '4 REINOS';
+    const b = (act: string, label: string, sub: string, focus = false): string => `<button class="mbtn" data-act="${act}"${focus ? ' data-focus' : ''}><span class="tx"><b>${label}</b><em>${sub}</em></span></button>`;
+    return `<div class="side"><div class="mini-logo"><b>FUTBOL</b><span>FAMILIA GG</span></div>
+      <div class="nbox">
+      ${b('quick', 'PARTIDO RAPIDO', '1 O 2 JUGADORES', true)}
+      ${b('cup', 'LA COPA', cupSub)}
+      ${b('training', 'ENTRENAMIENTO', 'CON THOR')}
+      ${b('vitrina', 'VITRINA', `${Object.values(s.trophies).slice(0, 4).filter(Boolean).length}/4 COPAS`)}
+      ${b('settings', 'AJUSTES', 'SONIDO Y CONTROLES')}</div></div>
+      <div class="corner"><div class="cbtns"><button class="chip-o" data-act="guide">CÓMO SE JUEGA</button><button class="chip-o" data-act="fs">PANTALLA COMPLETA</button></div>${this.dailyCard()}</div>`;
   }
 
   /** The little card of the main menu: today's three challenges as dots. */

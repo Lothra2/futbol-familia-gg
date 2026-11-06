@@ -3,7 +3,7 @@ import type { Match } from '../core/state';
 import { T } from '../core/tuning';
 import { goalX } from '../core/field';
 import { fkMeter, fkPath } from '../core/freekick';
-import { PY, sx, sy } from '../core/proj';
+import { PY, wx, sy } from '../core/proj';
 
 const INK = 0x2a1b3d;
 const font = (px: number, color: string): Phaser.Types.GameObjects.Text.TextStyle => ({ fontFamily: 'Pixelify, sans-serif', fontSize: `${px}px`, fontStyle: 'bold', color, stroke: '#2A1B3D', strokeThickness: 3 });
@@ -31,7 +31,7 @@ export class FreeKickView {
     const taker = m.players.find((p) => p.id === r.taker);
     if (!taker || r.t < 0.3) return;
     const human = taker.control === 'human', easy = human && taker.controls === 'easy', a = human ? 1 : 0.25, fk = r.fk;
-    const bx = Math.round(sx(r.x)), by = Math.round(sy(r.y) - 3), gx = Math.round(sx(goalX(r.team))), gy = Math.round(sy(fk.aimY, 8));
+    const bx = Math.round(wx(r.x, r.y)), by = Math.round(sy(r.y) - 3), gx = Math.round(wx(goalX(r.team), fk.aimY)), gy = Math.round(sy(fk.aimY, 8));
     const path = fkPath(m, r);
     // the path: the ball starts towards `start` and bends `drift` px on the way, so at the goal it is on the aimed point
     let px = bx, py = by;
@@ -46,7 +46,7 @@ export class FreeKickView {
     g.lineStyle(3, INK, a).strokeCircle(gx, gy, rr + 1).lineStyle(2, 0xffe45c, a).strokeCircle(gx, gy, rr);
     g.lineStyle(2, 0xffffff, a).lineBetween(gx - rr - 4, gy, gx - rr + 2, gy).lineBetween(gx + rr - 2, gy, gx + rr + 4, gy);
     if (!human) return;
-    const x = Math.round(sx(taker.x)), y0 = Math.round(sy(taker.y) - 58);
+    const x = Math.round(wx(taker.x, taker.y)), y0 = Math.round(sy(taker.y) - 58);
     if (easy) { this.label.setVisible(true).setText('Apunta y toca Tiro').setColor('#ffffff').setFontSize(10).setPosition(x, y0 - 4); return; }
     // the meter over the taker (full controls): first the aim, then (after the first Tiro) the cursor rises and falls once, the green top is the sweet spot
     const meter = fk.stage === 'meter', u = fkMeter(fk, r.t), w = 36, h = 6, x0 = x - w / 2, sweet = meter && u >= T.free.sweet;

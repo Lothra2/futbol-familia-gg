@@ -1,6 +1,8 @@
 import { T } from '../tuning';
 import { DT } from '../step';
 import { MID, PITCH, SY, attackDir, goalX, ownGoalX, slotPos } from '../field';
+import { superOpen } from '../specials';
+import { DIFFICULTY } from '../tuning';
 import { choosePass, segDist } from '../actions';
 import { emptyInput, type InputFrame } from '../types';
 import { aiParams } from './difficulty';
@@ -115,6 +117,8 @@ function brainThink(m: Match, p: Player, humanize: boolean): InputFrame {
   if (carrier && carrier.id === p.id) {
     const dGoal = Math.abs(gx - p.x);
     const near = foes.filter((q) => q.role !== 'gk' && (q.x - p.x) * dir > -6 && Math.hypot(q.x - p.x, (q.y - p.y) / T.yFactor) < 34).sort((a, c) => Math.hypot(a.x - p.x, a.y - p.y) - Math.hypot(c.x - p.x, c.y - p.y))[0];
+    // the súper patada: when he flashes he shoots it (Nekketsu)
+    if (superOpen(m, p) && m.rng.chance(p.team === 1 ? DIFFICULTY[m.difficulty].superTake : T.super.aiTake)) { f.mx = dir; f.my = 0; f.shootPressed = true; f.shoot = false; A.armedAt = 0; return f; }
     // the special, when the bar is full, close enough and after a short wait
     if (m.bar[p.team] >= T.bar.max && (p.team === 1 || !m.players.some((q) => q.team === 0 && q.control === 'human')) && dGoal <= (p.team === 1 ? T.special.aiRange : PITCH.w * T.special.zone)) {
       const full = ((m.data.fullAt as number[] | undefined) ?? [0, 0])[p.team];

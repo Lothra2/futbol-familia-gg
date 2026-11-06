@@ -62,6 +62,19 @@ export function makeTextures(scene: Phaser.Scene): void {
     ['#########', '.#######.', '..#####..', '...###...', '....#....'].forEach((row, y) => [...row].forEach((ch, x) => { if (ch === '#') px(c, '#ffffff', x, y); }));
     px(c, PAL.ink, 0, 0, 9, 1);
   });
+  // the big ball of Nintendo World Cup: 12 px, white with black patches that turn as it rolls (4 frames), ink rim
+  tex(scene, 'ballbig', 48, 12, (c) => {
+    const spots = [[[4, 3], [7, 6], [3, 8]], [[5, 3], [8, 7], [3, 7]], [[6, 4], [7, 8], [3, 5]], [[5, 5], [8, 4], [4, 8]]];
+    for (let f = 0; f < 4; f++) for (let y = 0; y < 12; y++) for (let x = 0; x < 12; x++) {
+      const d = Math.hypot(x + 0.5 - 6, y + 0.5 - 6);
+      if (d > 6) continue;
+      const rim = d > 5;
+      let col = rim ? PAL.ink : x + y < 9 ? '#ffffff' : x + y > 15 ? '#d9d2ec' : PAL.white;
+      if (!rim) for (const [sx, sy] of spots[f]) if (Math.abs(x - sx) + Math.abs(y - sy) <= 1) col = '#2a1b3d';
+      px(c, col, f * 12 + x, y);
+    }
+  });
+  if (!scene.textures.get('ballbig').has('0')) { for (let i = 0; i < 4; i++) scene.textures.get('ballbig').add(i, 0, i * 12, 0, 12, 12); }
   // the "1" and "2" over the player a person moves (Nintendo World Cup): a 3 x 5 digit at double size with an ink rim, tinted by the view
   for (const n of [1, 2]) tex(scene, `mark_${n}`, 10, 14, (c) => {
     DIGITS[String(n)].forEach((row, y) => [...row].forEach((ch, x) => { if (ch === '#') px(c, PAL.ink, x * 2, y * 2, 4, 4); }));

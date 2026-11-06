@@ -1,6 +1,6 @@
 import Phaser from 'phaser';
 import { AREA_BIG, AREA_SMALL, CENTER, GOAL, PENALTY_X, PITCH } from '../core/field';
-import { BOUNDS, MARGIN, PX, PY, PZ, sx, sy } from '../core/proj';
+import { BOUNDS, MARGIN, PX, PY, PZ, sx, sy, wx } from '../core/proj';
 import { WORLDS, rng, type World, type WorldId } from './worlds';
 import { drawFan, makeFans, poseOf, ROW_H, SEAT, type Fan, type FanKind } from './stadium/fans';
 import { drawText, textWidth } from './stadium/font5';
@@ -12,6 +12,7 @@ const W = Math.ceil(BOUNDS.x1 - BOUNDS.x0), H = Math.ceil(BOUNDS.y1 - BOUNDS.y0)
 const X = (x: number): number => Math.round(sx(x) - BOUNDS.x0);
 const Y = (y: number): number => Math.round(sy(y) - BOUNDS.y0);
 const ROWS = 4;
+const MIDY = (GOAL.y0 + GOAL.y1) / 2;
 /** Where the stands sit (world y): the boards at the foot, then the rows of fans going up. */
 const BOARD_Y0 = -22, BOARD_Y1 = -8, STAND_Y1 = BOARD_Y0 - 2;
 const GRADE: Record<TimeOfDay, number> = { day: 0xffffff, sunset: 0xffdcc0, night: 0xa0a8e0 };
@@ -25,8 +26,9 @@ export class TopPitch {
   readonly world: World;
   readonly time: TimeOfDay;
   private img: Phaser.GameObjects.Image;
-  private goals: Phaser.GameObjects.Image[] = [];
-  private frames: Phaser.GameObjects.Image[] = [];
+  private lineG: Phaser.GameObjects.Graphics;
+  private netG: Phaser.GameObjects.Graphics;
+  private frameG: Phaser.GameObjects.Graphics;
   private crowd: Phaser.GameObjects.Image;
   private grade: Phaser.GameObjects.Rectangle;
   private lights: Phaser.GameObjects.Graphics;
@@ -45,13 +47,9 @@ export class TopPitch {
     this.fans = makeFans(31 + id.length, Math.floor(W / SEAT), ROWS, MIX[id]);
     for (const st of ['idle', 'cheer'] as const) for (let k = 0; k < 4; k++) this.bakeCrowd(st, k);
     this.crowd = scene.add.image(BOUNDS.x0, Math.round(sy(STAND_Y1)) - ROWS * ROW_H, `crowd_${id}_idle_0`).setOrigin(0, 0).setDepth(2);
-    if (!scene.textures.exists('goal_net')) this.bakeGoal();
-    for (const side of [0, 1]) {
-      const gx = side === 0 ? 0 : PITCH.w;
-      // the net and the back of the goal behind everything that stands on the pitch, the frame (posts and bar) in front of what is behind the near post
-      this.goals.push(scene.add.image(sx(gx), sy(GOAL.y1), 'goal_net').setOrigin(side === 0 ? 1 : 0, 1).setFlipX(side === 1).setDepth(150));
-      this.frames.push(scene.add.image(sx(gx), sy(GOAL.y1), 'goal_frame').setOrigin(side === 0 ? 1 : 0, 1).setFlipX(side === 1).setDepth(200 + GOAL.y1 + 0.5));
-    }
+    this.lineG = scene.add.graphics().setDepth(3);
+    this.netG = scene.add.graphics().setDepth(150);
+    this.frameG = scene.add.graphics().setDepth(200 + GOAL.y1 + 0.5);
     this.lights = scene.add.graphics().setDepth(3550).setBlendMode(Phaser.BlendModes.ADD);
     this.grade = scene.add.rectangle(0, 0, 10, 10, GRADE[this.time]).setOrigin(0, 0).setDepth(3500).setScrollFactor(0).setBlendMode(Phaser.BlendModes.MULTIPLY).setVisible(this.time !== 'day');
     if (this.time === 'night') this.drawLights();
@@ -64,13 +62,14 @@ export class TopPitch {
   gasp(): void { this.cheerT = Math.max(this.cheerT, 1.2); }
 
   update(dt: number): void {
+    this.drawLines();
     this.clock += dt; this.cheerT = Math.max(0, this.cheerT - dt);
     this.state = this.cheerT > 0 ? 'cheer' : 'idle';
     const k = Math.floor(this.clock * (this.state === 'cheer' ? 8 : 2)) % 4;
     if (k !== this.k || this.crowd.texture.key.indexOf(this.state) < 0) { this.k = k; this.crowd.setTexture(`crowd_${this.id}_${this.state}_${k}`); }
   }
 
-  destroy(): void { for (const o of [this.img, this.crowd, this.grade, this.lights, ...this.goals, ...this.frames]) o.destroy(); }
+  destroy(): void { for (const o of [this.img, this.crowd, this.grade, this.lights, this.lineG, this.netG, this.frameG]) o.destroy(); }
 
   // ------------------------------------------------------------------ baking
   private bake(key: string): void {
@@ -97,7 +96,6 @@ export class TopPitch {
       for (let i = 1; i < 4; i++) c.fillRect(X(a) + Math.round(((X(b) - X(a)) * i) / 4), Y(-6), 1, Y(PITCH.d + 6) - Y(-6));
     }
     this.decorate(c, r);
-    this.lines(c);
     this.stands(c);
     t.refresh();
   }
@@ -118,26 +116,44 @@ export class TopPitch {
     }
   }
 
-  /** The white lines, from the constants of field.ts, 2 px thick. */
-  private lines(c: Ctx): void {
-    const col = this.world.line, L = 2;
-    const hline = (x0: number, x1: number, y: number): void => px(c, col, X(x0), Y(y) - 1, X(x1) - X(x0), L);
-    const vline = (x: number, y0: number, y1: number): void => px(c, col, X(x) - 1, Y(y0), L, Y(y1) - Y(y0));
-    const arc = (cx: number, cy: number, rr: number, a0: number, a1: number): void => {
-      for (let i = 0; i <= 360; i++) { const a = a0 + ((a1 - a0) * i) / 360; px(c, col, Math.round(X(cx) + Math.cos(a) * rr * PX) - 1, Math.round(Y(cy) + Math.sin(a) * rr * PY) - 1, L, L); }
+  /** The white lines and the goals, drawn every frame with the perspective of Nintendo World Cup (core/proj.ts wx): the lines that run up the
+   *  pitch lean and open towards the bottom of the screen. From the same constants the rules use. */
+  private drawLines(): void {
+    const g = this.lineG, col = Phaser.Display.Color.HexStringToColor(this.world.line).color; g.clear().lineStyle(2, col, 1);
+    const P = (x: number, y: number): [number, number] => [wx(x, y), sy(y)];
+    const seg = (x0: number, y0: number, x1: number, y1: number): void => { const a = P(x0, y0), b = P(x1, y1); g.lineBetween(a[0], a[1], b[0], b[1]); };
+    const arc = (cx: number, cy: number, r: number, a0: number, a1: number, n = 40): void => {
+      let prev: [number, number] | null = null;
+      for (let i = 0; i <= n; i++) { const a = a0 + ((a1 - a0) * i) / n, q = P(cx + Math.cos(a) * r, cy + Math.sin(a) * r); if (prev) g.lineBetween(prev[0], prev[1], q[0], q[1]); prev = q; }
     };
-    hline(0, PITCH.w, 0); hline(0, PITCH.w, PITCH.d); vline(0, 0, PITCH.d); vline(PITCH.w, 0, PITCH.d); vline(PITCH.w / 2, 0, PITCH.d);
-    arc(CENTER.x, CENTER.y, CENTER.r, 0, Math.PI * 2); px(c, col, X(CENTER.x) - 2, Y(CENTER.y) - 2, 4, 4);
+    seg(0, 0, PITCH.w, 0); seg(0, PITCH.d, PITCH.w, PITCH.d); seg(0, 0, 0, PITCH.d); seg(PITCH.w, 0, PITCH.w, PITCH.d); seg(PITCH.w / 2, 0, PITCH.w / 2, PITCH.d);
+    arc(CENTER.x, CENTER.y, CENTER.r, 0, Math.PI * 2, 56);
+    const c0 = P(CENTER.x, CENTER.y); g.fillStyle(col, 1).fillRect(c0[0] - 2, c0[1] - 2, 4, 4);
     for (const [gx, d] of [[0, 1], [PITCH.w, -1]] as const) {
       const bx = gx + d * AREA_BIG.len, sxx = gx + d * AREA_SMALL.len;
-      vline(bx, AREA_BIG.y0, AREA_BIG.y1); hline(Math.min(gx, bx), Math.max(gx, bx), AREA_BIG.y0); hline(Math.min(gx, bx), Math.max(gx, bx), AREA_BIG.y1);
-      vline(sxx, AREA_SMALL.y0, AREA_SMALL.y1); hline(Math.min(gx, sxx), Math.max(gx, sxx), AREA_SMALL.y0); hline(Math.min(gx, sxx), Math.max(gx, sxx), AREA_SMALL.y1);
-      const spot = gx + d * PENALTY_X; px(c, col, X(spot) - 2, Y(GOAL.y0 + 36) - 1, 4, 3);
-      // the arc of the area: the part of the circle round the spot that is outside the big area
-      const cosA = (AREA_BIG.len - PENALTY_X) / 48, a = Math.acos(Math.min(1, cosA));
-      if (d === 1) arc(spot, (GOAL.y0 + GOAL.y1) / 2, 48, -a, a); else arc(spot, (GOAL.y0 + GOAL.y1) / 2, 48, Math.PI - a, Math.PI + a);
+      seg(bx, AREA_BIG.y0, bx, AREA_BIG.y1); seg(gx, AREA_BIG.y0, bx, AREA_BIG.y0); seg(gx, AREA_BIG.y1, bx, AREA_BIG.y1);
+      seg(sxx, AREA_SMALL.y0, sxx, AREA_SMALL.y1); seg(gx, AREA_SMALL.y0, sxx, AREA_SMALL.y0); seg(gx, AREA_SMALL.y1, sxx, AREA_SMALL.y1);
+      const spot = gx + d * PENALTY_X, sp = P(spot, MIDY); g.fillRect(sp[0] - 2, sp[1] - 1, 4, 3);
+      const a = Math.acos(Math.min(1, (AREA_BIG.len - PENALTY_X) / 48));
+      if (d === 1) arc(spot, MIDY, 48, -a, a, 16); else arc(spot, MIDY, 48, Math.PI - a, Math.PI + a, 16);
     }
-    for (const [x, y, a0] of [[0, 0, 0], [PITCH.w, 0, Math.PI / 2], [PITCH.w, PITCH.d, Math.PI], [0, PITCH.d, -Math.PI / 2]] as const) arc(x, y, 8, a0, a0 + Math.PI / 2);
+    for (const [x, y, a0] of [[0, 0, 0], [PITCH.w, 0, Math.PI / 2], [PITCH.w, PITCH.d, Math.PI], [0, PITCH.d, -Math.PI / 2]] as const) arc(x, y, 8, a0, a0 + Math.PI / 2, 6);
+    // the goals: the net box behind the line (under the players) and the white frame, both with the same lean
+    const n = this.netG.clear(), f = this.frameG.clear(), H = GOAL.bar * PZ;
+    for (const [gx, d] of [[0, -1], [PITCH.w, 1]] as const) {
+      const bx = gx + d * GOAL.net;
+      const p00 = P(gx, GOAL.y0), p01 = P(gx, GOAL.y1), p10 = P(bx, GOAL.y0), p11 = P(bx, GOAL.y1);
+      // floor shade and the net: back wall, roof and the far side, as a grid
+      n.fillStyle(0x141428, 0.25).fillPoints(([{ x: p00[0], y: p00[1] }, { x: p01[0], y: p01[1] }, { x: p11[0], y: p11[1] }, { x: p10[0], y: p10[1] }] as unknown as Phaser.Math.Vector2[]), true);
+      n.lineStyle(1, 0xffffff, 0.7);
+      for (let k = 0; k <= 8; k++) { const y = GOAL.y0 + ((GOAL.y1 - GOAL.y0) * k) / 8, a = P(bx, y); n.lineBetween(a[0], a[1], a[0], a[1] - H); const b = P(gx, y); n.lineBetween(b[0], b[1] - H, a[0], a[1] - H); }
+      for (let k = 0; k <= 4; k++) { const hh = (H * k) / 4; n.lineBetween(p10[0], p10[1] - hh, p11[0], p11[1] - hh); n.lineBetween(p00[0], p00[1] - hh, p10[0], p10[1] - hh); }
+      // the frame: two posts and the crossbar, ink under white
+      for (const [w, c] of [[4, 0x2a1b3d], [2, 0xffffff]] as const) {
+        f.lineStyle(w, c, 1);
+        f.lineBetween(p00[0], p00[1], p00[0], p00[1] - H); f.lineBetween(p01[0], p01[1], p01[0], p01[1] - H); f.lineBetween(p00[0], p00[1] - H, p01[0], p01[1] - H);
+      }
+    }
   }
 
   /** The foot of the stands above the far touchline: a wall with the boards of the kingdom. The fans are their own picture (it moves). */
@@ -164,29 +180,6 @@ export class TopPitch {
     const t = this.scene.textures.createCanvas(key, W, ROWS * ROW_H + 4)!, c = t.getContext(); c.imageSmoothingEnabled = false;
     for (const f of this.fans) drawFan(c, f, poseOf(f, state, k), f.col * SEAT, 4 + (ROWS - 1 - f.row) * ROW_H, 1 - f.row * 0.08);
     t.refresh();
-  }
-
-  /** The goal seen from above and the south: the net box behind the line and, apart, the white frame (posts and crossbar), for the left goal. */
-  private bakeGoal(): void {
-    const dep = Math.round(GOAL.net * PX), hgt = Math.round(GOAL.bar * PZ), span = Math.round((GOAL.y1 - GOAL.y0) * PY);
-    const w = dep + 3, h = span + hgt + 2;
-    const net = this.scene.textures.createCanvas('goal_net', w, h)!, c = net.getContext(); c.imageSmoothingEnabled = false;
-    // the floor of the goal (shade), the back of the net and the roof, as a grid
-    px(c, 'rgba(20,20,40,0.28)', 0, hgt, dep, span);
-    c.fillStyle = 'rgba(255,255,255,0.75)';
-    for (let y = 0; y <= span + hgt; y += 3) c.fillRect(0, y, 1, 1);
-    for (let x = 0; x < dep; x += 3) for (let y = 0; y <= span + hgt; y += 3) c.fillRect(x, y, 1, 1);
-    for (let y = 0; y <= span + hgt; y += 6) c.fillRect(0, y, dep, 1);
-    for (let x = 0; x <= dep; x += 6) c.fillRect(x, 0, 1, h - 1);
-    px(c, '#ffffff', 0, 0, 1, h - 1);
-    net.refresh();
-    const fr = this.scene.textures.createCanvas('goal_frame', w, h)!, f = fr.getContext(); f.imageSmoothingEnabled = false;
-    // the crossbar seen from above is the top edge, the posts drop to the ground at the two ends; ink first, white on top
-    px(f, '#2a1b3d', w - 4, 0, 4, h);
-    px(f, '#ffffff', w - 3, 0, 2, h - 1);
-    px(f, '#2a1b3d', dep - 1, 0, w - dep + 1, 3); px(f, '#ffffff', dep, 1, w - dep - 1, 1);
-    px(f, '#d9d2ec', w - 3, hgt, 2, 1); px(f, '#d9d2ec', w - 3, h - 2, 2, 1);
-    fr.refresh();
   }
 
   /** Night: four pools of light from the towers on the pitch. */

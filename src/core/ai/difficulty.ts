@@ -19,7 +19,7 @@ export function aiParams(m: Match, p: Player): AIParams {
   const atk = sg?.atk === 'pase' ? { pass: 1.8, range: 0.9 } : sg?.atk === 'gambeta' ? { pass: 0.4, range: 1.12 } : { pass: 1, range: 1 };
   const def = sg?.def === 'marcar' ? { press: -1, slide: 0 } : sg?.def === 'barrer' ? { press: 1, slide: 0.2 } : { press: 0, slide: 0 };
   return {
-    reaction: Math.max(0.08, d.reaction - arc), shotErr: d.shotErr, press: Math.max(0, d.press + (st && soft === 1 ? st.press : 0) + def.press), slideRate: p.team === 1 ? 0.15 : def.slide, humanSlideRate: p.team === 1 ? d.slideHuman : 0,
+    reaction: Math.max(0.08, d.reaction - arc), shotErr: d.shotErr, press: Math.max(0, d.press + (st && soft === 1 ? st.press : 0) + def.press), slideRate: p.team === 1 ? 0.3 : 0.1 + def.slide, humanSlideRate: p.team === 1 ? d.slideHuman : 0,
     shootRange: range * k(st?.range ?? 1) * atk.range, star: p.team === 1 ? d.star : 1, special: d.special,
     passBias: k(st?.pass ?? 1) * atk.pass, crossBias: k(st?.cross ?? 1), counter: st ? st.counter * soft : 0,
   };

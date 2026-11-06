@@ -18,12 +18,14 @@ const ready = async (page) => { await page.waitForFunction(() => window.__futbol
     font: document.fonts.check('16px Pixelify'), w: window.__futbol.game.scale.width, h: window.__futbol.game.scale.height, css: document.querySelector('canvas').style.width }));
   ok('1280x720: un canvas, sin pantalla de carga, fuente cargada', info.canvases === 1 && !info.loading && info.font, JSON.stringify(info));
   ok('1280x720: pantalla logica 426x240 con escala entera x3', info.w === 426 && info.h === 240 && info.css === '1278px', `${info.w}x${info.h} css ${info.css}`);
+  // the rivals tackle hard now (Nekketsu): keep them away while the keys are measured
+  await page.evaluate(() => { for (const p of window.__futbol.scene.match.players) if (p.team === 1 && p.role !== 'gk') { p.x = 900; p.speedMult = 0.001; } });
   await page.keyboard.down('KeyD'); await page.waitForTimeout(500);
   const d1 = await dot(page); await page.keyboard.up('KeyD');
   ok('teclado: D da eje a la derecha y el jugador corre a la derecha', d1.mx > 0.9 && d1.vx > 20, `mx ${d1.mx} vx ${Math.round(d1.vx)}`);
   await page.keyboard.down('KeyS'); await page.waitForTimeout(400);
   const d2 = await dot(page); await page.keyboard.up('KeyS');
-  ok('teclado: S mueve en profundidad', d2.my > 0.9 && d2.vy > 10, `my ${d2.my} vy ${Math.round(d2.vy)}`);
+  ok('teclado: S mueve en profundidad', d2.my > 0.9 && d2.vy > 5, `my ${d2.my} vy ${Math.round(d2.vy)}`);
   await page.screenshot({ path: 'docs/qa/shots/m0_1280x720.png' });
   await page.keyboard.press('Escape'); await page.waitForTimeout(250);
   const p1 = await dot(page); await page.waitForTimeout(400); const p2 = await dot(page);

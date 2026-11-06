@@ -6,7 +6,7 @@ let bad = 0;
 const ok = (name, cond, extra = '') => { console.log(cond ? 'PASS' : 'FAIL', name, extra); if (!cond) bad++; };
 const { page, errors, ctx } = await openGame(b, srv.url, 'menu=main&autoplay=nina5&ff=8&half=20', { viewport: { width: 1280, height: 720 } });
 await page.waitForSelector('#s-main');
-ok('La Copa dice "4 reinos" al principio', await page.evaluate(() => document.querySelector('#s-main [data-act=cup] em').textContent.includes('4 reinos')));
+ok('La Copa dice "4 reinos" al principio', await page.evaluate(() => document.querySelector('#s-main [data-act=cup] em').textContent.includes('4 REINOS')));
 await page.click('#s-main [data-act=cup]'); await page.waitForSelector('#s-cup');
 await page.click('#cdiff .chip-o[data-i="0"]');
 await page.click('[data-act=cupnew]');
@@ -36,7 +36,7 @@ ok('la familia gano XP y los partidos quedaron contados', Object.values(save.cha
 await page.click('#credits'); await page.waitForSelector('#credits-screen');
 await page.click('#cclose'); await page.waitForSelector('#s-main');
 await page.reload(); await page.waitForSelector('#s-main');
-ok('despues de recargar: "Campeones x1" en La Copa', await page.evaluate(() => document.querySelector('#s-main [data-act=cup] em').textContent.includes('Campeones x1')));
+ok('despues de recargar: "Campeones x1" en La Copa', await page.evaluate(() => document.querySelector('#s-main [data-act=cup] em').textContent.includes('CAMPEONES X1')));
 await page.click('#s-main [data-act=vitrina]'); await page.waitForSelector('#s-vitrina');
 await page.screenshot({ path: 'docs/qa/shots/m10_vitrina.png' });
 ok('la vitrina muestra las 4 copas', await page.evaluate(() => document.querySelectorAll('.tro.got').length === 4));

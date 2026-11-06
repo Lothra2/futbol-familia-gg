@@ -50,9 +50,9 @@ for (const [w, h, touch] of [[1280, 720, false], [667, 375, true], [844, 390, tr
   const t1 = await page.evaluate(() => window.__futbol.match.tick);
   ok('el tour pausa el partido', t1 === t0, `${t0} ${t1}`);
   const steps = await page.evaluate(() => document.querySelector('.cstep').textContent);
-  ok('el tour tiene 4 pasos con controles completos', /1 de 4/.test(steps), steps);
+  ok('el tour tiene 5 pasos con controles completos', /1 de 5/.test(steps), steps);
   await page.screenshot({ path: 'docs/qa/shots/guia_tour_1.png' });
-  for (let i = 0; i < 3; i++) await page.click('#cnext');
+  for (let i = 0; i < 4; i++) await page.click('#cnext');
   const last = await page.evaluate(() => document.querySelector('#cnext').textContent);
   ok('el ultimo paso dice A jugar', /jugar/.test(last), last);
   await page.screenshot({ path: 'docs/qa/shots/guia_tour_4.png' });
@@ -82,7 +82,7 @@ for (const [w, h, touch] of [[1280, 720, false], [667, 375, true], [844, 390, tr
   await page.click('#c0 .chip-o[data-i="0"]'); await page.click('.go');
   await page.waitForSelector('#coach');
   const s = await page.evaluate(() => ({ step: document.querySelector('.cstep').textContent, phone: !!document.querySelector('#coach .phone'), fits: (() => { const r = document.querySelector('.cpanel').getBoundingClientRect(); return r.bottom <= innerHeight + 1 && r.top >= -1; })() }));
-  ok('tactil y fáciles: 3 pasos, dibuja el telefono y cabe en 844x390', /1 de 3/.test(s.step) && s.phone && s.fits, JSON.stringify(s));
+  ok('tactil y fáciles: 4 pasos, dibuja el telefono y cabe en 844x390', /1 de 4/.test(s.step) && s.phone && s.fits, JSON.stringify(s));
   await page.screenshot({ path: 'docs/qa/shots/guia_tour_tactil.png' });
   await page.click('#cskip'); await page.waitForTimeout(300);
   ok('Saltar guia la cierra y reanuda', await page.evaluate(() => !document.getElementById('coach') && !window.__futbol.scene.paused));

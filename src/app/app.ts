@@ -85,7 +85,7 @@ export class App {
       const k = KINGDOMS.find((q) => q.species === cfg0.rival), sq = lineup(cleanSquad(cfg0.squad));
       if (k) {
         this.screens.close();
-        showVs({ us: T_ES.teams.family, them: k.team, place: k.name, style: k.style, color: k.color, ours: ['thor', ...sq], theirs: [`riv_${k.species}_gk`, ...[1, 2, 3, 4, 5].map((i) => `riv_${k.species}_${i}`)], avatar: (id, s) => this.screens.avatar(id, s) }, () => this.startMatch(cfg0, false, true));
+        showVs({ us: T_ES.teams.family, them: k.team, place: k.name, style: k.style, color: k.color, kingdom: k.id, ours: ['thor', ...sq], theirs: [`riv_${k.species}_gk`, ...[1, 2, 3, 4, 5].map((i) => `riv_${k.species}_${i}`)], avatar: (id, s) => this.screens.avatar(id, s) }, () => this.startMatch(cfg0, false, true));
         services.audio?.play('whistle');
         return;
       }

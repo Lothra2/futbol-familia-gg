@@ -31,6 +31,9 @@ export const SFX: Record<string, SfxDef> = {
   bounce: { segs: [{ w: 'sin', f: [330, 200], d: 0.05, v: 0.25 }] },
   special: { segs: arp('sq', [72, 76, 79, 84, 88, 91], 0.05, 0.12, 0.35) },
   starfull: { segs: [...arp('tri', [96, 100, 103], 0.09, 0.18, 0.4), tone('sq', 108, 0.27, 0.3, 0.25)] },
+  superready: { segs: arp('sq', [84, 91, 96], 0.04, 0.06, 0.22) },
+  supershot: { segs: [{ w: 'noise', f: [0, 0], d: 0.25, v: 0.5, lp: 0.6 }, { w: 'saw', f: [220, 1200], d: 0.22, v: 0.35 }, { w: 'sin', f: [160, 50], d: 0.3, v: 0.7 }] },
+  pum: { segs: [{ w: 'noise', f: [0, 0], d: 0.14, v: 0.6, lp: 0.35 }, { w: 'sin', f: [140, 40], d: 0.18, v: 0.7 }] },
   zas: { segs: [{ w: 'noise', f: [0, 0], d: 0.15, v: 0.25, lp: 0.2 }, { w: 'saw', f: [800, 200], d: 0.12, v: 0.2 }] },
   whiff: { segs: [{ w: 'noise', f: [0, 0], d: 0.09, v: 0.16, lp: 0.2, atk: 0.03 }] },
   star: { segs: [tone('sq', 88, 0, 0.07, 0.4, { duty: 0.25 }), tone('sq', 95, 0.07, 0.16, 0.4, { duty: 0.25 })] },
@@ -53,7 +56,7 @@ export const SFX: Record<string, SfxDef> = {
 /** Which sound a match event asks for. M3 and M8 add the soccer effects. */
 export const FX_TO_SFX: Record<string, string> = {
   whistle: 'whistle', go: 'go', kick: 'kick', pass: 'pass', wall: 'pass', post: 'post', bar: 'post', goal: 'goal', slide: 'slide', slideball: 'kick', slidehit: 'bump', bump: 'bump',
-  steal: 'steal', penstart: 'penstart', golden: 'goldensting', save: 'save', catch: 'catch', bounce: 'bounce', deflect: 'bounce', special: 'special', starfull: 'starfull', zas: 'zas', whiff: 'whiff', dive: 'whiff',
+  steal: 'steal', penstart: 'penstart', golden: 'goldensting', save: 'save', catch: 'catch', bounce: 'bounce', deflect: 'bounce', special: 'special', starfull: 'starfull', zas: 'zas', whiff: 'whiff', dive: 'whiff', superready: 'superready', super: 'supershot', superhit: 'pum',
 };
 
 const duration = (def: SfxDef): number => def.segs.reduce((m, s) => Math.max(m, (s.at ?? 0) + s.d), 0);

@@ -62,7 +62,7 @@ export class Narrator {
         else this.say(this.any([`Gol de ${rival}. ¡Ánimo familia!`, 'Gol rival. A levantarse.', `Nos hicieron un gol. ¡A remontar!`]), 'goal', 0.5);
         break;
       }
-      case 'special': { const t = (T_ES.specials[KIND_INDEX[e.v ?? 0]] ?? '').replace(/[¡!]/g, '').toLowerCase(); if (t) this.say(`¡${t}!`, 'special', 0.8); break; }
+      case 'special': case 'super': { const t = (T_ES.specials[KIND_INDEX[e.v ?? 0]] ?? '').replace(/[¡!]/g, '').toLowerCase(); if (t) this.say(`¡${t}!`, 'special', 0.8); break; }
       case 'save':
         if (e.v !== 2 && m.phase === 'penalties') this.say('¡Atajó!', 'save', 0.5);
         else if (e.v !== 2) this.say(who?.charId === 'thor' ? this.any(['¡Atajadón de Thor!', '¡Thor lo paró!']) : '¡Qué atajada!', 'save', 3);

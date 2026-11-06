@@ -6,9 +6,9 @@ export function chromePath() {
   if (process.env.CHROMIUM_PATH) return process.env.CHROMIUM_PATH;
   const base = '/opt/pw-browsers';
   const d = readdirSync(base).filter((n) => /^chromium-\d+$/.test(n)).sort().pop();
-  const p = `${base}/${d}/chrome-linux/chrome`;
-  if (!existsSync(p)) throw new Error('Chromium not found at ' + p);
-  return p;
+  // the folder is chrome-linux in older Playwright builds and chrome-linux64 in newer ones; /opt/pw-browsers/chromium links to it when present
+  for (const p of [`${base}/${d}/chrome-linux/chrome`, `${base}/${d}/chrome-linux64/chrome`, `${base}/chromium`]) if (existsSync(p)) return p;
+  throw new Error('Chromium not found in ' + base);
 }
 
 export async function startPreview(port = 4173) {
