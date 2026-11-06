@@ -67,12 +67,13 @@ export class Screens {
   // ------------------------------------------------------------------ helpers
   private av(id: string, scale = 2, extra = ''): string {
     if (scale === 2 && window.innerHeight < 520) scale = 1;
-    // the NES look first (tools/nwc atlases, 24 cells a row, the idle facing us); a kingdom card shows its first kid
+    // the Nekketsu look first (PixelForja atlases in assets/nes, 32 x 32 cells, the idle facing us); a kingdom card shows its first kid.
+    // Whole multiples of the cell keep the pixels square: 1x in the small rows, 3x in the big cards.
     const nid = /^riv_[a-z]+$/.test(id) ? `${id}_1` : id;
-    const nm = this.d.game.cache.json.get(`nwc_${nid}_meta`) as { cols: number; anims: Record<string, { start: number }> } | undefined;
+    const nm = this.d.game.cache.json.get(`nes_${nid}_meta`) as { cols: number; cell: [number, number]; anims: Record<string, { start: number }> } | undefined;
     if (nm) {
-      const st = nm.anims.idle_down?.start ?? 0, col = st % nm.cols, row = Math.floor(st / nm.cols), s = 48 * scale;
-      return `<i class="av ${extra}" style="width:${s}px;height:${s}px;background-image:url(assets/nwc/${nid}.png);background-size:${nm.cols * 48 * scale}px auto;background-position:-${col * s}px -${row * s}px"></i>`;
+      const c = nm.cell[0], k = scale <= 1 ? 1 : 3, st = nm.anims.idle_down?.start ?? 0, col = st % nm.cols, row = Math.floor(st / nm.cols), s = c * k;
+      return `<i class="av ${extra}" style="width:${s}px;height:${s}px;background-image:url(assets/nes/${nid}.png);background-size:${nm.cols * s}px auto;background-position:-${col * s}px -${row * s}px"></i>`;
     }
     const meta = this.d.game.cache.json.get(`${id}_meta`) as { anims: Record<string, { start: number }> } | undefined;
     const st = meta?.anims.idle?.start ?? 0, col = st % 8, row = Math.floor(st / 8), s = 48 * scale;

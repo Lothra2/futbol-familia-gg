@@ -18,6 +18,12 @@ const BOARD_Y0 = -22, BOARD_Y1 = -8, STAND_Y1 = BOARD_Y0 - 2;
 const GRADE: Record<TimeOfDay, number> = { day: 0xffffff, sunset: 0xffdcc0, night: 0xa0a8e0 };
 const MIX: Record<WorldId, Partial<Record<FanKind, number>>> = { volcan: { dragon: 0.7, human: 0.3 }, bosque: { mapache: 0.7, human: 0.3 }, arrecife: { tiburon: 0.7, human: 0.3 }, nubes: { buho: 0.7, human: 0.3 } };
 
+/** A fill of every other pixel in a checker (the NES dither), anchored to the texture so the bands line up. */
+const checker = (c: Ctx, col: string): CanvasPattern | string => {
+  const t = document.createElement('canvas'); t.width = 2; t.height = 2;
+  const k = t.getContext('2d')!; k.fillStyle = col; k.fillRect(0, 0, 1, 1); k.fillRect(1, 1, 1, 1);
+  return c.createPattern(t, 'repeat') ?? col;
+};
 const px = (c: Ctx, col: string, x: number, y: number, w = 1, h = 1): void => { c.fillStyle = col; c.fillRect(x, y, w, h); };
 
 /** The pitch seen from above like Nintendo World Cup, one per kingdom: striped ground with patches and little things on it, the lines from the
@@ -75,17 +81,26 @@ export class TopPitch {
   private bake(key: string): void {
     const t = this.scene.textures.createCanvas(key, W, H)!, c = t.getContext(); c.imageSmoothingEnabled = false;
     const w = this.world, r = rng(7 + key.length * 13);
-    // the ground: horizontal stripes of 12 px everywhere, a little darker outside the lines
-    for (let y = 0; y < H; y += 12) px(c, w.stripe[(y / 12) % 2], 0, y, W, 12);
-    // the patches: blobs of a third colour with stepped edges, the way the NES draws them (an 8 px grid), two tones that follow the stripes
+    // the ground (Nintendo World Cup): bands of 16 px, one of the base colour and the next dithered with a darker tone in a checker
+    const B = 16;
+    px(c, w.stripe[0], 0, 0, W, H);
+    const dark = checker(c, w.stripe[1]);
+    for (let y = B; y < H; y += B * 2) { c.fillStyle = dark; c.fillRect(0, y, W, B); }
+    // the patches: big blobs of a lighter tone with edges stepped on an 8 px grid, and a one-cell dithered border, the way the NES draws them
     const blobs: { x: number; y: number; r: number }[] = [];
     const n = Math.round((W * H) / (w.patchSize * w.patchSize * 9) * w.patchCover * 3);
-    for (let i = 0; i < n; i++) blobs.push({ x: r() * W, y: r() * H, r: w.patchSize * (0.6 + r() * 0.9) });
-    const G = 6;
-    for (let gy = 0; gy < H; gy += G) for (let gx = 0; gx < W; gx += G) {
+    for (let i = 0; i < n; i++) blobs.push({ x: r() * W, y: r() * H, r: w.patchSize * (0.7 + r() * 1.1) });
+    const G = 8, cols = Math.ceil(W / G), rows = Math.ceil(H / G), cell = new Uint8Array(cols * rows);
+    for (let gy = 0; gy < rows; gy++) for (let gx = 0; gx < cols; gx++) {
       let v = 0;
-      for (const b of blobs) { const d = Math.hypot((gx - b.x) / 1.6, gy - b.y); if (d < b.r) v += 1 - d / b.r; }
-      if (v > 0.45) px(c, w.patch[(Math.floor(gy / 12)) % 2], gx, gy, G, G);
+      for (const b of blobs) { const d = Math.hypot((gx * G - b.x) / 1.8, gy * G - b.y); if (d < b.r) v += 1 - d / b.r; }
+      cell[gy * cols + gx] = v > 0.5 ? 2 : v > 0.36 ? 1 : 0;
+    }
+    const edge = checker(c, w.patch[1]);
+    for (let gy = 0; gy < rows; gy++) for (let gx = 0; gx < cols; gx++) {
+      const k = cell[gy * cols + gx];
+      if (k === 2) px(c, w.patch[0], gx * G, gy * G, G, G);
+      else if (k === 1) { c.fillStyle = edge; c.fillRect(gx * G, gy * G, G, G); }
     }
     // outside the lines: the ground darkens, and the track behind the goals
     c.fillStyle = 'rgba(20,30,20,0.16)';
@@ -100,19 +115,29 @@ export class TopPitch {
     t.refresh();
   }
 
-  /** Little things on the ground in small clusters (like the flower rings of the NES pitch), never on the lines. */
+  /** Little things on the ground in small clusters, never on the lines: the dotted flower rings of the NES grass pitch, little white tufts,
+   *  and each kingdom its own (pebbles, shells, sparkles). */
   private decorate(c: Ctx, r: () => number): void {
     const d = this.world.deco, clusters = Math.round((W * H) / 10000 * d.density / 3);
+    const ring = (x: number, y: number, col: string): void => {
+      // a ring of 7 x 5 px made of dots with a dot in the middle (the "flowers" of Nintendo World Cup)
+      for (const [dx, dy] of [[-1, -2], [1, -2], [-3, -1], [3, -1], [-3, 1], [3, 1], [-1, 2], [1, 2], [0, 0]]) px(c, col, x + dx, y + dy);
+    };
     for (let i = 0; i < clusters; i++) {
       const cx = r() * W, cy = Y(-4) + r() * (Y(PITCH.d + 20) - Y(-4)), m = 2 + Math.floor(r() * 4);
       for (let j = 0; j < m; j++) {
-        const x = Math.round(cx + (r() - 0.5) * 26), y = Math.round(cy + (r() - 0.5) * 14), col = d.colors[Math.floor(r() * d.colors.length)];
-        if (d.kind === 'flores') { px(c, col, x, y - 1); px(c, col, x - 1, y); px(c, col, x + 1, y); px(c, col, x, y + 1); px(c, '#ffe45c', x, y); }
-        else if (d.kind === 'piedras') { px(c, '#2e2230', x, y, 3, 2); px(c, col, x, y, 2, 1); }
+        const x = Math.round(cx + (j % 3) * 9 + (r() - 0.5) * 4), y = Math.round(cy + Math.floor(j / 3) * 7 + (r() - 0.5) * 3), col = d.colors[Math.floor(r() * d.colors.length)];
+        if (d.kind === 'flores') ring(x, y, col);
+        else if (d.kind === 'piedras') { px(c, d.colors[0], x, y, 3, 2); px(c, d.colors[1], x, y, 1, 1); }
         else if (d.kind === 'conchas') { px(c, col, x, y, 3, 1); px(c, col, x + 1, y - 1); px(c, 'rgba(0,0,0,0.25)', x, y + 1, 3, 1); }
         else if (d.kind === 'brillos') { px(c, col, x, y - 1, 1, 3); px(c, col, x - 1, y, 3, 1); }
         else { px(c, col, x, y, 2, 1); px(c, col, x + 1, y + 1, 2, 1); }
       }
+    }
+    // little white tufts of grass (the hooks scattered on the NES pitch)
+    for (let i = 0; i < Math.round((W * H) / 9000); i++) {
+      const x = Math.round(r() * W), y = Math.round(Y(-4) + r() * (Y(PITCH.d + 20) - Y(-4)));
+      px(c, 'rgba(255,255,255,0.75)', x, y, 1, 3); px(c, 'rgba(255,255,255,0.75)', x - 1, y + 3, 1, 1);
     }
   }
 

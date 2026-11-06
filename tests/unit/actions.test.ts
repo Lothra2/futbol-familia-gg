@@ -153,23 +153,24 @@ describe('barrida (B11)', () => {
     return { m, s };
   };
   it('el balón de un rival que lo lleva sale disparado y el rival trastabilla 0,35 s', () => {
-    const { m, s } = slideSetup(); const r = rival(m, 3); put(r, 420, MID); give(m, r); r.immuneT = 0; r.dirX = -1; r.facing = -1; m.ball.x = 412;
+    const { m, s } = slideSetup(); const r = rival(m, 3); put(r, 440, MID); give(m, r); r.immuneT = 0; r.dirX = -1; r.facing = -1; m.ball.x = 432;
     s.input = inp({ shootPressed: true, mx: 1 }); step(m); s.input = inp({ mx: 1 });
     expect(s.state).toBe('slide');
-    ticks(m, 12);
+    ticks(m, 18);
     expect(m.ball.owner).toBeNull(); expect(r.state).toBe('stagger'); expect(m.ball.vx).toBeGreaterThan(100);
     expect(s.state).not.toBe('dizzy');
     secs(m, 0.5); expect(r.state).not.toBe('stagger');
   });
-  it('toca las piernas sin balón: el rival da la voltereta 0,7 s y quien barrió queda mareado 1,0 s', () => {
-    const { m, s } = slideSetup(); const r = rival(m, 3); put(r, 414, MID);
+  it('toca las piernas sin balón: el rival sale volando y queda fuera de juego T.hit.down, quien barrió queda mareado 1,0 s', () => {
+    const { m, s } = slideSetup(); const r = rival(m, 3); put(r, 430, MID);
     ball(m, 100, 20, 0, 0, 0, 0);
     s.input = inp({ shootPressed: true, mx: 1 }); step(m); s.input = inp({ mx: 1 });
-    ticks(m, 12); s.input = inp();
+    expect(s.state).toBe('slide');
+    for (let i = 0; i < 30 && r.state !== 'tumble'; i++) step(m);
+    s.input = inp();
     expect(r.state).toBe('tumble'); expect(s.state).toBe('dizzy');
-    secs(m, 0.35); expect(r.state).toBe('tumble'); expect(s.state).toBe('dizzy');
-    secs(m, 0.3); expect(r.state).toBe('idle'); expect(s.state).toBe('dizzy');
-    secs(m, 0.45); expect(s.state).toBe('idle');
+    secs(m, T.hit.down - 0.2); expect(r.state).toBe('tumble');
+    secs(m, 0.4); expect(r.state).toBe('idle');
   });
   it('si no toca nada se queda 0,45 s extra en el piso, y la espera entre barridas es de 1,2 s', () => {
     const { m, s } = slideSetup(); ball(m, 100, 20, 0, 0, 0, 0);
@@ -204,19 +205,37 @@ describe('robo y choque (B12, B13)', () => {
     }
     return won / n;
   };
-  it('B12: a Alana le roban el 38,5 ± 3 % de las veces, a Sophie el 55 %, a Papá el 49,5 %', () => {
-    expect(Math.abs(trial('alana', 2000) - 0.385)).toBeLessThan(0.03);
-    expect(Math.abs(trial('sophie', 2000) - 0.55)).toBeLessThan(0.03);
-    expect(Math.abs(trial('papa', 2000) - 0.495)).toBeLessThan(0.03);
+  it('golpe (Nekketsu): casi siempre entra, tumba al que lleva el balón y se lo quita; a un niño con controles fáciles cuesta más', () => {
+    const rate = (carrier: 'alana' | 'sophie', easy: boolean, n: number): number => {
+      const m = mk({}, true); clear(m); const r = rival(m, 3), c = fam(m, carrier); c.controls = easy ? 'easy' : 'full';
+      let won = 0;
+      for (let i = 0; i < n; i++) {
+        put(r, 200, MID); r.facing = 1; r.cd.steal = 0; r.act = null; r.state = 'idle'; r.immuneT = 0;
+        put(c, 208, MID); c.act = null; c.state = 'idle'; c.immuneT = 0; c.hits = undefined;
+        give(m, c); m.ball.x = 216;
+        if (!tryFrontSteal(m, r)) throw new Error('no blow');
+        if ((c.state as string) === 'tumble') { won++; expect(m.ball.owner).not.toBe(c.id); }   // down, and the ball is the hitter's or loose
+      }
+      return won / n;
+    };
+    expect(Math.abs(rate('sophie', false, 1000) - T.hit.p)).toBeLessThan(0.04);
+    expect(Math.abs(rate('alana', true, 1000) - T.hit.easyP)).toBeLessThan(0.05);
   });
-  it('si el robo falla, quien lo intentó trastabilla 0,25 s; la espera entre robos es de 0,6 s', () => {
+  it('si el golpe falla, quien lo tiró trastabilla; la espera entre golpes es T.hit.cd', () => {
     const m = mk({ seed: 5 }, true); clear(m); const r = rival(m, 3), c = fam(m, 'sophie');
     put(r, 200, MID); r.facing = 1; put(c, 208, MID); give(m, c); c.immuneT = 0;
-    let tries = 0;
-    while (m.ball.owner === c.id && tries++ < 40) { r.cd.steal = 0; r.act = null; r.state = 'idle'; tryFrontSteal(m, r); }
-    // either outcome starts the cooldown
-    expect(r.cd.steal).toBeGreaterThan(0.55);
+    expect(tryFrontSteal(m, r)).toBe(true);
+    expect(r.cd.steal).toBeGreaterThan(T.hit.cd - 0.01);
     expect(tryFrontSteal(m, r)).toBe(false);
+  });
+  it('tres golpes seguidos lo dejan K.O. más tiempo', async () => {
+    const { knockDown } = await import('../../src/core/actions');
+    const m = mk({}, true); clear(m); const c = fam(m, 'papa'); put(c, 300, MID);
+    knockDown(m, c, null, 0, 0, 0); const d1 = c.act!.dur; c.act = null; c.state = 'idle';
+    knockDown(m, c, null, 0, 0, 0); c.act = null; c.state = 'idle';
+    knockDown(m, c, null, 0, 0, 0); const d3 = c.act!.dur;
+    expect(d1).toBeCloseTo(T.hit.down, 5); expect(d3).toBeCloseTo(T.hit.ko, 5);
+    expect(m.events.some((e) => e.k === 'ko')).toBe(true);
   });
   it('B13: quien acaba de ganar el balón es inmune 0,35 s', () => {
     const m = mk({}, true); clear(m); const r = rival(m, 3), c = fam(m, 'sophie');

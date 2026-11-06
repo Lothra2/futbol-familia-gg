@@ -1,62 +1,117 @@
-/** Before the match, like Nintendo World Cup: first the map of the kingdoms with the little plane flying from the home of the family to the
- *  kingdom of the rival, then the two teams face each other with a big VS and the line that says how the rivals play. Tap or any key skips. */
+/** Before the match, like Nintendo World Cup: on the navy blue screen the two crests face each other with a big VS, each with its flag under
+ *  it, and the white jumbo crosses the screen taking the family to the kingdom. Under it the two squads and the line that says how the rivals
+ *  play. Tap or any key skips. */
 export interface VsInfo {
   us: string; them: string; place: string; style: string; color: string; ours: string[]; theirs: string[]; avatar: (id: string, scale: number) => string;
-  /** Which kingdom the plane flies to: bosque, arrecife, nubes or volcan. */
+  /** Which kingdom the match is in: bosque, arrecife, nubes or volcan. */
   kingdom?: string;
 }
 
-/** The map: islands on a 64 x 36 grid of 8 px cells (land colour, label, where the label goes). Home is the island of the family. */
-const ISLANDS: Record<string, { x: number; y: number; w: number; h: number; c: string; d: string; name: string }> = {
-  casa: { x: 6, y: 20, w: 9, h: 7, c: '#5ddb43', d: '#2f9a3a', name: 'CASA GG' },
-  bosque: { x: 20, y: 6, w: 11, h: 8, c: '#3fae4a', d: '#1f6a2a', name: 'BOSQUE' },
-  arrecife: { x: 24, y: 24, w: 10, h: 6, c: '#f0d890', d: '#c0a050', name: 'ARRECIFE' },
-  nubes: { x: 40, y: 5, w: 10, h: 6, c: '#e8f4ff', d: '#a8c0e0', name: 'NUBE ALTA' },
-  volcan: { x: 46, y: 20, w: 11, h: 9, c: '#8a4a3a', d: '#4a2020', name: 'VOLCAN' },
+/** The emblem on the crest of each kingdom: its word and the colour of the shield. */
+const CREST: Record<string, { word: string; c: string; d: string }> = {
+  bosque: { word: 'BOSQUE', c: '#ff8a2a', d: '#a04a10' },
+  arrecife: { word: 'CORAL', c: '#2f5fa8', d: '#173870' },
+  nubes: { word: 'NUBES', c: '#e8b83a', d: '#8a6410' },
+  volcan: { word: 'DRAGON', c: '#e8423a', d: '#8a1a14' },
 };
 
-function drawMap(c: CanvasRenderingContext2D, to: string): void {
-  c.fillStyle = '#10307a'; c.fillRect(0, 0, 512, 288);
-  for (let y = 0; y < 36; y++) for (let x = 0; x < 64; x++) if ((x * 7 + y * 13) % 29 === 0) { c.fillStyle = '#2050a8'; c.fillRect(x * 8 + 2, y * 8 + 3, 4, 1); }   // waves
-  for (const [id, i] of Object.entries(ISLANDS)) {
-    for (let y = 0; y < i.h; y++) for (let x = 0; x < i.w; x++) {
-      const e = Math.hypot((x + 0.5 - i.w / 2) / (i.w / 2), (y + 0.5 - i.h / 2) / (i.h / 2));
-      if (e > 1 + ((x * 3 + y * 5) % 4) * 0.05) continue;
-      c.fillStyle = e > 0.8 ? i.d : i.c; c.fillRect((i.x + x) * 8, (i.y + y) * 8, 8, 8);
+const NAVY = '#2c4a94', W = 288, H = 150;
+type C = CanvasRenderingContext2D;
+const box = (c: C, col: string, x: number, y: number, w: number, h: number): void => { c.fillStyle = col; c.fillRect(x, y, w, h); };
+const text = (c: C, t: string, x: number, y: number, col: string, size = 8): void => {
+  c.font = `${size}px NES, monospace`; c.textAlign = 'center'; c.textBaseline = 'top';
+  c.fillStyle = '#000'; c.fillText(t, x + 1, y + 1); c.fillStyle = col; c.fillText(t, x, y);
+};
+
+/** The crest of the family: a white card with the flame of Nekketsu in the family colours and the word GG under it. */
+function crestFamily(c: C, x: number, y: number): void {
+  box(c, '#000', x + 4, y + 4, 52, 52); box(c, '#fff', x, y, 52, 52);
+  // the flame: a tall teardrop with two smaller tongues at its sides, red outside, then orange, then a yellow heart
+  const drop = (cx: number, top: number, h: number, r: number, cols: string[]): void => cols.forEach((col, k) => {
+    // every inner colour is a smaller drop sitting on the bottom of the one around it
+    const hk = h - k * 6, rk = r * (1 - k * 0.3), tk = top + k * 6 - k;
+    for (let i = 0; i < hk; i++) {
+      const u = i / hk, w = Math.round(u < 0.62 ? rk * Math.pow(u / 0.62, 0.75) : rk * Math.sqrt(Math.max(0, 1 - ((u - 0.62) / 0.38) ** 2)));
+      if (w > 0) box(c, col, x + cx - w, y + tk + i, w * 2, 1);
     }
-    if (id === 'volcan') { c.fillStyle = '#ff8a2a'; c.fillRect((i.x + 5) * 8, (i.y + 2) * 8, 8, 8); c.fillStyle = '#ffd447'; c.fillRect((i.x + 5) * 8 + 2, (i.y + 1) * 8 + 2, 4, 6); }
-    c.fillStyle = id === to ? '#ffd447' : '#ffffff'; c.font = '8px NES, monospace'; c.textAlign = 'center';
-    c.fillText(i.name, (i.x + i.w / 2) * 8, (i.y + i.h) * 8 + 12);
+  });
+  drop(15, 9, 16, 4, ['#e8423a', '#ff9a2a']);
+  drop(37, 9, 16, 4, ['#e8423a', '#ff9a2a']);
+  drop(26, 3, 30, 10, ['#e8423a', '#ff9a2a', '#ffe45c']);
+  box(c, '#000', x + 6, y + 38, 40, 11);
+  text(c, 'GG', x + 26, y + 40, '#5ddb43');
+}
+
+/** The crest of a kingdom: a shield in its colour with three stars on top and its word across, like the ITALY crest. */
+function crestKingdom(c: C, x: number, y: number, k: { word: string; c: string; d: string }): void {
+  box(c, '#000', x + 4, y + 4, 52, 52); box(c, '#fff', x, y, 52, 52);
+  for (let i = 0; i < 36; i++) {
+    const inset = i < 22 ? 0 : Math.round(((i - 22) / 14) ** 1.6 * 18);
+    box(c, '#000', x + 7 + inset, y + 10 + i, 38 - inset * 2, 1);
+    if (38 - inset * 2 > 4) box(c, i < 12 ? '#ffffff' : k.c, x + 9 + inset, y + 10 + i, 34 - inset * 2, 1);
   }
+  box(c, k.d, x + 9, y + 22, 34, 1);
+  for (const sx of [14, 24, 34]) { box(c, '#ffd447', x + sx, y + 4, 4, 2); box(c, '#ffd447', x + sx + 1, y + 3, 2, 4); }
+  box(c, '#000', x + 1, y + 12, 50, 9);
+  text(c, k.word, x + 26, y + 13, '#fff');
+  // a football in the middle of the shield
+  for (const [dy, dx0, w] of [[0, 3, 5], [1, 1, 9], [2, 0, 11], [3, 0, 11], [4, 0, 11], [5, 0, 11], [6, 0, 11], [7, 1, 9], [8, 3, 5]]) box(c, '#000', x + 20 + dx0, y + 27 + dy, w, 1);
+  for (const [dy, dx0, w] of [[1, 3, 5], [2, 1, 9], [3, 1, 9], [4, 1, 9], [5, 1, 9], [6, 1, 9], [7, 3, 5]]) box(c, '#fff', x + 20 + dx0, y + 27 + dy, w, 1);
+  box(c, '#000', x + 24, y + 30, 3, 3); box(c, '#000', x + 21, y + 29, 1, 2); box(c, '#000', x + 29, y + 29, 1, 2); box(c, '#000', x + 23, y + 34, 2, 1); box(c, '#000', x + 27, y + 34, 2, 1);
+}
+
+/** A little flag with its shadow: three bands. */
+function flag(c: C, x: number, y: number, bands: string[]): void {
+  box(c, '#000', x + 3, y + 3, 18, 12);
+  bands.forEach((b, i) => box(c, b, x + i * 6, y, 6, 12));
+}
+
+/** The white jumbo of Nintendo World Cup, 34 x 14, with its orange stripe and windows. */
+function plane(c: C, x: number, y: number): void {
+  const X = Math.round(x), Y = Math.round(y);
+  box(c, '#000', X + 1, Y + 7, 32, 5);            // outline under the body
+  box(c, '#fff', X + 2, Y + 5, 28, 6);             // body
+  box(c, '#fff', X + 30, Y + 6, 3, 4); box(c, '#fff', X + 33, Y + 7, 1, 2);   // nose
+  box(c, '#fff', X + 1, Y, 4, 6); box(c, '#fff', X + 3, Y + 2, 3, 4);          // tail fin
+  box(c, '#e8601a', X + 2, Y + 9, 30, 1); box(c, '#e8601a', X + 1, Y + 1, 2, 2);
+  for (let i = 0; i < 8; i++) box(c, '#2c4a94', X + 9 + i * 2, Y + 7, 1, 1);  // windows
+  box(c, '#2c4a94', X + 30, Y + 6, 2, 1);                                      // cockpit
+  box(c, '#c8d0e0', X + 12, Y + 10, 10, 2); box(c, '#000', X + 13, Y + 12, 8, 1);   // wing
+  box(c, '#888', X + 15, Y + 12, 3, 2);                                        // engine
 }
 
 /** The NES letters have no accented capitals: uppercase without accents. */
-export const nesUp = (t: string): string => t.normalize('NFD').replace(/[\u0300-\u036f]/g, '').toUpperCase();
+export const nesUp = (t: string): string => t.normalize('NFD').replace(/[̀-ͯ]/g, '').toUpperCase();
+
+function draw(c: C, v: VsInfo, kid: string, t: number): void {
+  box(c, NAVY, 0, 0, W, H);
+  text(c, 'COPA FAMILIA GG', W / 2, 6, '#fff');
+  text(c, nesUp(v.place), W / 2, 17, '#ffd447');
+  crestFamily(c, 50, 32);
+  crestKingdom(c, 186, 32, CREST[kid] ?? CREST.volcan);
+  // VS in big white letters with a darker shadow
+  text(c, 'VS', W / 2 + 2, 52, '#9ab0e0', 16); text(c, 'VS', W / 2, 50, '#fff', 16);
+  flag(c, 66, 98, ['#5ddb43', '#ffffff', '#5ddb43']);
+  const k = CREST[kid] ?? CREST.volcan;
+  flag(c, 202, 98, [k.c, '#ffffff', k.c]);
+  // the jumbo crosses from left to right and comes round again, bobbing a little
+  const u = (t / 3200) % 1;
+  plane(c, -40 + u * (W + 80), 122 + Math.sin(t / 260) * 1.5);
+}
 
 export function showVs(v: VsInfo, done: () => void, ms = 4200): void {
   const ui = document.getElementById('ui')!;
-  const to = v.kingdom && ISLANDS[v.kingdom] ? v.kingdom : 'volcan', a = ISLANDS.casa, b = ISLANDS[to];
+  const kid = v.kingdom && CREST[v.kingdom] ? v.kingdom : 'volcan';
   const el = document.createElement('div'); el.className = 'vs nesvs'; el.id = 'vs';
   const row = (ids: string[]): string => `<div class="vrow">${ids.map((id) => v.avatar(id, 1)).join('')}</div>`;
-  el.innerHTML = `<div class="vmap"><canvas width="512" height="288"></canvas><i class="vplane"></i><b class="vdest">RUMBO A ${nesUp(v.place)}</b></div>
-    <div class="vface"><div class="vside l"><b>${nesUp(v.us)}</b>${row(v.ours)}</div>
-    <div class="vmid"><span>VS</span><em>${nesUp(v.place)}</em></div>
-    <div class="vside r" style="--kc:${v.color}"><b>${nesUp(v.them)}</b>${row(v.theirs)}</div>
-    <div class="vstyle">${nesUp(v.style)}</div></div><div class="vtap">PRESIONA START</div>`;
+  el.innerHTML = `<canvas class="vcrest" width="${W}" height="${H}"></canvas>
+    <div class="vteams"><div class="vside l"><b>${nesUp(v.us)}</b>${row(v.ours)}</div><div class="vside r"><b>${nesUp(v.them)}</b>${row(v.theirs)}</div></div>
+    <div class="vstyle">${nesUp(v.style)}</div><div class="vtap">PRESIONA START</div>`;
   ui.appendChild(el);
   const cv = el.querySelector('canvas')!, ctx = cv.getContext('2d')!; ctx.imageSmoothingEnabled = false;
-  const draw = (): void => drawMap(ctx, to);
-  draw(); (document as Document & { fonts?: FontFaceSet }).fonts?.ready.then(draw);
-  // the plane flies from home to the kingdom along a gentle arc (percent of the map box)
-  const plane = el.querySelector('.vplane') as HTMLElement, x0 = ((a.x + a.w / 2) / 64) * 100, y0 = ((a.y + a.h / 2) / 36) * 100, x1 = ((b.x + b.w / 2) / 64) * 100, y1 = ((b.y + b.h / 2) / 36) * 100;
-  const t0 = performance.now(), fly = 1800;
-  const tick = (): void => {
-    const u = Math.min(1, (performance.now() - t0) / fly), k = u * u * (3 - 2 * u);
-    plane.style.left = `${x0 + (x1 - x0) * k}%`; plane.style.top = `${y0 + (y1 - y0) * k - Math.sin(Math.PI * k) * 12}%`;
-    plane.style.transform = `translate(-50%, -50%) scaleX(${x1 >= x0 ? 1 : -1})`;
-    if (u < 1 && el.isConnected) requestAnimationFrame(tick); else el.classList.add('face');
-  };
-  requestAnimationFrame(tick);
+  const t0 = performance.now();
+  const tick = (): void => { if (!el.isConnected) return; draw(ctx, v, kid, performance.now() - t0); requestAnimationFrame(tick); };
+  tick();
   let over = false;
   const end = (): void => { if (over) return; over = true; window.removeEventListener('keydown', end); el.classList.add('out'); window.setTimeout(() => { el.remove(); done(); }, 220); };
   el.addEventListener('pointerdown', end); window.addEventListener('keydown', end);

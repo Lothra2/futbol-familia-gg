@@ -4,11 +4,17 @@ export const T = Object.freeze({
   accel: 600, brake: 900, yFactor: 0.9, carrySpeed: 0.92,
   staminaMax: 100, staminaRecover: 30, staminaWait: 0.5, staminaUnlock: 35,
   jumpV: 220, jumpG: 760,
+  /** Golpes y patadas (Nekketsu): Tiro without the ball next to a rival hits him. `reach`/`dy` in front, `p` lands, the victim stays down `down` s
+   *  (`ko` s once he has taken `koAfter` hits within `combo` s), the attacker is busy `self` s and waits `cd` s. A child on easy controls who
+   *  carries the ball is hit with `easyP`. */
+  hit: { reach: 18, dy: 12, p: 0.9, easyP: 0.6, keep: 0.55, down: 1.6, ko: 3.4, koAfter: 3, combo: 6, self: 0.28, cd: 0.45, slack: { x: 5, y: 4 } },
+  /** Who you move when your team has not got the ball: the nearest to it, after `wait` s on the last one (`waitEasy` for a child), if he is `margin` px nearer. */
+  switchCtl: { wait: 0.22, waitEasy: 0.35, margin: 10 },
   /** Speed of the match against real time on screen: below 1 the whole game runs slower, the way Nintendo World Cup feels. */
   pace: 0.8,
   /** Súper patada (Nekketsu): after `at` px of dribble without stopping, inside `range` of the goal, the player flashes for `window` s (`easyWindow`
    *  for a child) and Tiro then is a super shot. Its goal chance is `base` falling by `fall` across the range; it flies `durK` of a special's time. */
-  super: { at: 200, still: 0.3, window: 0.6, easyWindow: 1.0, range: 420, base: 0.38, fall: 0.2, cap: 0.85, easyBonus: 0.1, durK: 0.8, hitR: 16, aiTake: 0.3 },
+  super: { at: 200, still: 0.3, window: 0.6, easyWindow: 1.0, range: 420, base: 0.33, fall: 0.2, cap: 0.85, easyBonus: 0.1, durK: 0.8, hitR: 16, aiTake: 0.3 },
   /** Players sent flying (Nintendo World Cup): the push of a slide and of a power shot along the ground, how fast it fades, and the lift. */
   fly: { slide: 150, slideVz: 190, shot: 230, shotVz: 280, fade: 0.45, steal: 110, stealVz: 150, bump: 160, bumpVz: 170 },
   // ---- ball (6.2)
@@ -83,9 +89,9 @@ export const KEEPERS = {
 /** How the family mates (always AI-controlled) play. They do not change with the difficulty of the rivals. */
 export const MATES = { speed: 0.92, reaction: 0.30, shotErr: 15, slideHuman: 0, press: 1, keeperSkill: 1, keeperReact: 0, star: 1, special: 0.5 } as const;
 export const DIFFICULTY = {
-  tranquilos: { superTake: 0.15, speed: 0.70, reaction: 0.55, shotErr: 24, slideHuman: 0, press: 1, keeperSkill: 0.72, keeperReact: 0.12, star: 0.5, special: 0.35 },
-  normales: { superTake: 0.7, speed: 1.0, reaction: 0.25, shotErr: 14, slideHuman: 0.25, press: 1, keeperSkill: 1.2, keeperReact: 0.02, star: 0.75, special: 0.50 },
-  campeones: { superTake: 0.75, speed: 1.00, reaction: 0.18, shotErr: 9, slideHuman: 0.5, press: 2, keeperSkill: 1.3, keeperReact: -0.05, star: 1.0, special: 0.60 },
+  tranquilos: { punch: 0.05, superTake: 0.15, speed: 0.70, reaction: 0.55, shotErr: 24, slideHuman: 0, press: 1, keeperSkill: 0.72, keeperReact: 0.12, star: 0.5, special: 0.35 },
+  normales: { punch: 0.3, superTake: 0.7, speed: 1.0, reaction: 0.25, shotErr: 14, slideHuman: 0.25, press: 1, keeperSkill: 1.2, keeperReact: 0.02, star: 0.75, special: 0.50 },
+  campeones: { punch: 0.5, superTake: 0.75, speed: 1.00, reaction: 0.18, shotErr: 9, slideHuman: 0.5, press: 2, keeperSkill: 1.3, keeperReact: -0.05, star: 1.0, special: 0.60 },
 } as const;
 
 /** How each kingdom plays (mejora 5). The rivals of a species follow their style on top of the difficulty: `press` more players press the carrier, `steal` multiplies

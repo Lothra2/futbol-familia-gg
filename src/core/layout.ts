@@ -1,6 +1,8 @@
-/** Integer-scale layout. Pure, so it can be unit tested. See ART_BIBLE section 2. */
-export const MIN_W = 426;
-export const MIN_H = 240;
+/** Integer-scale layout. Pure, so it can be unit tested. See ART_BIBLE section 2.
+ *  The smallest logical screen is close to the NES one (256 x 224): with the biggest whole scale that keeps at least 320 x 216 logical pixels a
+ *  footballer of 30 px fills an eighth of the height on every phone and tablet, as big and chunky as in Nintendo World Cup. */
+export const MIN_W = 320;
+export const MIN_H = 216;
 export const MAX_W = 640;
 export const MAX_H = 384;
 

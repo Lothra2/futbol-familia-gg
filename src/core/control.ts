@@ -36,15 +36,14 @@ function wanted(m: Match, h: HumanCtl, taken: Set<number>, tap = false): Player 
     if (pick && pick.id !== cur.id) return pick;
     return null;
   }
-  // loose ball or a rival with it: whoever arrives first, with hysteresis so the control does not jump about
-  const easy = h.controls === 'easy';
-  const wait = easy ? 0.8 : 0.5;
-  if (m.t - h.since < wait) return null;
-  let best: Player | null = null, be = Infinity;
-  for (const p of mates) { const e = etaTo(m, p); if (e < be) { be = e; best = p; } }
+  // loose ball or a rival with it (Nintendo World Cup): you always move the one of your team nearest to the ball. A short wait and a few px of
+  // margin keep the control from flickering between two players at the same distance.
+  if (m.t - h.since < (h.controls === 'easy' ? T.switchCtl.waitEasy : T.switchCtl.wait)) return null;
+  const d = (p: Player): number => Math.hypot(p.x - b.x, p.y - b.y);
+  let best: Player | null = null, bd = Infinity;
+  for (const p of mates) { const e = d(p); if (e < bd) { bd = e; best = p; } }
   if (!best || best.id === cur.id) return null;
-  if (easy) { if (Math.hypot(cur.x - b.x, cur.y - b.y) <= 80) return null; }
-  else if (etaTo(m, cur) <= be + 0.25) return null;
+  if (d(cur) <= bd + T.switchCtl.margin) return null;
   return best;
 }
 

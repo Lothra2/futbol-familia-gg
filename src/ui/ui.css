@@ -359,7 +359,9 @@ input[type=range] { width: 100%; height: 28px; accent-color: #5DDB43; }
 .vs .vtap { grid-column: 1 / 4; grid-row: 5; align-self: end; margin-bottom: 14px; font-size: 13px; opacity: .7; }
 
 /* ================= NES look (Nintendo World Cup): black screens, white NES letters, white dialog boxes and a ball as the cursor ================= */
-#ui.nesui .menu2, #ui.nesui .screen.menu2 { font-family: 'NES', monospace; background: #000 !important; color: #fff; letter-spacing: .02em; }
+/* the menus of Nintendo World Cup: navy blue with white boxes (the title and the main menu stay black, as in the game) */
+#ui.nesui { --nesbg: #2c4a94; }
+#ui.nesui .menu2, #ui.nesui .screen.menu2 { font-family: 'NES', monospace; background: var(--nesbg) !important; color: #fff; letter-spacing: .02em; }
 #ui.nesui .menu2 * { font-family: 'NES', monospace; }
 #ui.nesui .menu2 b, #ui.nesui .menu2 h2 { font-weight: 400; }
 /* title */
@@ -381,46 +383,46 @@ input[type=range] { width: 100%; height: 28px; accent-color: #5DDB43; }
 #ui.nesui .mini-logo span { font-size: clamp(12px, 3vh, 22px); color: #fff; text-shadow: 2px 2px 0 #2f6fe0; margin-top: 6px; }
 #ui.nesui .nbox { display: flex; flex-direction: column; gap: clamp(2px, 1vh, 8px); border: 4px solid #fff; box-shadow: 0 0 0 4px #000, 0 0 0 8px #fff; padding: clamp(8px, 2.4vh, 18px) clamp(14px, 4vw, 36px) clamp(8px, 2.4vh, 18px) clamp(30px, 6vw, 52px); }
 #ui.nesui .mbtn { background: none !important; border: 0; box-shadow: none !important; color: #fff; min-height: 0; padding: 4px 0; position: relative; }
-#ui.nesui .mbtn b { font-size: clamp(12px, 3vh, 20px); } #ui.nesui .mbtn em { font-size: clamp(7px, 1.6vh, 10px); color: #9a9a9a; opacity: 1; margin-top: 4px; }
+#ui.nesui .mbtn b { font-size: clamp(12px, 3vh, 20px); } #ui.nesui .mbtn em { font-size: clamp(7px, 1.6vh, 10px); color: #b0c4f0; opacity: 1; margin-top: 4px; }
 #ui.nesui .mbtn:hover, #ui.nesui .mbtn:focus-visible, #ui.nesui .mbtn:focus { transform: none; filter: none; outline: none; color: #ffd447; }
 #ui.nesui .mbtn:hover::before, #ui.nesui .mbtn:focus::before { content: ''; position: absolute; left: clamp(-30px, -4.6vw, -20px); top: 4px; width: clamp(12px, 3vh, 18px); height: clamp(12px, 3vh, 18px); background: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 12 12' shape-rendering='crispEdges'%3E%3Ccircle cx='6' cy='6' r='5.5' fill='%23fff' stroke='%23000'/%3E%3Cpath d='M4 3h2v2H4zM7 6h2v2H7zM3 7h2v2H3z' fill='%23000'/%3E%3C/svg%3E") center / contain no-repeat; image-rendering: pixelated; animation: spin 1s steps(4) infinite; }
 #ui.nesui .fam { display: none; }
-#ui.nesui .corner .chip-o { background: #000; color: #fff; border: 2px solid #fff; border-radius: 0; font-size: 9px; min-height: 30px; }
-#ui.nesui .dcard { background: #000; color: #fff; border: 2px solid #fff; border-radius: 0; box-shadow: none; }
-#ui.nesui .dcard b { font-size: 9px; } #ui.nesui .dcard em { color: #9a9a9a; font-size: 7px; } #ui.nesui .dcard .dots i { border: 2px solid #fff; background: #000; border-radius: 0; width: 10px; height: 10px; } #ui.nesui .dcard .dots i.on { background: #ffd447; }
+#ui.nesui .corner .chip-o { background: var(--nesbg); color: #fff; border: 2px solid #fff; border-radius: 0; font-size: 9px; min-height: 30px; }
+#ui.nesui .dcard { background: var(--nesbg); color: #fff; border: 2px solid #fff; border-radius: 0; box-shadow: none; }
+#ui.nesui .dcard b { font-size: 9px; } #ui.nesui .dcard em { color: #b0c4f0; font-size: 7px; } #ui.nesui .dcard .dots i { border: 2px solid #fff; background: var(--nesbg); border-radius: 0; width: 10px; height: 10px; } #ui.nesui .dcard .dots i.on { background: #ffd447; }
 /* every other screen: white boxes over black */
-#ui.nesui .mhead h2 { font-size: clamp(14px, 3.6vh, 24px); color: #ffd447; text-shadow: 2px 2px 0 #e8423a; } #ui.nesui .mhead small { color: #9a9a9a; font-size: clamp(7px, 1.6vh, 10px); }
-#ui.nesui .btn { background: #000; color: #fff; border: 3px solid #fff; border-radius: 0; box-shadow: none; font-size: clamp(11px, 2.6vh, 16px); min-height: 44px; }
+#ui.nesui .mhead h2 { font-size: clamp(14px, 3.6vh, 24px); color: #ffd447; text-shadow: 2px 2px 0 #e8423a; } #ui.nesui .mhead small { color: #b0c4f0; font-size: clamp(7px, 1.6vh, 10px); }
+#ui.nesui .btn { background: var(--nesbg); color: #fff; border: 3px solid #fff; border-radius: 0; box-shadow: none; font-size: clamp(11px, 2.6vh, 16px); min-height: 44px; }
 #ui.nesui .btn:active { transform: none; box-shadow: none; } #ui.nesui .btn.primary, #ui.nesui .btn.go { color: #ffd447; animation: blink 1.2s steps(1, end) infinite; }
 #ui.nesui .btn.back { width: 48px; } #ui.nesui .btn.back svg path { stroke: #fff; }
-#ui.nesui .qcol, #ui.nesui .vleft, #ui.nesui .vright, #ui.nesui .panel { background: #000; color: #fff; border: 3px solid #fff; border-radius: 0; box-shadow: none; }
-#ui.nesui .menu2 .lbl { color: #7be3ff; font-size: clamp(8px, 2vh, 12px); } #ui.nesui .menu2 .lbl small { color: #9a9a9a; font-size: 7px; }
+#ui.nesui .qcol, #ui.nesui .vleft, #ui.nesui .vright, #ui.nesui .panel { background: var(--nesbg); color: #fff; border: 3px solid #fff; border-radius: 0; box-shadow: none; }
+#ui.nesui .menu2 .lbl { color: #7be3ff; font-size: clamp(8px, 2vh, 12px); } #ui.nesui .menu2 .lbl small { color: #b0c4f0; font-size: 7px; }
 #ui.nesui .menu2 .note, #ui.nesui .menu2 p { color: #ddd; font-size: clamp(8px, 1.9vh, 11px); line-height: 1.6; }
-#ui.nesui .chip-o { background: #000; color: #fff; border: 0; border-radius: 0; font-size: clamp(8px, 2vh, 12px); min-height: 30px; padding: 2px 6px 2px 18px; position: relative; }
-#ui.nesui .chip-o.sel { background: #000; color: #ffd447; }
+#ui.nesui .chip-o { background: var(--nesbg); color: #fff; border: 0; border-radius: 0; font-size: clamp(8px, 2vh, 12px); min-height: 30px; padding: 2px 6px 2px 18px; position: relative; }
+#ui.nesui .chip-o.sel { background: var(--nesbg); color: #ffd447; }
 #ui.nesui .chip-o.sel::before { content: ''; position: absolute; left: 2px; top: 50%; width: 12px; height: 12px; margin-top: -6px; background: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 12 12' shape-rendering='crispEdges'%3E%3Ccircle cx='6' cy='6' r='5.5' fill='%23fff' stroke='%23000'/%3E%3Cpath d='M4 3h2v2H4zM7 6h2v2H7zM3 7h2v2H3z' fill='%23000'/%3E%3C/svg%3E") center / contain no-repeat; image-rendering: pixelated; }
-#ui.nesui .card { background: #000; color: #fff; border: 2px solid #555; border-radius: 0; box-shadow: none; } #ui.nesui .card.sel { border-color: #ffd447; box-shadow: 0 0 0 2px #ffd447; }
-#ui.nesui .card b { font-size: clamp(8px, 1.8vh, 11px); } #ui.nesui .card em { color: #9a9a9a; font-size: 7px; }
-#ui.nesui .wroom .board { border: 3px solid #fff; border-radius: 0; } #ui.nesui .wroom .spot b { font-size: 8px; background: #000; border-radius: 0; } #ui.nesui .wroom .spot em { font-size: 7px; }
+#ui.nesui .card { background: var(--nesbg); color: #fff; border: 2px solid #8aa0d8; border-radius: 0; box-shadow: none; } #ui.nesui .card.sel { border-color: #ffd447; box-shadow: 0 0 0 2px #ffd447; }
+#ui.nesui .card b { font-size: clamp(8px, 1.8vh, 11px); }
+/* the rival cards are narrow on a phone: the long team names shrink so they never run into the next card */
+#ui.nesui .kcards .card { min-width: 0; overflow: hidden; } #ui.nesui .kcards .card b, #ui.nesui .kcards .card em { font-size: clamp(6px, 0.74vw, 10px); white-space: nowrap; max-width: 100%; } #ui.nesui .card em { color: #b0c4f0; font-size: 7px; }
+#ui.nesui .wroom .board { border: 3px solid #fff; border-radius: 0; } #ui.nesui .wroom .spot b { font-size: 8px; background: var(--nesbg); border-radius: 0; } #ui.nesui .wroom .spot em { font-size: 7px; }
 #ui.nesui .wroom .wopts .chip-o { min-height: 26px; }
 #ui.nesui input[type=range] { accent-color: #ffd447; }
 #ui.nesui .m-main .side { margin: 0 auto; }
 #ui.nesui .m-main .corner { position: absolute; }
 
 /* the screen before the match: the map with the plane, then the VS (NES) */
-.vs.nesvs { display: flex; flex-direction: column; align-items: center; justify-content: center; background: #000; font-family: 'NES', monospace; }
+.vs.nesvs { display: flex; flex-direction: column; align-items: center; justify-content: center; gap: clamp(4px, 1.6vh, 12px); background: #2c4a94; font-family: 'NES', monospace; padding: max(6px, env(safe-area-inset-top)) max(10px, env(safe-area-inset-right)) max(6px, env(safe-area-inset-bottom)) max(10px, env(safe-area-inset-left)); }
 .vs.nesvs * { font-family: 'NES', monospace; font-weight: 400; }
-.nesvs .vmap { position: relative; width: min(92vw, 150vh); aspect-ratio: 16 / 9; border: 4px solid #fff; box-shadow: 0 0 0 4px #000, 0 0 0 8px #fff; }
-.nesvs .vmap canvas { width: 100%; height: 100%; display: block; image-rendering: pixelated; }
-.nesvs .vplane { position: absolute; width: 6%; aspect-ratio: 2; background: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 8' shape-rendering='crispEdges'%3E%3Cpath d='M1 3h9l3-3h2l-2 3h2v2h-2l2 3h-2l-3-3H1z' fill='%23fff' stroke='%23000' stroke-width='.6'/%3E%3Cpath d='M4 3h1v1H4zM6 3h1v1H6z' fill='%237be3ff'/%3E%3C/svg%3E") center / contain no-repeat; image-rendering: pixelated; }
-.nesvs .vdest { position: absolute; left: 0; right: 0; bottom: 4%; text-align: center; color: #fff; font-size: clamp(9px, 2.4vh, 16px); text-shadow: 2px 2px 0 #000; animation: blink 1s steps(1, end) infinite; }
-.nesvs .vface { display: none; position: absolute; inset: 0; background: #000; grid-template-columns: 1fr auto 1fr; grid-template-rows: 1fr auto auto 1fr; align-items: center; justify-items: center; }
-.nesvs.face .vface { display: grid; animation: vsin .2s steps(3); }
-.nesvs .vside { grid-row: 2; animation: none; } .nesvs .vside.l { grid-column: 1; } .nesvs .vside.r { grid-column: 3; }
-.nesvs .vside b { font-size: clamp(10px, 2.8vh, 18px); border: 3px solid #fff; border-radius: 0; background: #000 !important; color: #fff !important; text-shadow: none !important; padding: 6px 10px; }
-.nesvs .vmid { grid-column: 2; grid-row: 2; } .nesvs .vmid span { font-size: clamp(34px, 12vh, 80px); color: #ffd447; text-shadow: 5px 5px 0 #e8423a; animation: none; } .nesvs .vmid em { color: #7be3ff; font-size: clamp(8px, 2vh, 12px); margin-top: 10px; }
-.nesvs .vstyle { grid-column: 1 / 4; grid-row: 3; color: #fff; background: none; font-size: clamp(8px, 2vh, 13px); margin-top: 18px; }
-.nesvs .vtap { position: absolute; bottom: 10px; left: 0; right: 0; text-align: center; color: #9a9a9a; font-size: 9px; }
+/* the crests, the VS, the flags and the jumbo: one NES picture of 288 x 150 scaled up with square pixels */
+.nesvs .vcrest { height: min(56vh, calc(94vw * 150 / 288)); aspect-ratio: 288 / 150; image-rendering: pixelated; display: block; }
+.nesvs .vteams { display: flex; justify-content: center; gap: clamp(16px, 8vw, 90px); width: 100%; }
+.nesvs .vside { display: flex; flex-direction: column; align-items: center; gap: 4px; animation: none; }
+.nesvs .vside b { font-size: clamp(7px, 2.2vh, 13px); border: 2px solid #fff; border-radius: 0; background: #000; color: #fff; text-shadow: none; padding: 4px 8px; }
+.nesvs .vside.l b { color: #5ddb43; } .nesvs .vside.r b { color: #ffd447; }
+.nesvs .vrow { gap: 0; }
+.nesvs .vstyle { color: #fff; background: none; font-size: clamp(7px, 2vh, 12px); margin: 0; padding: 0 8px; text-align: center; }
+.nesvs .vtap { position: absolute; bottom: max(6px, env(safe-area-inset-bottom)); left: 0; right: 0; text-align: center; color: #9ab0e0; font-size: 8px; margin: 0; animation: blink 1s steps(1, end) infinite; }
 
 /* the match HUD in the NES letters: black boxes with a white rim */
 #hud .sb, #hud .clock, #hud .banner, #hud .hint, #hud .nes { font-family: 'NES', monospace; }
@@ -428,7 +430,12 @@ input[type=range] { width: 100%; height: 28px; accent-color: #5DDB43; }
 #hud .sb .team { font-size: clamp(8px, 1.8vh, 11px); font-weight: 400; } #hud .sb .t0 { background: #000; color: #5ddb43; } #hud .sb .t1 { background: #000; color: #ff8a2a; }
 #hud .sb .score { font-size: clamp(14px, 3.6vh, 22px); }
 #hud .clock { font-size: clamp(8px, 1.8vh, 11px); background: #000; border: 2px solid #fff; border-top: 0; border-radius: 0; padding: 3px 8px; }
-#hud .banner { font-size: clamp(20px, 6.4vh, 46px); font-weight: 400; color: #ffd447; text-shadow: 4px 4px 0 #e8423a, -2px -2px 0 #000, 2px -2px 0 #000, -2px 2px 0 #000; letter-spacing: .04em; }
+/* the banners of Nintendo World Cup: a black band over the bottom bar with the word in slanted orange letters (on touch screens the bottom
+   belongs to the buttons, so the band crosses the lower middle of the screen) */
+#hud .banner { top: auto; bottom: 0; left: 0; right: 0; transform: none; height: clamp(40px, 13vh, 76px); padding: 0 max(18px, 6vw); display: flex; align-items: center; background: #000; border-top: 3px solid #000; text-shadow: none; transition: opacity .08s; pointer-events: none; z-index: 6; font-size: min(clamp(18px, 6.4vh, 44px), calc(86vw / var(--n, 10))); font-weight: 400; letter-spacing: .02em; }
+#hud .banner.show { transform: none; }
+#hud .banner span { display: inline-block; transform: skewX(-14deg); background: linear-gradient(180deg, #fff3b0 0%, #ffd447 28%, #ff9a2a 55%, #e8601a 80%, #b83a10 100%); -webkit-background-clip: text; background-clip: text; color: transparent; filter: drop-shadow(2px 2px 0 #5a1a08); white-space: nowrap; overflow: hidden; text-overflow: clip; max-width: 100%; }
+@media (pointer: coarse) { #hud .banner { bottom: auto; top: 58%; } }
 #hud .hint { font-size: clamp(8px, 2vh, 12px); font-weight: 400; color: #fff; background: #000; border: 3px solid #fff; border-radius: 0; padding: 6px 12px; }
 #hud .star { border-radius: 0; border: 2px solid #fff; background: #000; }
 #hud .nes .nb { font-size: clamp(7px, 1.6vh, 10px); font-weight: 400; }

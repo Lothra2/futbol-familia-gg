@@ -34,10 +34,10 @@ describe('paso 0: deudas del diseño', () => {
   });
   it('0.1 mantener Pase más de 0,2 s no cambia (eso es contener, mejora 1)', () => {
     const m = mkH([seat(4, 0)]); clear(m);
-    const a = fam(m, 'sophie'), b = fam(m, 'mama'); put(a, 200, MID); put(b, 440, MID); ball(m, 500, MID);
+    const a = fam(m, 'sophie'), b = fam(m, 'mama'); put(a, 440, MID); put(b, 200, MID); ball(m, 500, MID);
     secs(m, 0.1);
     passFor(m, 0.3);
-    expect(ctl(m)).toBe(a);
+    expect(ctl(m)).toBe(a);   // he is the nearest: holding Pass contains and does not switch to the other
   });
   it('0.1 con controles fáciles el toque no cambia nada', () => {
     const m = mkH([seat(4, 0, 'easy')]); clear(m);

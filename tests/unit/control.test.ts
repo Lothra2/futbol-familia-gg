@@ -38,14 +38,17 @@ describe('cambio de jugador al más cercano (GAME_DESIGN 4)', () => {
     const c2 = fam(m2, 'sophie'), n2 = fam(m2, 'mama'); put(c2, 400, MID); put(n2, 410, MID); ball(m2, 500, MID, 0, 0, 0, 0);
     secs(m2, 1.0); expect(ctl(m2)).toBe(c2);
   });
-  it('controles fáciles: espera 0,8 s y solo cambia si el actual está a más de 80 px del balón', () => {
+  it('sin el balón manejas siempre al más cercano (Nintendo World Cup): fáciles esperan un poquito más y nadie salta por pocos px', () => {
     const m = mkH([seat(4, 0, 'easy')]); clear(m);
-    const cur = fam(m, 'sophie'), near = fam(m, 'mama'); put(cur, 440, MID); put(near, 490, MID); ball(m, 500, MID, 0, 0, 0, 0);
-    secs(m, 1.2); expect(ctl(m)).toBe(cur);                  // he is 60 px away: stays
+    const cur = fam(m, 'sophie'), near = fam(m, 'mama'); put(cur, 440, MID); put(near, 446, MID); ball(m, 500, MID, 0, 0, 0, 0);
+    secs(m, 1.2); expect(ctl(m)).toBe(cur);                  // only 6 px nearer: stays
     const f = mkH([seat(4, 0, 'easy')]); clear(f);
     const c2 = fam(f, 'sophie'), n2 = fam(f, 'mama'); put(c2, 200, MID); put(n2, 460, MID); ball(f, 500, MID, 0, 0, 0, 0);
-    secs(f, 0.6); expect(ctl(f)).toBe(c2);                   // 0.8 s have not passed
-    secs(f, 0.4); expect(ctl(f)).toBe(n2);
+    secs(f, 0.2); expect(ctl(f)).toBe(c2);                   // the short wait of a child
+    secs(f, 0.3); expect(ctl(f)).toBe(n2);
+    const g = mkH([seat(4, 0, 'full')]); clear(g);
+    const c3 = fam(g, 'sophie'), n3 = fam(g, 'mama'), r = rival(g, 3); put(c3, 200, MID); put(n3, 460, MID); put(r, 500, MID); give(g, r);
+    secs(g, 0.3); expect(ctl(g)).toBe(n3);                   // a rival has it: the nearest to him
   });
   it('Thor, el portero, nunca lo maneja un humano', () => {
     const m = mkH([seat(4, 0)]); clear(m);
@@ -55,7 +58,7 @@ describe('cambio de jugador al más cercano (GAME_DESIGN 4)', () => {
   });
   it('el humano maneja con su stick y sus botones al jugador que le toca', () => {
     const m = mkH([seat(4, 0)]); clear(m);
-    const a = fam(m, 'sophie'); put(a, 300, MID); ball(m, 700, MID, 0, 0, 0, 0);
+    const a = fam(m, 'sophie'); put(a, 300, MID); ball(m, 460, MID, 0, 0, 0, 0);
     setHumanInput(m, 0, inp({ mx: 1 })); secs(m, 0.5);
     expect(a.x).toBeGreaterThan(330);
   });

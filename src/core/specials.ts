@@ -1,7 +1,7 @@
 import { DIFFICULTY, SPECIAL_BASE, STYLE, T } from './tuning';
 import { MID, PITCH, attackDir, goalX, ownGoalX, slotPos } from './field';
 import { emit } from './events';
-import { playerById, setTouch, startDive, startStagger, startTumble } from './actions';
+import { knockDown, playerById, setTouch, startDive, startStagger, startTumble } from './actions';
 import type { Flight, Match, Player, SpecialKind, Team } from './state';
 
 const KIND_FAMILY: Record<string, SpecialKind> = { sophie: 'arcoiris', alana: 'burbuja', papa: 'canonazo', mama: 'estrellas', juandi: 'relampago', thor: 'carrera' };
@@ -217,7 +217,7 @@ export function stepFlight(m: Match, dt: number): void {
   // a power shot goes through people: whoever it meets on its way (low enough to hit him) is sent flying
   const hitR = f.kind === 'canonazo' ? 20 : T.super.hitR;
   for (const o of foes) if (!f.hit.includes(o.id) && !f.targets.includes(o.id) && b.z < 40 && Math.abs(b.x - o.x) < 10 && Math.abs(o.y - b.y) < hitR) {
-    f.hit.push(o.id); startTumble(m, o, 0.6, dir * T.fly.shot, Math.sign(o.y - b.y || 1) * T.fly.shot * 0.4, T.fly.shotVz); emit(m, 'superhit', o.x, o.y, 0, o.id);
+    f.hit.push(o.id); knockDown(m, o, playerById(m, f.shooter) ?? null, dir * T.fly.shot, Math.sign(o.y - b.y || 1) * T.fly.shot * 0.4, T.fly.shotVz, 1.2); emit(m, 'superhit', o.x, o.y, 0, o.id);
   }
   if (f.kind === 'estrellas') for (const id of f.targets) { const o = playerById(m, id)!; if (!f.hit.includes(id) && (b.x - o.x) * dir >= -4) { f.hit.push(id); startStagger(m, o, 0.6); } }
   if (u >= 1) endFlight(m, f, s);

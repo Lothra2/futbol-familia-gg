@@ -1,7 +1,7 @@
 import Phaser from 'phaser';
 
-/** The shirt colour of each family atlas (tools/nwc/nwc_gen.ts FAMILY): the pixels of that hue are the ones an outfit repaints. */
-export const SHIRT: Record<string, string> = { papa: '#c40f14', mama: '#6e3db8', sophie: '#91be35', alana: '#fd7eac', juandi: '#0a47af' };
+/** The shirt colour of each family atlas (tools/nes/elenco.json "camisa"): the pixels of that hue are the ones an outfit repaints. */
+export const SHIRT: Record<string, string> = { papa: '#d8202a', mama: '#7a3cc8', sophie: '#80c020', alana: '#ff70b0', juandi: '#1450c8' };
 
 const hsv = (r: number, g: number, b: number): [number, number, number] => {
   const mx = Math.max(r, g, b), mn = Math.min(r, g, b), d = mx - mn;
@@ -22,6 +22,7 @@ export function outfitAtlas(scene: Phaser.Scene, key: string, art: string, outfi
   if (!shirt || (outfit !== 'arcoiris' && outfit !== 'estrellas')) return key;
   if (scene.textures.exists(out)) return out;
   const src = scene.textures.get(key).getSourceImage() as HTMLImageElement | HTMLCanvasElement;
+  const cell = scene.textures.getFrame(key, 0)?.width ?? 32;
   const w = src.width, h = src.height, cv = document.createElement('canvas'); cv.width = w; cv.height = h;
   const c = cv.getContext('2d')!; c.drawImage(src, 0, 0);
   const img = c.getImageData(0, 0, w, h), px = img.data;
@@ -31,13 +32,13 @@ export function outfitAtlas(scene: Phaser.Scene, key: string, art: string, outfi
     const [hh, s, v] = hsv(px[i], px[i + 1], px[i + 2]);
     let dh = Math.abs(hh - sh); dh = Math.min(dh, 360 - dh);
     if (dh > 20 || s < ss * 0.45 || v < 0.12) continue;
-    const p = i / 4, x = p % w, y = Math.floor(p / w), cy = y % 48;
+    const p = i / 4, x = p % w, y = Math.floor(p / w), cy = y % cell;
     let r: [number, number, number];
-    if (outfit === 'arcoiris') r = rgb((Math.floor(cy / 3) * 50) % 360, 0.75, Math.min(1, v * 1.15));
+    if (outfit === 'arcoiris') r = rgb((Math.floor(cy / 2) * 50) % 360, 0.75, Math.min(1, v * 1.15));
     else r = (x * 7 + y * 13) % 19 === 0 ? [255, 228, 92] : rgb(232, 0.65, Math.min(1, v * 0.55));
     px[i] = r[0]; px[i + 1] = r[1]; px[i + 2] = r[2];
   }
   c.putImageData(img, 0, 0);
-  scene.textures.addSpriteSheet(out, cv as unknown as HTMLImageElement, { frameWidth: 48, frameHeight: 48 });
+  scene.textures.addSpriteSheet(out, cv as unknown as HTMLImageElement, { frameWidth: cell, frameHeight: cell });
   return out;
 }

@@ -9,8 +9,8 @@ export const FACES = ['sophie', 'alana', 'papa', 'mama', 'juandi', 'thor'];
 export const FX = ['arcoiris', 'burbuja', 'canonazo', 'estrellas', 'carrera', 'relampago', 'llamarada', 'ola', 'picada', 'hojas'];
 export const OUTFIT_CHARS = ['sophie', 'alana', 'papa', 'mama', 'juandi', 'thor'];
 export const STADIUMS = ['volcan', 'arrecife', 'nubes', 'bosque'];
-/** Every atlas of the NES look: the family, Thor and the keeper and five kids of each kingdom. */
-export const NWC = ['sophie', 'alana', 'papa', 'mama', 'juandi', 'thor', ...['dragon', 'tiburon', 'buho', 'mapache'].flatMap((k) => [`riv_${k}_gk`, ...[1, 2, 3, 4, 5].map((i) => `riv_${k}_${i}`)])];
+/** Every atlas of the Nekketsu look (made by PixelForja, tools/nes): the family, Thor and the keeper and five kids of each kingdom. */
+export const NES = ['sophie', 'alana', 'papa', 'mama', 'juandi', 'thor', ...['dragon', 'tiburon', 'buho', 'mapache'].flatMap((k) => [`riv_${k}_gk`, ...[1, 2, 3, 4, 5].map((i) => `riv_${k}_${i}`)])];
 export const SHEETS = ['sophie', 'alana', 'papa', 'mama', 'juandi', 'thor', 'riv_dragon', 'riv_dragon_gk', 'riv_tiburon', 'riv_tiburon_gk', 'riv_buho', 'riv_buho_gk', 'riv_mapache', 'riv_mapache_gk'];
 
 /** Loads the sprite sheets (48 x 48 cells) and their animation tables, bakes the small textures and tells the app it can show the menu. */
@@ -29,10 +29,10 @@ export class BootScene extends Phaser.Scene {
     for (const c of FACES) this.load.spritesheet(`caras_${c}`, `assets/cine/caras_${c}.png`, { frameWidth: 80, frameHeight: 80 });
     for (const k of FX) this.load.image(`cine_fx_${k}`, `assets/cine/fx_${k}.png`);
     for (const c of OUTFIT_CHARS) for (const o of ['arcoiris', 'estrellas']) this.load.spritesheet(`${c}_${o}`, `assets/sprites/${c}_${o}.png`, { frameWidth: 48, frameHeight: 48 });
-    // the footballers seen from above (tools/nwc/nwc_gen.ts with forja): 48 x 48 cells, five directions drawn and three by mirror
-    for (const k of NWC) {
-      this.load.spritesheet(`nwc_${k}`, `assets/nwc/${k}.png`, { frameWidth: 48, frameHeight: 48 });
-      this.load.json(`nwc_${k}_meta`, `assets/nwc/${k}.json`);
+    // the footballers in the Nekketsu style of PixelForja (tools/nes): 32 x 32 cells, five directions drawn and three by mirror
+    for (const k of NES) {
+      this.load.spritesheet(`nes_${k}`, `assets/nes/${k}.png`, { frameWidth: 32, frameHeight: 32 });
+      this.load.json(`nes_${k}_meta`, `assets/nes/${k}.json`);
     }
     for (const k of SHEETS) {
       this.load.spritesheet(k, `assets/sprites/${k}.png`, { frameWidth: 48, frameHeight: 48 });

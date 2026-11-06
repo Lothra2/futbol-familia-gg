@@ -74,7 +74,10 @@ export class Hud {
   banner(text: string, ms = 1400): void {
     if (!text) return;
     // the NES letters have no accented capitals
-    const b = this.el.banner; b.textContent = text.toUpperCase().replace(/[ÁÉÍÓÚÜ]/g, (c) => 'AEIOUU'['ÁÉÍÓÚÜ'.indexOf(c)]);
+    // Nintendo World Cup: the word in orange slanted letters on a black band (KICK OFF, GOAL!, THROW IN...)
+    const b = this.el.banner, span = document.createElement('span');
+    span.textContent = text.toUpperCase().replace(/[ÁÉÍÓÚÜ]/g, (c) => 'AEIOUU'['ÁÉÍÓÚÜ'.indexOf(c)]);
+    b.replaceChildren(span); b.style.setProperty('--n', String(Math.max(8, span.textContent.length)));
     b.classList.add('show'); window.clearTimeout(this.bannerTimer);
     this.bannerTimer = window.setTimeout(() => b.classList.remove('show'), ms);
   }

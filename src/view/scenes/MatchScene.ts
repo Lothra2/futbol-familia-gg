@@ -78,9 +78,9 @@ export class MatchScene extends Phaser.Scene {
     this.fx = new Fx(this);
     this.weather = new WeatherView(this, m.weather, m.ball.wind ?? 0);
     for (const p of m.players) {
-      // every player has his own atlas from forja (tools/nwc): the five of the family, Thor, and the six kids of each kingdom
-      let key = `nwc_${p.art}`;
-      if (!this.textures.exists(key)) key = p.role === 'gk' ? 'nwc_riv_dragon_gk' : 'nwc_riv_dragon_1';
+      // every player has his own atlas from forja (tools/nes): the five of the family, Thor, and the six kids of each kingdom
+      let key = `nes_${p.art}`;
+      if (!this.textures.exists(key)) key = p.role === 'gk' ? 'nes_riv_dragon_gk' : 'nes_riv_dragon_1';
       const meta = this.cache.json.get(`${key}_meta`) as NesMeta;
       // the outfit won in the Vitrina repaints the shirt of the family member (view/outfit.ts)
       const outfit = p.team === 0 && p.charId ? this.cfg.outfits?.[p.charId] : undefined;

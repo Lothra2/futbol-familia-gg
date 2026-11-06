@@ -23,6 +23,8 @@ const ready = async (page) => { await page.waitForFunction(() => window.__futbol
   await page.keyboard.down('KeyD'); await page.waitForTimeout(500);
   const d1 = await dot(page); await page.keyboard.up('KeyD');
   ok('teclado: D da eje a la derecha y el jugador corre a la derecha', d1.mx > 0.9 && d1.vx > 20, `mx ${d1.mx} vx ${Math.round(d1.vx)}`);
+  // with the ball at his feet the control stays on him (without it, it jumps to whoever is nearest the ball)
+  await page.evaluate(() => { const m = window.__futbol.scene.match, p = m.players.find((q) => q.humanSlot === 0); Object.assign(m.ball, { state: 'owned', owner: p.id, inNet: false, scored: null, x: p.x + 8, y: p.y, z: 0 }); });
   await page.keyboard.down('KeyS'); await page.waitForTimeout(400);
   const d2 = await dot(page); await page.keyboard.up('KeyS');
   ok('teclado: S mueve en profundidad', d2.my > 0.9 && d2.vy > 5, `my ${d2.my} vy ${Math.round(d2.vy)}`);
@@ -45,7 +47,7 @@ const ready = async (page) => { await page.waitForFunction(() => window.__futbol
   const { page, errors, ctx } = await openGame(b, srv.url, Q, { viewport: { width: 844, height: 390 }, deviceScaleFactor: 3, hasTouch: true, isMobile: true });
   await ready(page);
   const info = await page.evaluate(() => ({ w: window.__futbol.game.scale.width, h: window.__futbol.game.scale.height, touch: document.getElementById('touch').classList.contains('on'), rotate: document.getElementById('rotate').classList.contains('on') }));
-  ok('844x390 @3: pantalla logica 633x292 y controles tactiles visibles', info.w === 633 && info.h === 292 && info.touch && !info.rotate, JSON.stringify(info));
+  ok('844x390 @3: pantalla logica 506x234 (cerca de la NES) y controles tactiles visibles', info.w === 506 && info.h === 234 && info.touch && !info.rotate, JSON.stringify(info));
   const cdp = await ctx.newCDPSession(page);
   const touch = (type, pts) => cdp.send('Input.dispatchTouchEvent', { type, touchPoints: pts.map(([x, y, id]) => ({ x, y, id })) });
   const d0 = await dot(page);

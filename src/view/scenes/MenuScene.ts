@@ -36,8 +36,8 @@ export class MenuScene extends Phaser.Scene {
     this.cameras.main.setBackgroundColor('#000000');
     this.pitch = new TopPitch(this, this.id, this.time_);
     for (const p of this.m.players) {
-      let key = `nwc_${p.art}`;
-      if (!this.textures.exists(key)) key = p.role === 'gk' ? 'nwc_riv_dragon_gk' : 'nwc_riv_dragon_1';
+      let key = `nes_${p.art}`;
+      if (!this.textures.exists(key)) key = p.role === 'gk' ? 'nes_riv_dragon_gk' : 'nes_riv_dragon_1';
       this.views.push(new NesPlayer(this, p, key, this.cache.json.get(`${key}_meta`) as NesMeta));
     }
     this.ball = new BallView(this, this.m.ball);

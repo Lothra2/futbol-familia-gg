@@ -2,6 +2,7 @@ import { T } from '../tuning';
 import { DT } from '../step';
 import { MID, PITCH, SY, attackDir, goalX, ownGoalX, slotPos } from '../field';
 import { superOpen } from '../specials';
+import { hitTarget } from '../actions';
 import { DIFFICULTY } from '../tuning';
 import { choosePass, segDist } from '../actions';
 import { emptyInput, type InputFrame } from '../types';
@@ -112,6 +113,12 @@ function brainThink(m: Match, p: Player, humanize: boolean): InputFrame {
   }
   const carrier = b.owner === null ? null : m.players.find((q) => q.id === b.owner) ?? null;
   const mine = !!carrier && carrier.team === p.team, theirs = !!carrier && carrier.team !== p.team;
+
+  // Nekketsu: a rival who has a person of the family within reach now and then just hits him, with or without the ball
+  if (p.team === 1 && !(carrier && carrier.id === p.id)) {
+    const t = hitTarget(m, p);
+    if (t && t.control === 'human' && m.rng.chance(DIFFICULTY[m.difficulty].punch)) { f.shootPressed = true; f.shoot = false; return f; }
+  }
 
   // ------------------------------------------------------------------ I carry the ball
   if (carrier && carrier.id === p.id) {

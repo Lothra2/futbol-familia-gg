@@ -4,8 +4,9 @@ import { LoopClock } from './anim';
 import { PX, PY, depthAt, wx, sy } from '../core/proj';
 import type { Match, Player } from '../core/state';
 import type { Fx } from './Fx';
+import { T } from '../core/tuning';
 
-/** An atlas made by tools/nwc/nwc_gen.ts: 48 x 48 cells, `<anim>_<dir>` rows, the left half of the compass drawn by flipping the right half. */
+/** An atlas of the Nekketsu style of PixelForja (tools/nes): 32 x 32 cells, `<anim>_<dir>` rows, the left half of the compass drawn by flipping the right half. */
 export interface NesMeta { cell: [number, number]; pivot: [number, number]; cols: number; mirror: Record<string, string>; anims: Record<string, AnimMeta> }
 
 /** The eight directions on the screen, clockwise from the right (screen y grows down). */
@@ -21,6 +22,9 @@ export function dirOf(dx: number, dy: number, prev: number | null = null): numbe
   let off = a - prev * step; off = Math.atan2(Math.sin(off), Math.cos(off));
   return Math.abs(off) > step / 2 + Math.PI / 12 ? i : prev;
 }
+
+/** Seconds of the flight of a knocked down player (the 5 frames of `tumble` at 12 fps) and of getting up (2 frames of `fall_getup` at 8 fps). */
+const TUMBLE_T = 0.42, GETUP_T = 0.25;
 
 /** What the player is doing, in the names of the forja atlas (the same for the family and the rivals; keepers add the keeper_ rows, Thor has his own). */
 export function nesAnim(p: Player, m: Match | null, isThor: boolean): { name: string; loop: boolean; t: number } {
@@ -50,9 +54,16 @@ export function nesAnim(p: Player, m: Match | null, isThor: boolean): { name: st
     }
     case 'special': return { name: 'shot', loop: false, t: Math.min(t, 0.25) };
     case 'slide': return { name: 'slide', loop: false, t };
-    case 'bump': return { name: 'tackle', loop: false, t };
-    case 'stagger': case 'dizzy': return { name: 'stagger', loop: false, t };
-    case 'tumble': return { name: 'tumble', loop: false, t };
+    case 'bump': return { name: p.act?.kind === 'hit' ? (p.act.blow === 'kick' ? 'kick_hit' : 'punch') : 'tackle', loop: false, t };
+    case 'stagger': return { name: 'stagger', loop: false, t };
+    case 'dizzy': return { name: 'dizzy', loop: true, t };
+    case 'tumble': {
+      // Nekketsu: he flies, lands flat on the ground and stays there, and only gets up at the very end of the time he is out
+      const dur = p.act?.dur ?? 0;
+      if (t < TUMBLE_T || dur < TUMBLE_T + GETUP_T) return { name: 'tumble', loop: false, t };
+      if (dur - t < GETUP_T) return { name: 'fall_getup', loop: false, t: t - (dur - GETUP_T) };
+      return { name: 'lie', loop: true, t };
+    }
     case 'getup': return { name: 'fall_getup', loop: false, t: t + 0.3 };
     case 'celebrate': return { name: p.team === 0 ? 'dance' : 'celebrate', loop: true, t };
     case 'sad': return { name: 'sad', loop: true, t };
@@ -136,8 +147,18 @@ export class NesPlayer {
     this.shadow.setPosition(x, gy).setScale(k * 1.15, 1).setDepth(depthAt(p.y) - 0.5);
     const mine = humanSlot !== null;
     this.mark.setVisible(mine);
-    if (mine) this.mark.setTexture(`mark_${humanSlot + 1}`).setPosition(x, y - 38).setTint(jColor).setDepth(1000 + p.y);
+    if (mine) this.mark.setTexture(`mark_${humanSlot + 1}`).setPosition(x, y - 33).setTint(jColor).setDepth(1000 + p.y);
     this.bar.clear();
+    // the cartoon stars of Nekketsu over the head of a player who is out cold (K.O.) or dizzy after a slide
+    const ko = p.state === 'tumble' && (p.act?.dur ?? 0) >= T.hit.ko * 0.9 && (p.act?.t ?? 0) > TUMBLE_T;
+    if (ko || p.state === 'dizzy') {
+      const hx = ko ? x + (mirrored ? -9 : 9) : x, hy = ko ? y - 12 : y - 32, a0 = (m?.t ?? 0) * 6;
+      for (let i = 0; i < 3; i++) {
+        const a = a0 + (i * Math.PI * 2) / 3, sx = Math.round(hx + Math.cos(a) * 7), sy2 = Math.round(hy + Math.sin(a) * 2.5);
+        this.bar.fillStyle(i === 1 ? 0xffffff : 0xffe45c).fillRect(sx - 1, sy2, 3, 1).fillRect(sx, sy2 - 1, 1, 3);
+      }
+      this.bar.setDepth(depthAt(p.y) + 0.6);
+    }
     if (mine) {
       const w = 14, v = Math.max(0, Math.min(1, p.stamina / 100));
       this.bar.fillStyle(0x2a1b3d).fillRect(x - w / 2 - 1, gy + 3, w + 2, 4).fillStyle(p.sprintLock ? 0xff5e7e : v < 0.25 ? 0xffb23f : 0x5ddb43).fillRect(x - w / 2, gy + 4, Math.round(w * v), 2).setDepth(depthAt(p.y) - 0.4);

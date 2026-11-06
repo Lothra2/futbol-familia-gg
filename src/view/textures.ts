@@ -52,7 +52,7 @@ export function makeTextures(scene: Phaser.Scene): void {
   tex(scene, 'ball', 32, 8, ballFrames);
   for (const n of Object.values(JERSEY)) numberTag(scene, n);
   if (!scene.textures.get('ball').has('0')) { for (let i = 0; i < 4; i++) scene.textures.get('ball').add(i, 0, i * 8, 0, 8, 8); }
-  tex(scene, 'shadow', 16, 6, (c) => { c.fillStyle = 'rgba(42,27,61,0.38)'; for (const [x, w, y] of [[3, 10, 0], [1, 14, 1], [0, 16, 2], [0, 16, 3], [1, 14, 4], [3, 10, 5]] as const) c.fillRect(x, y, w, 1); });
+  tex(scene, 'shadow', 16, 6, (c) => { c.fillStyle = 'rgba(0,0,0,0.5)'; for (const [x, w, y] of [[3, 10, 0], [1, 14, 1], [0, 16, 2], [0, 16, 3], [1, 14, 4], [3, 10, 5]] as const) c.fillRect(x, y, w, 1); });
   tex(scene, 'ring', 20, 8, (c) => {
     c.fillStyle = '#fff';
     for (const [x, w, y] of [[5, 10, 0], [2, 3, 1], [15, 3, 1], [0, 2, 2], [18, 2, 2], [0, 2, 4], [18, 2, 4], [2, 3, 5], [15, 3, 5], [5, 10, 6]] as const) c.fillRect(x, y, w, 1);

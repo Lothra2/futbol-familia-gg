@@ -257,7 +257,7 @@ function slideContacts(m: Match, p: Player, a: Act): void {
     for (const o of foes(m, p)) {
       if (LOCK.has(o.state) || o.z > 8 || o.immuneT > 0 && m.ball.owner === o.id) continue;
       if (within(o.x, o.y, T.slide.reach + 4, T.slide.half + 3)) {
-        startTumble(m, o, T.slide.tumble, (a.dx ?? 0) * T.fly.slide, (a.dy ?? 0) * T.fly.slide, T.fly.slideVz);
+        knockDown(m, o, p, (a.dx ?? 0) * T.fly.slide, (a.dy ?? 0) * T.fly.slide, T.fly.slideVz);
         emit(m, 'slidehit', o.x, o.y, 0, o.id);
         // a foul: the rival who carried the ball is brought down close to the goal of the one who slides (rules.ts gives the free kick when the step ends)
         if (!m.training && m.t - ((m.data.fkAt as number) ?? -99) > T.free.cd && Math.abs(o.x - ownGoalX(p.team)) < T.free.zone && (m.ball.owner === o.id || Math.hypot(m.ball.x - o.x, m.ball.y - o.y) < T.free.ballNear)) m.data.foul = { team: o.team, x: o.x, y: o.y, who: o.id };
@@ -268,26 +268,61 @@ function slideContacts(m: Match, p: Player, a: Act): void {
   }
 }
 
-/** Frontal steal: the rival with the ball is in reach in front. Returns whether an attempt was made. */
-export function tryFrontSteal(m: Match, p: Player, slack = false): boolean {
-  if (p.cd.steal > 0) return false;
-  const b = m.ball, c = playerById(m, b.owner);
-  if (!c || c.team === p.team || c.immuneT > 0) return false;
-  const fx = (c.x - p.x) * p.facing;
-  if (fx < -2 || fx > T.steal.reach + (slack ? T.steal.slack.x : 0) || Math.abs(c.y - p.y) > T.steal.dy + (slack ? T.steal.slack.y : 0)) return false;
-  p.cd.steal = T.steal.cd;
-  const easyCarrier = c.control === 'human' && c.controls === 'easy' ? T.easy.stolen : 1;   // the ball sticks more to a child on easy controls
-  const contained = (p.containT ?? 0) >= T.contain.after ? T.contain.stealBonus : 1;           // after half a second of holding him the steal is likelier
-  if (m.rng.chance(Math.min(0.95, T.steal.p * (p.stats.steal ?? 1) * c.stats.stolen * easyCarrier * contained))) {
-    { const d = Math.sign(c.x - p.x) || p.facing; startTumble(m, c, T.slide.tumble * 0.8, d * T.fly.steal, (c.y - p.y) * 3, T.fly.stealVz); }   // Nekketsu: the one who loses the ball goes down
-    b.owner = p.id; b.state = 'owned'; p.immuneT = T.immune; p.stats2.steals++; setTouch(m, p); addBar(m, p.team, T.bar.steal + (contained > 1 ? T.bar.containSteal : 0));
-    emit(m, 'steal', b.x, b.y, 0, p.id);
+/** A player is knocked down and stays out of the game for a while (Nekketsu). The hits add up: three close together and he is out longer. */
+export function knockDown(m: Match, o: Player, from: Player | null, kx: number, ky: number, vz: number, extra = 1): void {
+  const h = (o.hits ??= { n: 0, t: -99 });
+  h.n = m.t - h.t < T.hit.combo ? h.n + 1 : 1; h.t = m.t;
+  const ko = h.n >= T.hit.koAfter, dur = (ko ? T.hit.ko : T.hit.down) * extra;
+  if (ko) h.n = 0;
+  startTumble(m, o, dur, kx, ky, vz);
+  o.immuneT = dur + 0.4;   // nobody hits a player who is down
+  emit(m, ko ? 'ko' : 'down', o.x, o.y, 0, o.id, from ? from.id : -1);
+}
+
+/** The rival a hit would reach: in front of the player, close, standing; the one with the ball first. */
+export function hitTarget(m: Match, p: Player, slack = false): Player | null {
+  if (p.cd.steal > 0 || m.phase !== 'play' || LOCK.has(p.state) || p.act) return null;
+  const R = T.hit.reach + (slack ? T.hit.slack.x : 0), DY = T.hit.dy + (slack ? T.hit.slack.y : 0);
+  let best: Player | null = null, bs = Infinity;
+  for (const o of foes(m, p)) {
+    if (LOCK.has(o.state) || o.immuneT > 0 || o.z > 12 || (o.role === 'gk' && m.ball.owner === o.id && m.ball.state === 'held')) continue;
+    const fx = (o.x - p.x) * p.facing;
+    if (fx < -4 || fx > R || Math.abs(o.y - p.y) > DY) continue;
+    const sc = Math.hypot(o.x - p.x, o.y - p.y) - (m.ball.owner === o.id ? 100 : 0);
+    if (sc < bs) { bs = sc; best = o; }
+  }
+  return best;
+}
+
+/** Golpe o patada (Nekketsu): Tiro without the ball next to a rival. When it lands he goes down and stays out a while, and if he had the ball it
+ *  is yours. When it misses the one who swung stumbles. Returns whether a blow was thrown. */
+export function tryHit(m: Match, p: Player, slack = false): boolean {
+  const o = hitTarget(m, p, slack);
+  if (!o) return false;
+  const b = m.ball, had = b.owner === o.id;
+  p.cd.steal = T.hit.cd;
+  p.blow = p.blow === 'punch' ? 'kick' : 'punch';
+  begin(p, { kind: 'hit', t: 0, dur: T.hit.self, blow: p.blow }, 'bump');
+  const easyCarrier = had && o.control === 'human' && o.controls === 'easy';
+  const contained = (p.containT ?? 0) >= T.contain.after ? T.contain.stealBonus : 1;
+  if (m.rng.chance(Math.min(0.97, (easyCarrier ? T.hit.easyP : T.hit.p) * contained))) {
+    const d = Math.sign(o.x - p.x) || p.facing;
+    knockDown(m, o, p, d * T.fly.steal, (o.y - p.y) * 3, T.fly.stealVz);
+    emit(m, 'hit', o.x, o.y, 0, p.id, p.blow === 'kick' ? 1 : 0);
+    if (had && m.rng.chance(T.hit.keep)) { b.owner = p.id; b.state = 'owned'; p.immuneT = T.immune; p.stats2.steals++; setTouch(m, p); addBar(m, p.team, T.bar.steal + (contained > 1 ? T.bar.containSteal : 0)); emit(m, 'steal', b.x, b.y, 0, p.id); }
+    else if (had) {
+      // the ball pops loose from the one who went down: a scramble, and now and then it goes out (Nekketsu)
+      b.state = 'free'; b.owner = null; b.vx = d * m.rng.range(60, 160); b.vy = m.rng.range(-170, 170); b.vz = m.rng.range(40, 120); b.inNet = false; setTouch(m, p);
+      p.stats2.steals++; addBar(m, p.team, T.bar.steal);
+    }
   } else {
-    startStagger(m, p, T.steal.fail);
+    p.act = null; startStagger(m, p, T.steal.fail);
     emit(m, 'whiff', p.x, p.y, 0, p.id);
   }
   return true;
 }
+/** The old names: a steal is a hit now. */
+export const tryFrontSteal = tryHit;
 
 /** A sprinting player runs into the rival who carries the ball. */
 export function checkBump(m: Match, p: Player): void {
@@ -302,7 +337,7 @@ export function checkBump(m: Match, p: Player): void {
     const n = Math.hypot(p.vx, p.vy) || 1;
     dropBall(m, c, (p.vx / n) * 70, (p.vy / n) * 70 + m.rng.range(-30, 30), 0);
     m.ball.state = 'free'; setTouch(m, p);
-    startTumble(m, c, T.slide.tumble, (p.vx / n) * T.fly.bump, (p.vy / n) * T.fly.bump, T.fly.bumpVz); c.holdT = 0;   // a body check knocks him down
+    knockDown(m, c, p, (p.vx / n) * T.fly.bump, (p.vy / n) * T.fly.bump, T.fly.bumpVz); c.holdT = 0;   // a body check knocks him down
   }
   begin(p, { kind: 'bump', t: 0, dur: T.bump.self }, 'bump');
 }
@@ -374,24 +409,18 @@ export function handleInput(m: Match, p: Player, dt: number): void {
   }
   if (loose && sh.release) { startKick(m, p, planShot(m, p, 0), PREP.shot); return; }
   if (sh.press) {
-    if (p.control === 'ai') { if (inp.slide) startSlide(m, p); else tryFrontSteal(m, p); }
+    if (p.control === 'ai') { if (inp.slide) startSlide(m, p); else tryHit(m, p); }
     else {
-      // "close steals, far slides": a rival with the ball right in front is taken from the front (never with a slide), anywhere else it is a slide
-      const c = playerById(m, b.owner), fx = c ? (c.x - p.x) * p.facing : 0;
-      if (c && c.team !== p.team && c.immuneT <= 0 && fx >= -2 && fx <= T.steal.reach + T.steal.slack.x && Math.abs(c.y - p.y) <= T.steal.dy + T.steal.slack.y) tryFrontSteal(m, p, true);
+      // "close hits, far slides" (Nekketsu): a rival right in front gets a punch or a kick, anywhere else it is a slide
+      if (hitTarget(m, p, true)) tryHit(m, p, true);
       else startSlide(m, p);
     }
   }
 }
 
 /** The rival with the ball whom a human without the ball could steal from the front right now (for the mark under his feet, view only). */
-export function stealTarget(m: Match, p: Player): Player | null {
-  if (p.cd.steal > 0 || m.phase !== 'play' || LOCK.has(p.state) || p.act) return null;
-  const c = playerById(m, m.ball.owner);
-  if (!c || c.team === p.team || c.immuneT > 0) return null;
-  const fx = (c.x - p.x) * p.facing;
-  return fx >= -2 && fx <= T.steal.reach + T.steal.slack.x && Math.abs(c.y - p.y) <= T.steal.dy + T.steal.slack.y ? c : null;
-}
+/** The rival the arc under him shows: the one a hit would reach. */
+export const stealTarget = (m: Match, p: Player): Player | null => hitTarget(m, p, true);
 
 // ------------------------------------------------------------------------------------------------ acts in progress
 export function updateAct(m: Match, p: Player, dt: number): { moveScale: number; override: { vx: number; vy: number } | null } {
@@ -419,7 +448,7 @@ export function updateAct(m: Match, p: Player, dt: number): { moveScale: number;
       break;
     }
     case 'bump': if (a.t >= a.dur) endAct(p); break;
-    case 'steal': if (a.t >= a.dur) endAct(p); break;
+    case 'steal': case 'hit': if (a.t >= a.dur) endAct(p); break;
     case 'tumble': {
       // thrown back by the hit: the push fades out in under half a second
       if (a.dx || a.dy) { const k = Math.max(0, 1 - a.t / T.fly.fade); override = { vx: (a.dx ?? 0) * k, vy: (a.dy ?? 0) * k }; }

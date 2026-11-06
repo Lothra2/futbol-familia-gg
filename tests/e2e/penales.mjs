@@ -7,6 +7,8 @@ const ok = (name, cond, extra = '') => { console.log(cond ? 'PASS' : 'FAIL', nam
 for (const [w, h] of [[1280, 720], [844, 390], [667, 375]]) {
   const { page, errors, ctx } = await openGame(b, srv.url, 'mode=quick&half=5&seed=7&autoplay=quieto&cine=off&controls=full&stadium=arrecife', { viewport: { width: w, height: h } });
   await page.waitForFunction(() => window.__futbol?.match?.phase === 'play', null, { timeout: 20000 });
+  // the shootout needs a tie: the score is held at 0-0 until the whistle (with the súper patada a rival can score in five seconds)
+  await page.evaluate(() => { const m = window.__futbol.match, id = setInterval(() => { if (m.phase === 'penalties' || m.phase === 'over') clearInterval(id); else { m.score[0] = 0; m.score[1] = 0; } }, 20); });
   await page.waitForFunction(() => window.__futbol.match.phase === 'penalties', null, { timeout: 90000 });
   ok(`${w}x${h}: el empate va a penales`, true);
   const shot = async (n) => page.screenshot({ path: `docs/qa/shots/penales_${w}x${h}_${n}.png` });

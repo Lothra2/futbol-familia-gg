@@ -24,13 +24,15 @@ export interface KickPlan {
   first?: boolean; vaselina?: boolean;
 }
 export interface Act {
-  kind: 'kick' | 'slide' | 'bump' | 'stagger' | 'tumble' | 'dizzy' | 'getup' | 'steal' | 'dive';
+  kind: 'kick' | 'slide' | 'bump' | 'stagger' | 'tumble' | 'dizzy' | 'getup' | 'steal' | 'dive' | 'hit';
+  /** A hit: a punch or a kick (they take turns). */
+  blow?: 'punch' | 'kick';
   t: number; dur: number; contact?: number; plan?: KickPlan; done?: boolean; dx?: number; dy?: number; sub?: KickKind;
 }
 
 export interface Player {
   id: number; team: Team; slot: number; role: Role; stats: PStats; charId?: CharId; species?: Species; name: string;
-  /** The sprite of this player (public/assets/nwc/<art>.png). */
+  /** The sprite of this player (public/assets/nes/<art>.png). */
   art: string;
   control: 'human' | 'ai'; humanSlot: number | null; controls: ControlMode;
   x: number; y: number; z: number; vx: number; vy: number; vz: number; facing: 1 | -1; dirX: number; dirY: number;
@@ -53,6 +55,10 @@ export interface Player {
   buf?: { kind: 'shoot' | 'pass'; until: number } | null;
   /** The súper patada of Nekketsu: px dribbled without stopping, and until when the flash (the moment to shoot it) lasts. */
   sup?: { run: number; still: number; until: number; last: number } | null;
+  /** Hits taken lately (Nekketsu): how many and when the last one was. Three close together knock him out for longer. */
+  hits?: { n: number; t: number };
+  /** The last blow thrown (punch and kick take turns). */
+  blow?: 'punch' | 'kick';
 }
 
 export interface AIMind {
