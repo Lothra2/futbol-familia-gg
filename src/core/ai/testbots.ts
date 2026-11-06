@@ -1,7 +1,6 @@
 import { DT } from '../step';
 import { aiInput } from './brain';
 import { MID, attackDir, goalX } from '../field';
-import { fkMeter } from '../freekick';
 import { emptyInput, type InputFrame } from '../types';
 import { T } from '../tuning';
 import { stealTarget } from '../actions';
@@ -27,16 +26,6 @@ export function botFrame(m: Match, h: HumanCtl, s: BotState): InputFrame {
       f.mx = s.penAim; f.my = -0.15;
       if (pen.t > 1.1) f.shootPressed = true;
     }
-    return f;
-  }
-  // a free kick: aim at a corner of the goal, a bit of effect, and press when the meter is at the top (sophie) or after a second and a half (nina5)
-  const rs = m.restart;
-  if (m.phase === 'restart' && rs?.kind === 'freekick' && rs.taker === p.id && rs.fk) {
-    const f = emptyInput(), want = MID + (m.tick % 2 ? -25 : 25), dir = attackDir(p.team);
-    f.my = Math.max(-1, Math.min(1, (want - rs.fk.aimY) / 8)); f.mx = rs.fk.curve < 0.8 ? 0.4 * dir : 0;
-    // sophie presses Tiro to start the meter and again at the top of it, nina5 (easy controls) presses once
-    if (s.kind === 'sophie') { if (rs.fk.stage === 'aim' ? rs.t > 1.2 : fkMeter(rs.fk, rs.t) >= T.free.sweet) f.shootPressed = true; }
-    else if (rs.t > 1.7) f.shootPressed = true;
     return f;
   }
   if (s.kind === 'sophie') {

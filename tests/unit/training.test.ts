@@ -27,27 +27,15 @@ describe('entrenamiento con Thor', () => {
     f[0].stats2.chips = 2; expect(t.update(m).justDone).toBe(true);
     f[1].stats2.goals = 3; expect(t.update(m).justDone).toBe(true);
     f[1].stats2.spGoals = 1; expect(t.update(m).justDone).toBe(true);
-    m.data.fkGoals = 1; expect(t.update(m).justDone).toBe(true);
     m.data.penGoals = 2; const v = t.update(m);
     expect(v.allDone).toBe(true); expect(v.title).toContain('completo');
-    expect(CHALLENGES.length).toBe(6);
+    expect(CHALLENGES.length).toBe(5);
   });
-  it('con controles faciles se salta el pase alto', () => { const m = mk(); const t = new Training(m, true); expect(t.total).toBe(5); });
-  it('el reto del tiro libre pone el balón en su sitio con los conos de barrera y se repite hasta meterlo', () => {
-    const m = mk(); const t = new Training(m); const st = newBot('sophie');
-    const f = m.players.filter((p) => p.team === 0 && p.role !== 'gk');
-    f[0].stats2.passes = 5; t.update(m); f[0].stats2.chips = 2; t.update(m); f[1].stats2.goals = 3; t.update(m); f[1].stats2.spGoals = 1; t.update(m);
-    t.update(m);
-    expect(m.phase).toBe('restart'); expect(m.restart!.kind).toBe('freekick'); expect(m.restart!.team).toBe(0);
-    for (const id of m.restart!.fk!.wall) expect(m.players.find((p) => p.id === id)!.team).toBe(1);
-    let done = false;
-    for (let i = 0; i < 60 * 240 && !done; i++) { setHumanInput(m, 0, botFrame(m, m.humans[0], st)); step(m); if (i % 6 === 0) done = t.update(m).allDone; }
-    expect(done).toBe(true); expect(m.data.fkGoals).toBeGreaterThanOrEqual(1); expect(m.data.fkTries as number).toBeGreaterThanOrEqual(1);
-  });
+  it('con controles faciles se salta el pase alto', () => { const m = mk(); const t = new Training(m, true); expect(t.total).toBe(4); });
   it('el reto de penales empieza una práctica: solo patea la familia, nadie gana y se vuelve al juego al meter 2', () => {
     const m = mk(); const t = new Training(m); const st = newBot('sophie');
     const f = m.players.filter((p) => p.team === 0 && p.role !== 'gk');
-    f[0].stats2.passes = 5; t.update(m); f[0].stats2.chips = 2; t.update(m); f[1].stats2.goals = 3; t.update(m); f[1].stats2.spGoals = 1; t.update(m); m.data.fkGoals = 1; t.update(m);
+    f[0].stats2.passes = 5; t.update(m); f[0].stats2.chips = 2; t.update(m); f[1].stats2.goals = 3; t.update(m); f[1].stats2.spGoals = 1; t.update(m);
     for (let i = 0; i < 60 * 20 && m.phase !== 'penalties'; i++) { setHumanInput(m, 0, botFrame(m, m.humans[0], st)); step(m); if (i % 6 === 0) t.update(m); }
     expect(m.phase).toBe('penalties'); expect(m.pen!.practice).toBe(true);
     let done = false, sawRival = false;
@@ -56,28 +44,13 @@ describe('entrenamiento con Thor', () => {
     for (let i = 0; i < 60 * 4 && m.pen; i++) { step(m); t.update(m); }   // the practice ends when the celebration of the last goal is over
     expect(sawRival).toBe(false); expect(m.pen).toBeNull(); expect(m.phase).not.toBe('penalties'); expect(m.data.penGoals as number).toBeGreaterThanOrEqual(2);
   });
-  it('los ejercicios del menú se repiten sin terminar nunca: tiros libres y penales', () => {
-    for (const drill of ['libre', 'penal'] as const) {
+  it('el ejercicio de penales del menú se repite sin terminar nunca', () => {
+    for (const drill of ['penal'] as const) {
       const m = mk(); const t = new Training(m, false, drill); const st = newBot('sophie');
       expect(t.total).toBe(1);
       let sets = 0;
       for (let i = 0; i < 60 * 500 && sets < 2; i++) { setHumanInput(m, 0, botFrame(m, m.humans[0], st)); step(m); if (i % 6 === 0) { const v = t.update(m); expect(v.allDone).toBe(false); if (v.justDone) sets++; } }
       expect(sets, drill).toBe(2);
     }
-  });
-  it('tras patear el tiro libre el balón sigue su camino: no se coloca otro tiro libre antes de ver cómo termina (aunque se haya tardado en apuntar)', () => {
-    const m = mk(); const t = new Training(m, false, 'libre');
-    t.update(m);
-    expect(m.restart?.kind).toBe('freekick');
-    const taker = m.players.find((p) => p.id === m.restart!.taker)!;
-    const tap = (): void => { setHumanInput(m, 0, { mx: 0, my: 0, shoot: false, pass: false, sprint: false, special: false, shootPressed: true, passPressed: false, specialPressed: false }); step(m); setHumanInput(m, 0, null); };
-    for (let i = 0; i < 60 * 10; i++) { step(m); if (i % 6 === 0) t.update(m); }   // 10 s aiming
-    expect(m.restart?.kind).toBe('freekick');
-    tap(); for (let i = 0; i < 40; i++) step(m); tap();
-    expect(m.restart).toBeNull(); expect(taker.id).toBeGreaterThan(-1);
-    const bx = m.ball.x;
-    for (let i = 0; i < 90; i++) { step(m); if (i % 6 === 0) t.update(m); }
-    expect(m.restart?.kind === 'freekick' && m.data.fkTries === 2).toBe(false);
-    expect(Math.abs(m.ball.x - bx)).toBeGreaterThan(20);
   });
 });

@@ -1,5 +1,4 @@
 import type { Match } from '../core/state';
-import { startTrainingFreeKick } from '../core/freekick';
 import { endPenaltyPractice, startPenaltyPractice } from '../core/penalties';
 
 export interface Challenge { id: string; title: string; hint: string; need: number; read: (m: Match) => number; needsFull?: boolean; /** Called at every update while this challenge is the one on (the free kick puts the ball in place). */ tick?: (m: Match) => void }
@@ -12,15 +11,12 @@ export const CHALLENGES: Challenge[] = [
   { id: 'alto', title: 'Haz 2 pases altos', hint: 'Mantén Pase un momento y suéltalo: el balón vuela por arriba', need: 2, read: (m) => sum(m, (s) => s.chips), needsFull: true },
   { id: 'goles', title: 'Marca 3 goles', hint: 'Mantén Tiro para más potencia y suéltalo cerca del arco', need: 3, read: (m) => sum(m, (s) => s.goals) },
   { id: 'poder', title: 'Marca un gol con tu poder', hint: 'Acércate al arco con el balón y toca Especial', need: 1, read: (m) => sum(m, (s) => s.spGoals) },
-  { id: 'libre', title: 'Mete un tiro libre', hint: 'Apunta con el stick, toca Tiro y otra vez Tiro cuando el medidor esté en verde. Sin prisa', need: 1, read: (m) => (m.data.fkGoals as number) ?? 0,
-    tick: (m) => { if (((m.phase === 'play' && !m.restart) || m.phase === 'kickoff') && m.t - ((m.data.fkKickAt as number) ?? -99) > 4) startTrainingFreeKick(m); } },
   { id: 'penales', title: 'Mete 2 penales', hint: 'Mueve el stick a los lados para apuntar y arriba o abajo para la altura. Toca Tiro para patear', need: 2, read: (m) => (m.data.penGoals as number) ?? 0,
     tick: (m) => { if (((m.phase === 'play' && !m.restart) || m.phase === 'kickoff') && !m.pen) startPenaltyPractice(m); } },
 ];
 
-/** The drills of the menu: only free kicks or only penalties, repeated until the person leaves (a set of 3 is a "reto superado" and the next set starts). */
+/** The drills of the menu: only penalties, repeated until the person leaves (a set of 3 is a "reto superado" and the next set starts). */
 const DRILLS: Record<string, Challenge[]> = {
-  libre: [{ ...CHALLENGES.find((c) => c.id === 'libre')!, title: 'Mete 3 tiros libres', need: 3 }],
   penal: [{ ...CHALLENGES.find((c) => c.id === 'penales')!, title: 'Mete 3 penales', need: 3 }],
 };
 
@@ -33,7 +29,7 @@ export class Training {
   private loop: boolean;
   /** The last penalty of the challenge went in: the practice ends when its celebration is over. */
   private endPen = false;
-  constructor(m: Match, private easy = false, drill: 'todo' | 'libre' | 'penal' = 'todo') {
+  constructor(m: Match, private easy = false, drill: 'todo' | 'penal' = 'todo') {
     this.loop = drill !== 'todo';
     this.list = (DRILLS[drill] ?? CHALLENGES).filter((c) => !(easy && c.needsFull));
     this.base = this.list[0].read(m);

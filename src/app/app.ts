@@ -157,7 +157,7 @@ export class App {
   credits(): void { showCredits(() => undefined); }
 
   /** The practice session with Thor (M12). */
-  startTraining(players: 1 | 2, drill: 'todo' | 'libre' | 'penal' = 'todo'): void {
+  startTraining(players: 1 | 2, drill: 'todo' | 'penal' = 'todo'): void {
     const c = this.cfg;
     this.menuCfg = { ...c, training: false };   // the practice changes the rival, the stadium and the difficulty: the menus get their own settings back afterwards
     this.startMatch({ ...c, drill, players, versus: false, training: true, cup: false, knockout: false, rival: 'tiburon', stadium: 'arrecife', time: 'day', difficulty: 'tranquilos', seed: (Date.now() & 0xffff) + 1, ff: 1, autoplay: null });

@@ -90,6 +90,9 @@ function launch(m: Match, p: Player, plan: KickPlan): void {
     if (Math.abs(goalX(p.team) - b.x) < 320) { m.stats.shots[p.team]++; addBar(m, p.team, plan.ty >= 58 && plan.ty <= 102 ? T.bar.shot : T.bar.shotOff); }
   }
   releaseBall(m, p, ux * v, uy * v, vz, plan.spin, (plan.kind === 'pass' || plan.kind === 'chip') && !plan.vaselina ? 'pass' : 'kick');
+  // a shot of a person can be bent while it flies (match.ts reads the stick of whoever shot it)
+  if (p.control === 'human' && p.humanSlot !== null && (plan.kind === 'shot' || plan.kind === 'volley' || plan.kind === 'chilena')) m.data.banana = { who: p.id, slot: p.humanSlot, until: m.t + T.banana.window };
+  else m.data.banana = undefined;
 }
 
 // ------------------------------------------------------------------------------------------------ choosing where to pass
@@ -259,8 +262,7 @@ function slideContacts(m: Match, p: Player, a: Act): void {
       if (within(o.x, o.y, T.slide.reach + 4, T.slide.half + 3)) {
         knockDown(m, o, p, (a.dx ?? 0) * T.fly.slide, (a.dy ?? 0) * T.fly.slide, T.fly.slideVz);
         emit(m, 'slidehit', o.x, o.y, 0, o.id);
-        // a foul: the rival who carried the ball is brought down close to the goal of the one who slides (rules.ts gives the free kick when the step ends)
-        if (!m.training && m.t - ((m.data.fkAt as number) ?? -99) > T.free.cd && Math.abs(o.x - ownGoalX(p.team)) < T.free.zone && (m.ball.owner === o.id || Math.hypot(m.ball.x - o.x, m.ball.y - o.y) < T.free.ballNear)) m.data.foul = { team: o.team, x: o.x, y: o.y, who: o.id };
+        // no fouls in Nekketsu: whoever is knocked down is down, and play goes on
         startDizzy(p, T.slide.dizzy);
         return;
       }

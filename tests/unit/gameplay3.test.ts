@@ -15,9 +15,9 @@ describe('mejora 3: tirar con criterio', () => {
     expect(ty(0.5)).toBeCloseTo(MID + 0.5 * T.chance.aim, 5); expect(ty(-0.5)).toBeCloseTo(MID - 0.5 * T.chance.aim, 5);
     expect(ty(1)).toBeCloseTo(MID + T.chance.aim, 5); expect(ty(-1)).toBeCloseTo(MID - T.chance.aim, 5); expect(ty(3)).toBeCloseTo(MID + T.chance.aim, 5);
   });
-  it('el error de un tiro tocado es 6 y crece con la fuerza hasta 14', () => {
+  it('el error de un tiro tocado es chico (T.shotNormal.err) y crece con la fuerza hasta 14', () => {
     const m = mk({}, true); clear(m); const p = fam(m, 'sophie'); put(p, 800, MID); give(m, p);
-    expect(planShot(m, p, 0).err).toBe(6);
+    expect(planShot(m, p, 0).err).toBe(T.shotNormal.err);
     expect(planShot(m, p, T.hardTime).err).toBeCloseTo(14, 5);
   });
   it('calidad de ocasión: cerca vale más que lejos, la banda y el tráfico la bajan, y de primera la sube', () => {

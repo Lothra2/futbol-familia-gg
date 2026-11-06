@@ -20,7 +20,7 @@ export interface ScreenDeps {
   cfg: () => MatchConfig; setCfg: (c: MatchConfig) => void;
   play: (cfg: MatchConfig) => void;
   /** Starts the training session with Thor (M12). */
-  train: (players: 1 | 2, drill: 'todo' | 'libre' | 'penal') => void;
+  train: (players: 1 | 2, drill: 'todo' | 'penal') => void;
   credits: () => void;
 }
 
@@ -221,8 +221,8 @@ export class Screens {
     return `${this.head('Entrenamiento', 'Practica pases, tiros y poderes con Thor')}
       <div class="qgrid"><div class="qcol"><div class="lbl">Jugadores</div>${this.chips('tplayers', [{ v: 1, label: '1 jugador' }, { v: 2, label: '2 juntos' }], this.d.cfg().players)}
       <div class="lbl">Tu equipo</div>${this.squadHtml(this.d.cfg())}</div>
-      <div class="qcol opts"><div class="lbl">Qué practicar</div>${this.chips('tdrill', [{ v: 'todo', label: 'Todos los retos' }, { v: 'libre', label: 'Tiros libres' }, { v: 'penal', label: 'Penales' }], this.d.cfg().drill ?? 'todo')}
-      <p class="note">${({ todo: 'Pases, tiros, el poder, un tiro libre y penales con Thor. Sin tiempo, sin presión.', libre: 'Tiros libres contra la barrera, uno tras otro. Apunta, toca Tiro y otra vez Tiro en verde.', penal: 'Penales uno tras otro, vistos desde atrás del pateador. Mira con el stick y toca Tiro.' } as Record<string, string>)[this.d.cfg().drill ?? 'todo']}</p></div></div><div class="mfoot"><button class="btn primary go" data-act="trainGo" data-focus>¡A entrenar!</button></div>`;
+      <div class="qcol opts"><div class="lbl">Qué practicar</div>${this.chips('tdrill', [{ v: 'todo', label: 'Todos los retos' }, { v: 'penal', label: 'Penales' }], this.d.cfg().drill ?? 'todo')}
+      <p class="note">${({ todo: 'Pases, tiros, el poder y penales con Thor. Sin tiempo, sin presión.', penal: 'Penales uno tras otro, vistos desde atrás del pateador. Mira con el stick y toca Tiro.' } as Record<string, string>)[this.d.cfg().drill ?? 'todo']}</p></div></div><div class="mfoot"><button class="btn primary go" data-act="trainGo" data-focus>¡A entrenar!</button></div>`;
   }
 
   // ------------------------------------------------------------------ behaviour
@@ -251,7 +251,7 @@ export class Screens {
     el.querySelectorAll('[data-outfit]').forEach((b) => b.addEventListener('click', () => { const [id, o] = (b as HTMLElement).dataset.outfit!.split(':'); store.data.characters[id as CharId].outfit = o as 'base'; store.save(); redraw(); }));
     chips('players', (i) => { c.players = i === 0 ? 1 : 2; c.versus = i === 2; set(); });
     chips('tplayers', (i) => { c.players = i === 0 ? 1 : 2; set(); });
-    chips('tdrill', (i) => { c.drill = (['todo', 'libre', 'penal'] as const)[i]; set(); });
+    chips('tdrill', (i) => { c.drill = (['todo', 'penal'] as const)[i]; set(); });
     chips('c0', (i) => { c.controls[0] = i === 0 ? 'easy' : 'full'; set(); this.persist(); });
     chips('c1', (i) => { c.controls[1] = i === 0 ? 'easy' : 'full'; set(); this.persist(); });
     chips('diff', (i) => { c.difficulty = (['tranquilos', 'normales', 'campeones'] as const)[i]; set(); this.persist(); });

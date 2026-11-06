@@ -33,14 +33,23 @@ export function nesAnim(p: Player, m: Match | null, isThor: boolean): { name: st
   const throwIn = !!m && m.phase === 'restart' && m.restart?.kind === 'throwin' && owns;
   if (isThor) {
     switch (p.state) {
-      case 'dive': return { name: 'jump', loop: false, t };
-      case 'hold': return { name: 'pickup', loop: false, t: 9 };
-      case 'kick': return { name: 'fetch', loop: false, t };
+      // the save: a dog's pounce at the ball; with it in his mouth he wags; he kicks it away with a snap of the jaws
+      case 'dive': return { name: 'pounce', loop: false, t };
+      case 'hold': return { name: 'wag', loop: true, t };
+      case 'kick': return { name: 'bite', loop: false, t };
       case 'celebrate': case 'special': return { name: 'celebrate', loop: true, t };
-      case 'sad': return { name: 'lie', loop: true, t };
+      // a goal against: he howls at the sky
+      case 'sad': return { name: 'howl', loop: true, t };
       case 'tumble': case 'stagger': case 'dizzy': case 'bump': return { name: 'hurt', loop: false, t };
       case 'slide': return { name: 'jump', loop: false, t };
-      default: return moving ? { name: 'run', loop: true, t } : { name: owns ? 'wag' : 'idle', loop: true, t };
+      default: {
+        if (moving) return { name: 'run', loop: true, t };
+        if (owns) return { name: 'wag', loop: true, t };
+        // on guard: he barks when a rival comes at his goal with the ball
+        const foe = m && m.ball.owner !== null ? m.players.find((q) => q.id === m.ball.owner) : undefined;
+        if (foe && foe.team !== p.team && Math.abs(foe.x - p.x) < 220) return { name: 'bark', loop: true, t };
+        return { name: 'idle', loop: true, t };
+      }
     }
   }
   const gk = p.role === 'gk';
@@ -52,7 +61,7 @@ export function nesAnim(p: Player, m: Match | null, isThor: boolean): { name: st
       const n = s === 'pass' || s === 'restart' ? 'pass' : s === 'chip' ? 'chip' : s === 'volley' ? 'volley' : s === 'header' ? 'header' : s === 'chilena' ? 'chilena' : 'shot';
       return { name: n, loop: false, t };
     }
-    case 'special': return { name: 'shot', loop: false, t: Math.min(t, 0.25) };
+    case 'special': return { name: 'super', loop: false, t };
     case 'slide': return { name: 'slide', loop: false, t };
     case 'bump': return { name: p.act?.kind === 'hit' ? (p.act.blow === 'kick' ? 'kick_hit' : 'punch') : 'tackle', loop: false, t };
     case 'stagger': return { name: 'stagger', loop: false, t };
@@ -128,6 +137,7 @@ export class NesPlayer {
     const want = DIRS[this.dir], mirrored = this.meta.mirror[want];
     const st = nesAnim(p, m, this.isThor);
     let key = `${st.name}_${mirrored ?? want}`;
+    if (!this.meta.anims[key] && st.name === 'super') key = `shot_${mirrored ?? want}`;
     if (!this.meta.anims[key]) key = `idle_${mirrored ?? want}`;
     const a = this.meta.anims[key];
     const speed = Math.hypot(p.vx, p.vy);

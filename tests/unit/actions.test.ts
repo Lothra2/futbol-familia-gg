@@ -14,10 +14,10 @@ describe('tiros (B9)', () => {
     expect(k.length, `${c} hold ${hold}`).toBe(1);
     return k[0].v!;
   };
-  it('el toque corto es un tiro normal de 320 × potencia', () => {
-    expect(shotSpeed('sophie', 0)).toBeCloseTo(320, -1);
-    expect(shotSpeed('alana', 0)).toBeCloseTo(320 * 0.85, -1);
-    expect(shotSpeed('papa', 0)).toBeCloseTo(320 * 1.25, -1);
+  it('el toque corto ya es un cañonazo (T.shotNormal.v × potencia, como en Nekketsu)', () => {
+    expect(shotSpeed('sophie', 0)).toBeCloseTo(T.shotNormal.v, -1);
+    expect(shotSpeed('alana', 0)).toBeCloseTo(T.shotNormal.v * 0.85, -1);
+    expect(shotSpeed('papa', 0)).toBeCloseTo(Math.min(T.kickCap, T.shotNormal.v * 1.25), -1);
   });
   it('mantener carga el tiro fuerte: Sophie 520, Alana 442, Papá tope de 560', () => {
     expect(shotSpeed('sophie', 0.6)).toBeCloseTo(520, -1);

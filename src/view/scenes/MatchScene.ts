@@ -16,7 +16,6 @@ import { Cinematic, type CineInfo } from '../Cinematic';
 import { Aim } from '../Aim';
 import { PenView } from '../PenView';
 import { PenCine } from '../PenCine';
-import { FreeKickView } from '../FreeKickView';
 import { Narrator } from '../../audio/narrator';
 import { Recorder, ReplayOverlay, ReplayPlayer, type Snap } from '../Replay';
 import { Training } from '../../app/training';
@@ -43,7 +42,6 @@ export class MatchScene extends Phaser.Scene {
   private weather!: WeatherView; private lastCam = { x: 0, y: 0 };
   cine!: Cinematic;
   private aim!: Aim;
-  private fkView?: FreeKickView;
   private pen!: PenView;
   private penCine?: PenCine;
   private training: Training | null = null; private trainPanel: TrainingPanel | null = null;
@@ -90,7 +88,6 @@ export class MatchScene extends Phaser.Scene {
     this.ballView = new BallView(this, m.ball);
     this.cine = new Cinematic(this);
     this.aim = new Aim(this);
-    this.fkView?.destroy(); this.fkView = new FreeKickView(this);
     this.pen = new PenView(this, [T_ES.teams.family, T_ES.teams[this.cfg.rival] ?? '']);
     this.penCine?.destroy(); this.penCine = new PenCine(this, this.cfg.stadium ?? 'volcan');
     this.ceremony = false; this.ceremonyT = 0; this.pows = [];
@@ -105,7 +102,7 @@ export class MatchScene extends Phaser.Scene {
     this.scale.on('resize', this.layout, this);
     services.audio?.music(this.cfg.stadium ?? 'volcan'); services.audio?.crowd(true);
     services.app?.coach(this);
-    this.events.once('shutdown', () => { this.penCine?.destroy(); this.penCine = undefined; this.fkView?.destroy(); this.fkView = undefined; services.audio?.crowd(false); this.narrator.stop(); this.trainPanel?.destroy(); this.trainPanel = null; window.removeEventListener('pointerdown', this.tapSkip); window.removeEventListener('keydown', this.replayKey); this.replayUi.destroy(); this.scale.off('resize', this.layout, this); this.hud.show(false); document.getElementById('result')?.remove(); });
+    this.events.once('shutdown', () => { this.penCine?.destroy(); this.penCine = undefined; services.audio?.crowd(false); this.narrator.stop(); this.trainPanel?.destroy(); this.trainPanel = null; window.removeEventListener('pointerdown', this.tapSkip); window.removeEventListener('keydown', this.replayKey); this.replayUi.destroy(); this.scale.off('resize', this.layout, this); this.hud.show(false); document.getElementById('result')?.remove(); });
     this.layout();
     this.follow(0, true);
     this.applyCamera();
@@ -142,7 +139,6 @@ export class MatchScene extends Phaser.Scene {
         case 'throwin': this.hud.banner(B.throwin, 900); break;
         case 'goalkick': this.hud.banner(B.goalkick, 900); break;
         case 'corner': this.hud.banner(B.corner, 900); break;
-        case 'freekick': { this.hud.banner(B.freekick, 1100); const tk = this.ctl.m.players.find((q) => q.id === e.who); if (tk?.control === 'human') this.hud.hint(tk.controls === 'easy' ? B.freekickEasy : B.freekickFull, 2600); break; }
         case 'final': this.hud.banner(B.final, 1800); break;
         case 'whistle': if (e.v === 2) this.hud.banner(B.halftime, 1600); else if (e.v === 1 && this.ctl.m.phase === 'kickoff' && this.cfg.cine !== 'off') this.hud.banner(B.kickoff, 1100); break;
         case 'special': this.stadium.gasp(); if (this.cfg.cine === 'off') this.hud.banner(T_ES.specials[KIND_INDEX[e.v ?? 0]] ?? '', 1500); this.hud.flash(180); shakeCamera(this.cam, 0.3); break;
@@ -200,7 +196,6 @@ export class MatchScene extends Phaser.Scene {
       }
       this.prevPhase = m.phase;
       this.aim.update(m, this.time.now / 1000);
-      this.fkView?.update(m, this.time.now / 1000);
       if (this.training && this.trainPanel) {
         const v = this.training.update(m); this.trainPanel.update(v);
         if (v.justDone) { this.hud.banner(v.allDone ? '¡Entrenamiento completo!' : '¡Reto superado!', 1400); services.audio?.play('starfull'); }

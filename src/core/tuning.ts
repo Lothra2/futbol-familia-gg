@@ -27,8 +27,10 @@ export const T = Object.freeze({
   // ---- kicks (6.4)
   kickCap: 560, passMin: 160, passMax: 360, passEnd: 70, lobSpeed: 170, lobMaxD: 320, passCone: 30 * Math.PI / 180, passConeWide: 50 * Math.PI / 180,
   passPrep: 0.08, shotPrep: 0.12, volleyPrep: 0.10, headerPrep: 0.25, chilenaPrep: 0.30, chilenaFloor: 0.5, kickRecover: 0.18,
-  shotNormal: { v: 320, vz: 100, err: 6 }, shotHard: { v: 340, vzV: 80, err: 6 }, hardV: 180, hardVz: 90, hardErr: 8, hardTime: 0.5, tapTime: 0.15,
+  shotNormal: { v: 355, vz: 95, err: 5 }, shotHard: { v: 340, vzV: 80, err: 6 }, hardV: 180, hardVz: 90, hardErr: 8, hardTime: 0.5, tapTime: 0.15,
   volley: { v: 380, vz: 40, err: 12 }, header: { v: 280, vzDown: -20, vzUp: 60, err: 10 }, chilena: { v: 400, vz: 30, err: 12 },
+  /** The banana of Nintendo World Cup: for `window` s after a person shoots, holding up or down bends the ball that way. */
+  banana: { window: 0.6, rate: 4.5, max: 1.4 },
   lobHold: 0.25, autoFire: 0.9, effect: 0.6, effectHard: 0.8, passErr: 6, lobErr: 8,
   aerial: { dx: 18, dy: 16, zMin: 6, volleyZ: 24, headerZ: 48 }, firstTimeReach: 12,
   wallWindow: 1.2, wallLead: 40, wallBoost: 1.15,

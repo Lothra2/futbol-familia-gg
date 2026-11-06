@@ -20,7 +20,7 @@ const later = (page, sec) => page.evaluate(async (sec) => { const m = window.__f
 {
   const { page, errors, ctx } = await openGame(b, srv.url, 'menu=main', { viewport: { width: 844, height: 390 }, hasTouch: true, isMobile: true });
   await page.waitForSelector('#s-main'); await page.click('#s-main [data-act=training]'); await page.waitForSelector('#s-training');
-  await page.click('#s-training #tdrill .chip-o:nth-child(3)');   // Penales
+  await page.click('#s-training #tdrill .chip-o:nth-child(2)');   // Penales
   await page.click('.go');
   await page.waitForFunction(() => window.__futbol.match?.training, null, { timeout: 10000 });
   await page.waitForFunction(() => window.__futbol.match.phase === 'penalties' && window.__futbol.match.pen?.practice, null, { timeout: 20000 });
@@ -51,15 +51,13 @@ const later = (page, sec) => page.evaluate(async (sec) => { const m = window.__f
   ok('sin errores', errors.length === 0, errors.join('|'));
   await ctx.close();
 }
-// the free kick drill of the menu starts on its own
+// the practice menu has no free kicks any more (no fouls in Nekketsu): only all the challenges or penalties
 {
   const { page, errors, ctx } = await openGame(b, srv.url, 'menu=main', { viewport: { width: 844, height: 390 }, hasTouch: true, isMobile: true });
   await page.waitForSelector('#s-main'); await page.click('#s-main [data-act=training]'); await page.waitForSelector('#s-training');
-  await page.click('#s-training #tdrill .chip-o:nth-child(2)');   // Tiros libres
-  await page.click('.go');
-  await page.waitForFunction(() => window.__futbol.match?.restart?.kind === 'freekick', null, { timeout: 20000 });
-  ok('práctica de tiros libres: empieza sola con la barrera de conos', await page.evaluate(() => window.__futbol.match.restart.fk.wall.length === 2));
-  ok('práctica de tiros libres: sin errores', errors.length === 0, errors.join('|'));
+  const chips = await page.evaluate(() => [...document.querySelectorAll('#s-training #tdrill .chip-o')].map((e) => e.textContent.trim()));
+  ok('práctica: sin tiros libres en el menú', chips.length === 2 && !chips.some((t) => /libre/i.test(t)), JSON.stringify(chips));
+  ok('práctica: sin errores', errors.length === 0, errors.join('|'));
   await ctx.close();
 }
 await b.close(); srv.stop();

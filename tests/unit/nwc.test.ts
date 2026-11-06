@@ -28,7 +28,8 @@ describe('sala de espera (Nintendo World Cup)', () => {
   it('estrategia: con "pase" los compañeros IA de la familia pasan más que con "gambeta"', () => {
     const passes = (atk: 'pase' | 'gambeta'): number => {
       let n = 0;
-      for (const seed of [1, 2, 3]) {
+      // six matches: the effect is clear over several matches, three are too few against the luck of the play
+      for (const seed of [1, 2, 3, 4, 5, 6]) {
         const m = createMatch({ seed, ai: 'brain', halfLength: 45, strategy: { atk, def: 'mixto' } });
         for (let i = 0; i < 60 * 100 && m.phase !== 'over'; i++) { step(m); for (const e of m.events) if (e.k === 'pass' && m.players.find((p) => p.id === e.who)?.team === 0) n++; m.events = []; }
       }

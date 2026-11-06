@@ -109,9 +109,15 @@ export function step(m: Match, dt: number = DT): void {
     stepFlight(m, dt);
     const live = movesIn(m);
     const takerId = m.restart && (m.phase === 'restart' || m.phase === 'kickoff') ? m.restart.taker : -1;
-    const wall = m.restart?.kind === 'freekick' && m.restart.fk && takerId >= 0 ? m.restart.fk.wall : [];
-    for (const p of m.players) updatePlayer(m, p, dt, live && p.id !== takerId && !wall.includes(p.id));
+    for (const p of m.players) updatePlayer(m, p, dt, live && p.id !== takerId);
     separate(m, dt);
+    // the banana: up or down on the stick of the one who shot bends the ball while it is fresh off the boot
+    const bn = m.data.banana as { who: number; slot: number; until: number } | undefined;
+    if (bn) {
+      const fr = m.hin[bn.slot];
+      if (m.t > bn.until || m.ball.state !== 'free' || m.ball.lastTouch.player !== bn.who) m.data.banana = undefined;
+      else if (fr && Math.abs(fr.my) > 0.3) m.ball.spin = Math.max(-T.banana.max, Math.min(T.banana.max, m.ball.spin + Math.sign(fr.my) * T.banana.rate * dt));
+    }
     const px = m.ball.x, py = m.ball.y;
     stepBall(m.ball, dt, {
       post: (x, y, z, v) => emit(m, 'post', x, y, z, undefined, v),
