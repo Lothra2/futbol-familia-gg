@@ -1,5 +1,6 @@
 import Phaser from 'phaser';
 import { JERSEY } from '../core/types';
+import { FACING, paintBall, rotate } from './ballart';
 
 type Ctx = CanvasRenderingContext2D;
 export const PAL = {
@@ -17,19 +18,14 @@ function tex(scene: Phaser.Scene, key: string, w: number, h: number, draw: (c: C
   draw(c); t.refresh();
 }
 
-/** An 8x8 ball with four frames of spin. The ink outline and a dark patch that moves round the ball. */
+/** The small ball of the close-ups (the cinematic of a special, the penalties, drawn at 4x): the same football as the one of the match
+ *  (ballart.ts) at 8 px, four frames of a turn that loops (the patches repeat every fifth of a turn). */
 function ballFrames(c: Ctx): void {
-  const mask = ['..####..', '.######.', '########', '########', '########', '########', '.######.', '..####..'];
-  const patches: [number, number][] = [[3, 3], [4, 3], [4, 4], [3, 4]];
-  patches.forEach(([ox, oy], f) => {
-    mask.forEach((row, y) => [...row].forEach((ch, x) => {
-      if (ch !== '#') return;
-      const edge = !(mask[y - 1]?.[x] === '#' && mask[y + 1]?.[x] === '#' && row[x - 1] === '#' && row[x + 1] === '#');
-      px(c, edge ? PAL.ink : PAL.white, f * 8 + x, y);
-    }));
-    px(c, PAL.ink, f * 8 + ox, oy, 2, 2);
-    px(c, PAL.cream, f * 8 + (7 - ox), 7 - oy);
-  });
+  const buf = new Uint8ClampedArray(8 * 8 * 4);
+  for (let f = 0; f < 4; f++) {
+    paintBall(buf, 8, rotate(FACING, 0, 0, 1, (f * 2 * Math.PI) / 20), { r: 4 });
+    for (let i = 0; i < 64; i++) if (buf[i * 4 + 3]) px(c, `rgb(${buf[i * 4]},${buf[i * 4 + 1]},${buf[i * 4 + 2]})`, f * 8 + (i % 8), i >> 3);
+  }
 }
 
 /** 3 x 5 pixel digits for the shirt numbers. */
@@ -62,19 +58,6 @@ export function makeTextures(scene: Phaser.Scene): void {
     ['#########', '.#######.', '..#####..', '...###...', '....#....'].forEach((row, y) => [...row].forEach((ch, x) => { if (ch === '#') px(c, '#ffffff', x, y); }));
     px(c, PAL.ink, 0, 0, 9, 1);
   });
-  // the big ball of Nintendo World Cup: 12 px, white with black patches that turn as it rolls (4 frames), ink rim
-  tex(scene, 'ballbig', 48, 12, (c) => {
-    const spots = [[[4, 3], [7, 6], [3, 8]], [[5, 3], [8, 7], [3, 7]], [[6, 4], [7, 8], [3, 5]], [[5, 5], [8, 4], [4, 8]]];
-    for (let f = 0; f < 4; f++) for (let y = 0; y < 12; y++) for (let x = 0; x < 12; x++) {
-      const d = Math.hypot(x + 0.5 - 6, y + 0.5 - 6);
-      if (d > 6) continue;
-      const rim = d > 5;
-      let col = rim ? PAL.ink : x + y < 9 ? '#ffffff' : x + y > 15 ? '#d9d2ec' : PAL.white;
-      if (!rim) for (const [sx, sy] of spots[f]) if (Math.abs(x - sx) + Math.abs(y - sy) <= 1) col = '#2a1b3d';
-      px(c, col, f * 12 + x, y);
-    }
-  });
-  if (!scene.textures.get('ballbig').has('0')) { for (let i = 0; i < 4; i++) scene.textures.get('ballbig').add(i, 0, i * 12, 0, 12, 12); }
   // the "1" and "2" over the player a person moves (Nintendo World Cup): a 3 x 5 digit at double size with an ink rim, tinted by the view
   for (const n of [1, 2]) tex(scene, `mark_${n}`, 10, 14, (c) => {
     DIGITS[String(n)].forEach((row, y) => [...row].forEach((ch, x) => { if (ch === '#') px(c, PAL.ink, x * 2, y * 2, 4, 4); }));

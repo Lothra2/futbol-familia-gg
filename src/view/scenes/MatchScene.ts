@@ -147,9 +147,12 @@ export class MatchScene extends Phaser.Scene {
           if (e.v !== 2 && this.ctl.m.phase !== 'penalties') this.hud.banner(B.save, 700); this.stadium.gasp();
           // Thor barks when he stops one
           const k = this.ctl.m.players.find((q) => q.id === e.who); if (k?.art === 'thor') this.pow(k.x, k.y, '¡GUAU!', '#ffe45c');
+          this.ballView.wobble();
           break;
         }
-        case 'post': case 'bar': if (this.ctl.m.phase !== 'penalties') this.hud.banner(B.post, 600); shakeCamera(this.cam, 0.1); this.stadium.gasp(); break;
+        case 'post': case 'bar': if (this.ctl.m.phase !== 'penalties') this.hud.banner(B.post, 600); shakeCamera(this.cam, 0.1); this.stadium.gasp(); this.ballView.wobble(); break;
+        case 'deflect': this.ballView.wobble(); break;
+        case 'spinkick': this.pow(e.x, e.y, '¡GIRO!', '#ffe45c'); shakeCamera(this.cam, 0.12); break;
         case 'starfull': if (e.v === 0) this.hud.hint(T_ES.hints.star, 1500); break;
         case 'super': this.hud.banner(T_ES.specials[KIND_INDEX[e.v ?? 0]] ?? '¡SÚPER PATADA!', 1000); this.hud.flash(120); shakeCamera(this.cam, 0.3); this.stadium.gasp(); break;
         case 'superready': { const p = this.ctl.m.players.find((q) => q.id === e.who); if (p?.control === 'human') this.pow(e.x, e.y, '¡YA!', '#ffe45c'); break; }
@@ -269,6 +272,7 @@ export class MatchScene extends Phaser.Scene {
     else if (e.k === 'bump') t = 0.06;
     else if (e.k === 'super') t = 0.16;
     else if (e.k === 'superhit' || e.k === 'slidehit') t = 0.08;
+    else if (e.k === 'spinkick') t = 0.09;
     else if (e.k === 'save' && v !== 2 && m.phase === 'play') t = 0.05;
     if (t > this.hitStop) this.hitStop = t;
   }

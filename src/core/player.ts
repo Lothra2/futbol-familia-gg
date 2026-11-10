@@ -13,7 +13,7 @@ export const hasBall = (m: Match, p: Player): boolean => m.ball.owner === p.id;
 /** Moves one player for one fixed step: timers, stamina, input to actions or to movement, integration inside the escape box. */
 export function updatePlayer(m: Match, p: Player, dt: number, live: boolean): void {
   p.stateT += dt;
-  p.cd.slide = Math.max(0, p.cd.slide - dt); p.cd.steal = Math.max(0, p.cd.steal - dt); p.cd.bump = Math.max(0, p.cd.bump - dt);
+  p.cd.slide = Math.max(0, p.cd.slide - dt); p.cd.steal = Math.max(0, p.cd.steal - dt); p.cd.bump = Math.max(0, p.cd.bump - dt); p.cd.jump = Math.max(0, p.cd.jump - dt);
   p.immuneT = Math.max(0, p.immuneT - dt); p.noControlT = Math.max(0, p.noControlT - dt);
   if (p.slowT) p.slowT = Math.max(0, p.slowT - dt);
   const inp = live ? p.input : emptyInput();
@@ -42,7 +42,7 @@ export function updatePlayer(m: Match, p: Player, dt: number, live: boolean): vo
   // vertical motion (headers and the bicycle kick leave the ground)
   if (p.z > 0 || p.vz !== 0) {
     p.vz -= T.jumpG * dt; p.z += p.vz * dt;
-    if (p.z <= 0) { p.z = 0; p.vz = 0; }
+    if (p.z <= 0) { p.z = 0; p.vz = 0; if (!p.act) p.cd.jump = T.jump.cd; }
   }
 
   // contain: a human with full controls who holds Pass (past the tap) without the ball stays between the rival who has it and his own goal, a bit slower than a sprint
@@ -63,7 +63,8 @@ export function updatePlayer(m: Match, p: Player, dt: number, live: boolean): vo
     p.containT = 0;
   }
 
-  // horizontal motion
+  // horizontal motion (a player who has jumped steers little: he keeps the way he was going)
+  const jumping = p.z > 0 && !p.act;
   const locked = isLocked(p) || !!override;
   let tvx = 0, tvy = 0, sprinting = false;
   if (override) { p.vx = override.vx; p.vy = override.vy; }
@@ -72,14 +73,15 @@ export function updatePlayer(m: Match, p: Player, dt: number, live: boolean): vo
     const mag = Math.hypot(mx, my);
     if (mag > 1) { mx /= mag; my /= mag; }
     sprinting = wantSprint && mag > 0.2;
-    const speed = p.stats.run * (sprinting ? p.stats.sprint : 1) * (hasBall(m, p) ? T.carrySpeed : 1) * p.speedMult * moveScale * (containing ? T.contain.speed : 1) * (p.slowT ? T.contain.slow : 1);
+    const speed = p.stats.run * (sprinting ? p.stats.sprint : 1) * (hasBall(m, p) ? T.carrySpeed * (jumping ? T.jump.carry : 1) : 1) * p.speedMult * moveScale * (containing ? T.contain.speed : 1) * (p.slowT ? T.contain.slow : 1);
     tvx = mx * speed; tvy = my * speed * T.yFactor;
     if (Math.abs(mx) > 0.2) p.facing = mx > 0 ? 1 : -1;
     if (mag > 0.2) { const n = Math.hypot(mx, my); p.dirX = mx / n; p.dirY = my / n; }
   }
   if (!override) {
-    const ax = (Math.abs(tvx) > Math.abs(p.vx) && Math.sign(tvx) === Math.sign(p.vx || tvx) ? T.accel : T.brake) * dt;
-    const ay = (Math.abs(tvy) > Math.abs(p.vy) && Math.sign(tvy) === Math.sign(p.vy || tvy) ? T.accel : T.brake) * dt;
+    const ak = jumping ? T.jump.air : 1;
+    const ax = (Math.abs(tvx) > Math.abs(p.vx) && Math.sign(tvx) === Math.sign(p.vx || tvx) ? T.accel : T.brake) * dt * ak;
+    const ay = (Math.abs(tvy) > Math.abs(p.vy) && Math.sign(tvy) === Math.sign(p.vy || tvy) ? T.accel : T.brake) * dt * ak;
     p.vx = approach(p.vx, tvx, ax); p.vy = approach(p.vy, tvy, ay);
   }
   p.x = Math.max(ESCAPE.x0, Math.min(ESCAPE.x1, p.x + p.vx * dt));
@@ -88,7 +90,7 @@ export function updatePlayer(m: Match, p: Player, dt: number, live: boolean): vo
   // visible state, read by the view and by tests
   if (!p.act || p.act.kind === 'kick') {
     if (p.act?.kind === 'kick') p.state = 'kick';
-    else if (!isLocked(p)) { const sp = Math.hypot(p.vx, p.vy); p.state = sp < 8 ? 'idle' : sprinting ? 'sprint' : 'run'; }
+    else if (!isLocked(p)) { const sp = Math.hypot(p.vx, p.vy); p.state = p.z > 0 ? 'jump' : sp < 8 ? 'idle' : sprinting ? 'sprint' : 'run'; }
   }
 }
 

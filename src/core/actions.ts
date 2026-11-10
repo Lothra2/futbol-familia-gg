@@ -84,14 +84,16 @@ function launch(m: Match, p: Player, plan: KickPlan): void {
   else if (plan.kind === 'restart') { v = clamp(speedToReach(d, T.passEnd), T.passMin, T.passMax); vz = 0; }
   else v = Math.min(T.kickCap, plan.speed * (plan.assist ? 1.1 : 1) * p.stats.power);
   if ((plan.kind === 'pass' || plan.kind === 'chip') && !plan.vaselina) { m.lastPass = { from: p.id, to: plan.target ?? -1, t: m.t, team: p.team }; p.stats2.passes++; if (plan.kind === 'chip') p.stats2.chips++; }
-  if (plan.kind === 'shot' || plan.kind === 'volley' || plan.kind === 'chilena' || plan.vaselina || (plan.kind === 'header' && plan.target === undefined)) {
+  if (plan.kind === 'shot' || plan.kind === 'spin' || plan.kind === 'volley' || plan.kind === 'chilena' || plan.vaselina || (plan.kind === 'header' && plan.target === undefined)) {
     p.stats2.shots++;
     m.data.shotQ = { q: shotQuality(m, p, plan.ty, !!plan.first), first: !!plan.first, team: p.team, t: m.t };   // read by the keeper when he rolls the save
     if (Math.abs(goalX(p.team) - b.x) < 320) { m.stats.shots[p.team]++; addBar(m, p.team, plan.ty >= 58 && plan.ty <= 102 ? T.bar.shot : T.bar.shotOff); }
   }
   releaseBall(m, p, ux * v, uy * v, vz, plan.spin, (plan.kind === 'pass' || plan.kind === 'chip') && !plan.vaselina ? 'pass' : 'kick');
+  m.ball.kick = { kind: plan.kind === 'shot' && (plan.hard ?? 0) > 0.6 ? 'hard' : plan.kind, t: m.t };
+  if (plan.kind === 'spin') { emit(m, 'spinkick', m.ball.x, m.ball.y, m.ball.z, p.id, Math.hypot(ux * v, uy * v)); if (p.team === 0) m.data.spins = ((m.data.spins as number) ?? 0) + 1; }
   // a shot of a person can be bent while it flies (match.ts reads the stick of whoever shot it)
-  if (p.control === 'human' && p.humanSlot !== null && (plan.kind === 'shot' || plan.kind === 'volley' || plan.kind === 'chilena')) m.data.banana = { who: p.id, slot: p.humanSlot, until: m.t + T.banana.window };
+  if (p.control === 'human' && p.humanSlot !== null && (plan.kind === 'shot' || plan.kind === 'spin' || plan.kind === 'volley' || plan.kind === 'chilena')) m.data.banana = { who: p.id, slot: p.humanSlot, until: m.t + T.banana.window };
   else m.data.banana = undefined;
 }
 
@@ -190,13 +192,13 @@ export function planPass(m: Match, p: Player, lob: boolean): KickPlan {
 function startKick(m: Match, p: Player, plan: KickPlan, prep: number, floor = 0): void {
   const dx = plan.tx - p.x;
   if (Math.abs(dx) > 4) p.facing = dx > 0 ? 1 : -1;
-  if (plan.air && (plan.kind === 'header' || plan.kind === 'chilena')) p.vz = T.jumpV * (plan.kind === 'chilena' ? 0.9 : 1);
+  if (plan.air && p.z <= 0 && (plan.kind === 'header' || plan.kind === 'chilena')) p.vz = T.jumpV * (plan.kind === 'chilena' ? 0.9 : 1);
   begin(p, { kind: 'kick', t: 0, dur: prep + T.kickRecover, contact: prep, plan, sub: plan.kind }, 'kick');
   p.act!.dx = floor;
   p.shoot.down = false; p.pass.down = false;
 }
 
-const PREP: Record<KickKind, number> = { pass: T.passPrep, chip: T.passPrep, shot: T.shotPrep, volley: T.volleyPrep, header: T.headerPrep, chilena: T.chilenaPrep, restart: T.passPrep };
+const PREP: Record<KickKind, number> = { pass: T.passPrep, chip: T.passPrep, shot: T.shotPrep, volley: T.volleyPrep, header: T.headerPrep, chilena: T.chilenaPrep, restart: T.passPrep, spin: T.spin.prep };
 
 /** What an airborne free ball asks of a player standing under it. */
 /** The target of a pass in the air (a cross, a lob) gets a window 30 % bigger to reach it with the head or the foot. */
@@ -210,6 +212,29 @@ export function aerialZone(m: Match, p: Player): 'volley' | 'header' | null {
   if (b.z >= T.aerial.zMin && b.z < T.aerial.volleyZ) return 'volley';
   if (b.z >= T.aerial.volleyZ && b.z <= T.aerial.headerZ) return 'header';
   return null;
+}
+
+/** The same for a player who has already jumped: the height of the ball is counted from his feet, so he reaches balls nobody reaches from the ground. */
+export function airZone(m: Match, p: Player): 'volley' | 'header' | null {
+  const b = m.ball;
+  if (b.state !== 'free' || p.noControlT > 0 || p.z <= 0) return null;
+  const k = aerialK(m, p), rz = b.z - p.z;
+  if (!ballNear(m, p, T.aerial.dx * k, T.aerial.dy * k) || rz < T.jump.lo || rz > T.jump.hi) return null;
+  return rz >= T.jump.headZ ? 'header' : 'volley';
+}
+
+/** La patada giratoria: the shot of a player who is in the air with the ball. */
+export function planSpin(m: Match, p: Player): KickPlan {
+  const { ty } = shotTarget(m, p, false), sy = p.input.my, eff = Math.abs(sy) > 0.3 ? Math.sign(sy) : 0;
+  return { kind: 'spin', speed: T.spin.v, vz: T.spin.vz, tx: goalX(p.team), ty, err: p.control === 'ai' ? p.aiErr * 0.8 : T.spin.err, spin: eff * T.effect, air: true, first: true, jumped: true };
+}
+
+/** El salto. */
+export function startJump(m: Match, p: Player): boolean {
+  if (p.z > 0 || p.cd.jump > 0 || p.role === 'gk' || m.phase !== 'play') return false;
+  p.vz = T.jump.v; p.z = 0.5; p.shoot.down = false; p.pass.down = false;
+  emit(m, 'jump', p.x, p.y, 0, p.id);
+  return true;
 }
 
 function planAerial(m: Match, p: Player, zone: 'volley' | 'header', viaPass: boolean): { plan: KickPlan; prep: number; floor: number } {
@@ -308,21 +333,45 @@ export function tryHit(m: Match, p: Player, slack = false): boolean {
   const easyCarrier = had && o.control === 'human' && o.controls === 'easy';
   const contained = (p.containT ?? 0) >= T.contain.after ? T.contain.stealBonus : 1;
   if (m.rng.chance(Math.min(0.97, (easyCarrier ? T.hit.easyP : T.hit.p) * contained))) {
-    const d = Math.sign(o.x - p.x) || p.facing;
-    knockDown(m, o, p, d * T.fly.steal, (o.y - p.y) * 3, T.fly.stealVz);
-    emit(m, 'hit', o.x, o.y, 0, p.id, p.blow === 'kick' ? 1 : 0);
-    if (had && m.rng.chance(T.hit.keep)) { b.owner = p.id; b.state = 'owned'; p.immuneT = T.immune; p.stats2.steals++; setTouch(m, p); addBar(m, p.team, T.bar.steal + (contained > 1 ? T.bar.containSteal : 0)); emit(m, 'steal', b.x, b.y, 0, p.id); }
-    else if (had) {
-      // the ball pops loose from the one who went down: a scramble, and now and then it goes out (Nekketsu)
-      b.state = 'free'; b.owner = null; b.vx = d * m.rng.range(60, 160); b.vy = m.rng.range(-170, 170); b.vz = m.rng.range(40, 120); b.inNet = false; setTouch(m, p);
-      p.stats2.steals++; addBar(m, p.team, T.bar.steal);
-    }
+    landBlow(m, p, o, contained > 1);
   } else {
     p.act = null; startStagger(m, p, T.steal.fail);
     emit(m, 'whiff', p.x, p.y, 0, p.id);
   }
   return true;
 }
+/** A blow that lands: the rival goes down and stays out a while; if he had the ball it is yours or it pops loose. */
+function landBlow(m: Match, p: Player, o: Player, contained = false): void {
+  const b = m.ball, had = b.owner === o.id;
+  const d = Math.sign(o.x - p.x) || p.facing;
+  knockDown(m, o, p, d * T.fly.steal, (o.y - p.y) * 3, T.fly.stealVz);
+  emit(m, 'hit', o.x, o.y, 0, p.id, p.blow === 'kick' ? 1 : 0);
+  if (had && m.rng.chance(T.hit.keep)) { b.owner = p.id; b.state = 'owned'; p.immuneT = T.immune; p.stats2.steals++; setTouch(m, p); addBar(m, p.team, T.bar.steal + (contained ? T.bar.containSteal : 0)); emit(m, 'steal', b.x, b.y, 0, p.id); }
+  else if (had) {
+    // the ball pops loose from the one who went down: a scramble, and now and then it goes out (Nekketsu)
+    b.state = 'free'; b.owner = null; b.vx = d * m.rng.range(60, 160); b.vy = m.rng.range(-170, 170); b.vz = m.rng.range(40, 120); b.inNet = false; setTouch(m, p);
+    p.stats2.steals++; addBar(m, p.team, T.bar.steal);
+  }
+}
+
+/** La patada voladora: Tiro in the air without a ball to strike. Whoever it meets before the player lands goes down (updateAct looks every step). */
+export function startFlyKick(m: Match, p: Player): boolean {
+  if (p.cd.steal > 0 || p.z <= 0 || m.phase !== 'play') return false;
+  p.cd.steal = T.hit.cd; p.blow = 'kick';
+  begin(p, { kind: 'hit', t: 0, dur: T.flyKick.dur, blow: 'kick', air: true }, 'bump');
+  emit(m, 'flykick', p.x, p.y, p.z, p.id);
+  return true;
+}
+/** The rival the flying kick meets right now. */
+function flyKickTarget(m: Match, p: Player): Player | null {
+  for (const o of foes(m, p)) {
+    if (LOCK.has(o.state) || o.immuneT > 0 || Math.abs(o.z - p.z) > T.flyKick.z || (o.role === 'gk' && m.ball.owner === o.id && m.ball.state === 'held')) continue;
+    const fx = (o.x - p.x) * p.facing;
+    if (fx >= -4 && fx <= T.flyKick.reach && Math.abs(o.y - p.y) <= T.flyKick.dy) return o;
+  }
+  return null;
+}
+
 /** The old names: a steal is a hit now. */
 export const tryFrontSteal = tryHit;
 
@@ -330,7 +379,7 @@ export const tryFrontSteal = tryHit;
 export function checkBump(m: Match, p: Player): void {
   if (p.state !== 'sprint' || p.cd.bump > 0 || m.phase !== 'play') return;
   const c = playerById(m, m.ball.owner);
-  if (!c || c.team === p.team || c.immuneT > 0 || LOCK.has(c.state)) return;
+  if (!c || c.team === p.team || c.immuneT > 0 || LOCK.has(c.state) || c.z > 10) return;
   const dx = c.x - p.x, dy = c.y - p.y;
   if (Math.abs(dx) > T.bump.dx || Math.abs(dy) > T.bump.dy || dx * p.vx + dy * p.vy <= 0) return;
   p.cd.bump = T.bump.cd;
@@ -377,6 +426,22 @@ export function handleInput(m: Match, p: Player, dt: number): void {
     }
     if (zone) { const a = planAerial(m, p, zone, false); startKick(m, p, a.plan, a.prep, a.floor); return; }
     tryFrontSteal(m, p);
+    return;
+  }
+
+  // the jump (Nekketsu): its own button, or Tiro and Pase together like A + B on the NES
+  if (p.z <= 0 && (inp.jumpPressed || (sh.press && pa.press) || (own && ((sh.press && p.pass.down) || (pa.press && p.shoot.down)))) && startJump(m, p)) return;
+  if (p.z > 0) {
+    // in the air: with the ball Tiro is the spinning kick and Pase a pass from up there; a ball within reach is struck with the head or the
+    // foot; and with no ball to strike Tiro is the flying kick
+    if (own) {
+      if (sh.press) { startKick(m, p, planSpin(m, p), T.spin.prep); p.vz = Math.max(p.vz, T.spin.hang); }
+      else if (pa.press) startKick(m, p, { ...planPass(m, p, false), jumped: true }, T.jump.prep);
+      return;
+    }
+    const az = airZone(m, p);
+    if (az && (sh.press || pa.press)) { const a = planAerial(m, p, az, pa.press && !sh.press); startKick(m, p, { ...a.plan, jumped: true }, T.jump.prep, a.floor); return; }
+    if (!az && sh.press) startFlyKick(m, p);
     return;
   }
 
@@ -450,7 +515,17 @@ export function updateAct(m: Match, p: Player, dt: number): { moveScale: number;
       break;
     }
     case 'bump': if (a.t >= a.dur) endAct(p); break;
-    case 'steal': case 'hit': if (a.t >= a.dur) endAct(p); break;
+    case 'steal': case 'hit': {
+      if (a.air) {
+        // the flying kick keeps the way he was going and lands on the first rival it meets; it is over when he touches the ground
+        override = { vx: p.vx, vy: p.vy };
+        if (!a.done) { const o = flyKickTarget(m, p); if (o) { a.done = true; landBlow(m, p, o); } }
+        if (p.act === a && (a.t >= a.dur || (p.z <= 0 && a.t > 0.05))) endAct(p);
+        break;
+      }
+      if (a.t >= a.dur) endAct(p);
+      break;
+    }
     case 'tumble': {
       // thrown back by the hit: the push fades out in under half a second
       if (a.dx || a.dy) { const k = Math.max(0, 1 - a.t / T.fly.fade); override = { vx: (a.dx ?? 0) * k, vy: (a.dy ?? 0) * k }; }
@@ -468,7 +543,7 @@ function resolveKick(m: Match, p: Player, plan: KickPlan): void {
   const mine = b.owner === p.id;
   let ok = mine;
   if (!ok && b.state === 'free') {
-    if (plan.air) ok = Math.abs(b.x - p.x) < T.aerial.dx * aerialK(m, p) + 6 && Math.abs(b.y - p.y) < T.aerial.dy * aerialK(m, p) + 6 && b.z >= T.aerial.zMin - 4 && b.z <= T.aerial.headerZ + 14;
+    if (plan.air) ok = Math.abs(b.x - p.x) < T.aerial.dx * aerialK(m, p) + 6 && Math.abs(b.y - p.y) < T.aerial.dy * aerialK(m, p) + 6 && (plan.jumped ? b.z - p.z >= T.jump.lo - 6 && b.z - p.z <= T.jump.hi + 10 : b.z >= T.aerial.zMin - 4 && b.z <= T.aerial.headerZ + 14);
     else ok = Math.abs(b.x - p.x) < T.firstTimeReach + 6 && Math.abs(b.y - p.y) < T.firstTimeReach && b.z < T.ctrl.z;
   }
   if (!ok && plan.kind === 'restart' && b.state === 'dead') ok = true;

@@ -1,7 +1,7 @@
 import { emptyInput, type InputFrame } from '../core/types';
 
-export type Btn = 'shoot' | 'pass' | 'sprint' | 'special';
-export const BTNS: Btn[] = ['shoot', 'pass', 'sprint', 'special'];
+export type Btn = 'shoot' | 'pass' | 'sprint' | 'special' | 'jump';
+export const BTNS: Btn[] = ['shoot', 'pass', 'sprint', 'special', 'jump'];
 interface SlotState { axes: Map<string, [number, number]>; held: Map<string, Set<Btn>>; latch: Set<Btn> }
 
 /** Single source of truth for human input. Keyboard, touch and gamepad push into it per player slot.
@@ -28,6 +28,7 @@ export class InputRouter {
     return {
       mx, my, shoot: held('shoot'), pass: held('pass'), sprint: held('sprint'), special: held('special'),
       shootPressed: s.latch.has('shoot'), passPressed: s.latch.has('pass'), specialPressed: s.latch.has('special'),
+      jump: held('jump'), jumpPressed: s.latch.has('jump'),
     };
   }
   endStep(): void { for (const s of this.slots) s.latch.clear(); }

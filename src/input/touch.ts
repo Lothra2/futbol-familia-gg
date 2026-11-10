@@ -6,7 +6,7 @@ const DEAD = 0.18;
 export type ControlMode = 'easy' | 'full';
 
 interface Ptr { kind: 'joy' | 'btn'; slot: number; btn?: Btn; ox: number; oy: number; el?: HTMLElement }
-const LABEL: Record<Btn, string> = { shoot: 'Tiro', pass: 'Pase', sprint: 'Sprint', special: 'Especial' };
+const LABEL: Record<Btn, string> = { shoot: 'Tiro', pass: 'Pase', sprint: 'Sprint', special: 'Especial', jump: 'Salto' };
 
 /** On screen controls. Every finger is bound to the zone where it first touched (pointerId), so one thumb can steer
  *  while another presses a button, and in two player mode each half of the tablet belongs to one player.
@@ -73,7 +73,7 @@ export class TouchUI {
       slot.className = `tslot s${s}${mir ? ' mir' : ''}${small ? ' two' : ''}${easy ? ' easy' : ''}`;
       slot.dataset.slot = String(s);
       slot.style.setProperty('--c', ['#FFD447', '#7BE3FF'][s] ?? '#fff');
-      const btns: Btn[] = easy ? ['shoot', 'special'] : ['shoot', 'pass', 'sprint', 'special'];
+      const btns: Btn[] = easy ? ['shoot', 'special'] : ['shoot', 'pass', 'jump', 'sprint', 'special'];
       slot.innerHTML = `<div class="tbase"><i class="tknob"></i></div>${btns.map((b) => this.btnHtml(b, easy)).join('')}`;
       this.root.appendChild(slot);
       this.bases.push(slot.querySelector('.tbase') as HTMLElement);

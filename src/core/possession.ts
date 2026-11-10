@@ -63,7 +63,9 @@ function tryControl(m: Match): void {
     // the receiver of a pass can take it down from a higher ball (chest height), so a lob settles instead of bouncing over him
     const lp = m.lastPass;
     const target = !!lp && lp.to === p.id && lp.team === p.team && m.t - lp.t < 4 && b.vz <= 0;
-    if (b.z >= (target ? T.ctrl.zTarget : T.ctrl.z)) continue;
+    // a player who jumped (and is not striking the ball) takes it down by its height over his feet
+    const rz = b.z - (p.act ? 0 : p.z);
+    if (rz >= (target ? T.ctrl.zTarget : T.ctrl.z) || rz < T.jump.lo) continue;
     const dx = Math.abs(b.x - p.x), dy = Math.abs(b.y - p.y);
     if (dx >= (easy ? T.ctrl.easyDx : T.ctrl.dx) || dy >= (easy ? T.ctrl.easyDy : T.ctrl.dy)) continue;
     const d = dx + dy;

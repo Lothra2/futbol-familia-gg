@@ -4,7 +4,7 @@ import { BTNS } from './router';
 const DEAD = 0.22;
 interface PadState { axes: readonly number[]; buttons: readonly { pressed: boolean }[] }
 
-/** Standard mapping: left stick or d-pad moves, A shoots, X passes, B or RB sprints, Y uses the special, Start pauses.
+/** Standard mapping: left stick or d-pad moves, A shoots, X passes, B or RB sprints, Y uses the special, LB or LT jumps, Start pauses.
  *  `window.__mockPads` lets automated tests feed a simulated pad (reported as simulated in the QA notes). */
 export class GamepadInput {
   private seen = new Set<number>();
@@ -49,6 +49,7 @@ export class GamepadInput {
       this.router.setButton(slot, src, 'pass', !!b[2]?.pressed);
       this.router.setButton(slot, src, 'sprint', !!(b[1]?.pressed || b[5]?.pressed));
       this.router.setButton(slot, src, 'special', !!b[3]?.pressed);
+      this.router.setButton(slot, src, 'jump', !!(b[4]?.pressed || b[6]?.pressed));
       const start = !!b[9]?.pressed;
       if (start && !this.prevStart.get(i)) this.router.pause();
       this.prevStart.set(i, start);

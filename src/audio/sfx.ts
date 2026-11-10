@@ -49,6 +49,7 @@ export const SFX: Record<string, SfxDef> = {
   draw: { segs: [tone('sq', 72, 0, 0.18, 0.3), tone('sq', 72, 0.2, 0.18, 0.3), tone('sq', 67, 0.4, 0.5, 0.3), tone('tri', 55, 0.4, 0.6, 0.35)] },
   lose: { segs: [tone('tri', 67, 0, 0.25, 0.4), tone('tri', 64, 0.25, 0.25, 0.4), tone('tri', 60, 0.5, 0.25, 0.4), tone('tri', 55, 0.75, 0.7, 0.4), tone('sin', 43, 0.75, 0.8, 0.3)] },
   champion: { segs: [...arp('sq', [60, 64, 67, 72, 76, 79, 84], 0.09, 0.14, 0.35), tone('sq', 88, 0.65, 0.5, 0.35), tone('sq', 91, 1.15, 0.4, 0.35), tone('sq', 96, 1.55, 0.8, 0.35), tone('tri', 48, 0, 0.7, 0.45), tone('tri', 55, 0.65, 0.9, 0.45), tone('tri', 60, 1.55, 0.8, 0.45), tone('sq', 84, 1.55, 0.8, 0.2)] },
+  jump: { segs: [tone('sq', 62, 0, 0.05, 0.22), tone('sq', 69, 0.04, 0.05, 0.22), tone('sq', 74, 0.08, 0.08, 0.22)] },
   roar: { segs: [{ w: 'noise', f: [0, 0], d: 1.2, v: 0.28, lp: 0.7, atk: 0.4, curve: 0.7 }] },
   fanfare: { segs: [...arp('sq', [67, 67, 67, 72], 0.14, 0.12, 0.35), tone('sq', 76, 0.56, 0.3, 0.35), tone('sq', 72, 0.9, 0.12, 0.35), tone('sq', 76, 1.02, 0.12, 0.35), tone('sq', 79, 1.14, 0.7, 0.35), tone('tri', 55, 0.56, 1.3, 0.45)] },
 };
@@ -56,7 +57,7 @@ export const SFX: Record<string, SfxDef> = {
 /** Which sound a match event asks for. M3 and M8 add the soccer effects. */
 export const FX_TO_SFX: Record<string, string> = {
   whistle: 'whistle', go: 'go', kick: 'kick', pass: 'pass', wall: 'pass', post: 'post', bar: 'post', goal: 'goal', slide: 'slide', slideball: 'kick', slidehit: 'bump', bump: 'bump',
-  steal: 'steal', penstart: 'penstart', golden: 'goldensting', save: 'save', catch: 'catch', bounce: 'bounce', deflect: 'bounce', special: 'special', starfull: 'starfull', zas: 'zas', whiff: 'whiff', dive: 'whiff', superready: 'superready', super: 'supershot', superhit: 'pum',
+  steal: 'steal', penstart: 'penstart', golden: 'goldensting', save: 'save', catch: 'catch', bounce: 'bounce', deflect: 'bounce', special: 'special', starfull: 'starfull', zas: 'zas', whiff: 'whiff', dive: 'whiff', superready: 'superready', super: 'supershot', superhit: 'pum', jump: 'jump', flykick: 'whiff', spinkick: 'supershot', hit: 'pum',
 };
 
 const duration = (def: SfxDef): number => def.segs.reduce((m, s) => Math.max(m, (s.at ?? 0) + s.d), 0);

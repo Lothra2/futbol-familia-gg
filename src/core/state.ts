@@ -5,8 +5,8 @@ import type { CharId, InputFrame, MatchEvent, Species } from './types';
 export type Team = 0 | 1;
 export type Role = 'gk' | 'def' | 'mid' | 'fwd';
 export type ControlMode = 'easy' | 'full';
-export type PState = 'idle' | 'run' | 'sprint' | 'kick' | 'slide' | 'bump' | 'stagger' | 'tumble' | 'dizzy' | 'getup' | 'celebrate' | 'sad' | 'dive' | 'hold' | 'special';
-export type KickKind = 'pass' | 'chip' | 'shot' | 'volley' | 'header' | 'chilena' | 'restart';
+export type PState = 'idle' | 'run' | 'sprint' | 'jump' | 'kick' | 'slide' | 'bump' | 'stagger' | 'tumble' | 'dizzy' | 'getup' | 'celebrate' | 'sad' | 'dive' | 'hold' | 'special';
+export type KickKind = 'pass' | 'chip' | 'shot' | 'volley' | 'header' | 'chilena' | 'restart' | 'spin';
 export type DifficultyId = 'tranquilos' | 'normales' | 'campeones';
 
 export interface PStats {
@@ -22,11 +22,13 @@ export interface KickPlan {
   lob?: boolean; assist?: boolean; target?: number; air?: boolean; hard?: number; throwFrom?: boolean;
   /** A shot or pass taken first time (the button was pressed before the ball arrived), and a chip over a keeper who is off his line. */
   first?: boolean; vaselina?: boolean;
+  /** Struck by a player who had already jumped (the view shows the kick of the air). */
+  jumped?: boolean;
 }
 export interface Act {
   kind: 'kick' | 'slide' | 'bump' | 'stagger' | 'tumble' | 'dizzy' | 'getup' | 'steal' | 'dive' | 'hit';
-  /** A hit: a punch or a kick (they take turns). */
-  blow?: 'punch' | 'kick';
+  /** A hit: a punch or a kick (they take turns). `air`: the flying kick of a player who jumped, it lands on whoever it meets before he comes down. */
+  blow?: 'punch' | 'kick'; air?: boolean;
   t: number; dur: number; contact?: number; plan?: KickPlan; done?: boolean; dx?: number; dy?: number; sub?: KickKind;
 }
 
@@ -39,7 +41,7 @@ export interface Player {
   state: PState; stateT: number; act: Act | null; input: InputFrame;
   stamina: number; sprintLock: boolean; noSprintT: number;
   speedMult: number; reactionT: number;
-  cd: { slide: number; steal: number; bump: number };
+  cd: { slide: number; steal: number; bump: number; jump: number };
   immuneT: number; noControlT: number; dizzyT: number;
   shoot: { down: boolean; t: number }; pass: { down: boolean; t: number };
   stats2: { goals: number; assists: number; steals: number; saves: number; shots: number; passes: number; specials: number; spGoals: number; chips: number };
@@ -97,6 +99,8 @@ export interface Ball {
   inNet: boolean; scored: Team | null;
   /** The weather on the ball (Nintendo World Cup): `wet` multiplies the rolling friction (rain), `wind` pushes a ball in the air along x (px/s²). */
   wet?: number; wind?: number;
+  /** The kick that sent it flying, for the view (the ball of a spinning kick does not look like the ball of a pass): what and when. */
+  kick?: { kind: string; t: number };
 }
 
 export type Phase = 'kickoff' | 'play' | 'restart' | 'goal' | 'halftime' | 'cinematic' | 'penalties' | 'over';

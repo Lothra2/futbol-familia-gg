@@ -2,9 +2,9 @@ import { ICONS } from './icons';
 
 /** The guide of controls: one screen with keyboard, touch and tips, and a short first-match tour. Pure HTML builders, so the menu, the pause menu and the tour show the same pictures. */
 export type Tab = 'teclado' | 'tactil' | 'trucos';
-export type Focus = 'move' | 'shoot' | 'pass' | 'special' | 'sprint' | null;
+export type Focus = 'move' | 'shoot' | 'pass' | 'special' | 'sprint' | 'jump' | null;
 
-const COL = { move: '#7be3ff', shoot: '#ff7a7a', pass: '#7be36a', sprint: '#ffd447', special: '#c79bff', neutral: '#e6dcf5' } as const;
+const COL = { move: '#7be3ff', shoot: '#ff7a7a', pass: '#7be36a', sprint: '#ffd447', special: '#c79bff', jump: '#ff9ad5', neutral: '#e6dcf5' } as const;
 
 /** Phones and tablets with a touch screen start on the touch tab, everything else on the keyboard. */
 export const defaultTab = (): Tab => (typeof matchMedia === 'function' && matchMedia('(pointer: coarse)').matches ? 'tactil' : 'teclado');
@@ -12,12 +12,12 @@ export const defaultTab = (): Tab => (typeof matchMedia === 'function' && matchM
 const cap = (label: string, kind: keyof typeof COL, what: string, focus: Focus, mine: Focus, wide = false): string =>
   `<div class="kc${wide ? ' wide' : ''}${focus && focus !== mine ? ' faded' : ''}"><div class="kcap" style="--kc:${COL[kind]}">${label}</div>${what ? `<small>${what}</small>` : ''}</div>`;
 
-/** One keyboard: the move keys and the four action keys. `p2` draws the keys of the second player. */
+/** One keyboard: the move keys and the five action keys. `p2` draws the keys of the second player. */
 function board(who: 'solo' | 'p1' | 'p2', focus: Focus): string {
   const mv = who === 'p2' ? ['↑', '←', '↓', '→'] : ['W', 'A', 'S', 'D'];
-  const act = who === 'solo' ? [['J', 'Tiro', 'shoot'], ['K', 'Pase', 'pass'], ['L', 'Correr', 'sprint'], ['I', 'Especial', 'special']]
-    : who === 'p1' ? [['F', 'Tiro', 'shoot'], ['G', 'Pase', 'pass'], ['H', 'Correr', 'sprint'], ['T', 'Especial', 'special']]
-      : [[',', 'Tiro', 'shoot'], ['.', 'Pase', 'pass'], ['/', 'Correr', 'sprint'], [';', 'Especial', 'special']];
+  const act = who === 'solo' ? [['J', 'Tiro', 'shoot'], ['K', 'Pase', 'pass'], ['U', 'Salto', 'jump'], ['L', 'Correr', 'sprint'], ['I', 'Especial', 'special']]
+    : who === 'p1' ? [['F', 'Tiro', 'shoot'], ['G', 'Pase', 'pass'], ['R', 'Salto', 'jump'], ['H', 'Correr', 'sprint'], ['T', 'Especial', 'special']]
+      : [[',', 'Tiro', 'shoot'], ['.', 'Pase', 'pass'], ['L', 'Salto', 'jump'], ['/', 'Correr', 'sprint'], [';', 'Especial', 'special']];
   const f = (k: Focus): string => (focus && focus !== k ? ' faded' : '');
   return `<div class="board">
     <div class="bm${f('move')}"><div class="pad">
@@ -54,13 +54,15 @@ export function touchHtml(easy: boolean, focus: Focus = null): string {
       <path d="M86 70l-7 9h14zM86 166l-7-9h14zM38 118l9-7v14zM134 118l-9-7v14z" fill="#fff"/><text x="86" y="60" text-anchor="middle" fill="${COL.move}" class="lb">Mueve con el pulgar</text></g>
     ${easy
       ? `${btn(342, 112, 31, COL.shoot, inner('kick'), '¡Patea!', 'shoot', 'b')}${btn(342, 48, 21, COL.special, inner('special'), 'Especial', 'special', 'b')}`
-      : `${btn(352, 118, 28, COL.shoot, inner('shoot'), 'Tiro', 'shoot', 'b')}${btn(300, 140, 22, COL.pass, inner('pass'), 'Pase', 'pass', 'l')}${btn(352, 52, 20, COL.special, inner('special'), 'Especial', 'special', 'b')}${btn(272, 62, 18, COL.sprint, inner('sprint'), 'Correr', 'sprint', 'b')}`}
+      : `${btn(352, 118, 28, COL.shoot, inner('shoot'), 'Tiro', 'shoot', 'b')}${btn(300, 140, 22, COL.pass, inner('pass'), 'Pase', 'pass', 't')}${btn(250, 150, 18, COL.jump, inner('jump'), 'Salto', 'jump', 'l')}${btn(352, 52, 20, COL.special, inner('special'), 'Especial', 'special', 'b')}${btn(272, 62, 18, COL.sprint, inner('sprint'), 'Correr', 'sprint', 'b')}`}
   </svg>`;
 }
-type Btn = keyof typeof ICONS & ('shoot' | 'pass' | 'sprint' | 'special' | 'kick');
+type Btn = keyof typeof ICONS & ('shoot' | 'pass' | 'sprint' | 'special' | 'kick' | 'jump');
 
 const TIPS: [string, string, string][] = [
   ['Súper patada', 'Corre con el balón <b>sin parar</b> hacia el arco. Cuando tu jugador <b>brille</b> y salga <b>¡YA!</b>, toca <b>Tiro</b>: sale su poder y tumba a todos los que estén en el camino. Si esperas mucho, se apaga y hay que volver a correr.', 'shoot'],
+  ['Salta', 'Toca <b>Salto</b> para brincar: pasas por encima de las barridas y de los golpes. Con el balón en el aire, <b>Tiro</b> es la <b>patada giratoria</b>, más fuerte que un tiro normal. Tiro y Pase a la vez también saltan.', 'jump'],
+  ['En el aire', 'Salta por un balón alto: <b>Tiro</b> lo cabecea o lo patea de bolea al arco y <b>Pase</b> se lo baja a un compañero. Sin balón cerca, <b>Tiro</b> en el aire es la <b>patada voladora</b> y tumba al rival de enfrente.', 'jump'],
   ['A pelear', 'Quitarle el balón a un rival lo tira al suelo. Correr fuerte contra el que lleva el balón también. Y la barrida manda a volar.', 'shoot'],
   ['Pase alto', 'Toca <b>Pase</b> para un pase raso. <b>Mantenlo</b> un momento y suéltalo: el balón vuela por arriba y pasa a los rivales.', 'pass'],
   ['Más potencia', 'Mantén <b>Tiro</b> y suéltalo cuando la barra se llene. Si te pasas, dispara solo.', 'shoot'],
@@ -113,12 +115,13 @@ export function showGuideWindow(onClose: () => void = () => undefined, start: Pa
 }
 
 interface Step { title: string; text: string; focus: Focus }
-/** The short tour of the first match (5 cards, or 4 with the easy controls). It runs over the paused match. */
+/** The short tour of the first match (6 cards, or 4 with the easy controls). It runs over the paused match. */
 export function runCoach(opt: { touch: boolean; easy: boolean }, onDone: () => void): HTMLElement {
   const steps: Step[] = [
     { title: 'Mueve a tu jugador', text: opt.touch ? 'Pon el pulgar izquierdo en la pantalla y arrástralo.' : 'Usa W A S D o las flechas.', focus: 'move' },
     { title: opt.easy ? '¡Patea!' : 'Tiro', text: opt.easy ? 'Toca ¡Patea! con el balón: tira al arco o pasa solo, lo mejor en el momento.' : opt.touch ? 'Toca Tiro para patear. Mantenlo para más potencia.' : 'Toca J (o Espacio) para patear. Mantenlo para más potencia.', focus: 'shoot' },
     ...(opt.easy ? [] : [{ title: 'Pase', text: opt.touch ? 'Toca Pase para un pase raso. Mantenlo y suéltalo para un pase alto.' : 'Toca K para un pase raso. Mantenlo y suéltalo para un pase alto.', focus: 'pass' as Focus }]),
+    ...(opt.easy ? [] : [{ title: 'Salto', text: (opt.touch ? 'Toca Salto para brincar por encima de barridas y golpes. En el aire con el balón, Tiro' : 'Toca U para brincar por encima de barridas y golpes. En el aire con el balón, J') + ' es la patada giratoria. Sin balón, cabeceas el que venga alto.', focus: 'jump' as Focus }]),
     { title: 'Súper patada', text: 'Corre con el balón sin parar hacia el arco. Cuando tu jugador brille y salga ¡YA!, ' + (opt.touch ? (opt.easy ? 'toca ¡Patea!' : 'toca Tiro') : 'toca J') + ': ¡sale su poder!', focus: 'shoot' },
     { title: 'Tu poder', text: 'Cuando se llene la barra ★ de arriba y estés cerca del arco, ' + (opt.touch ? 'toca Especial.' : 'toca I (o Enter).') + ' ¡Sale una película!', focus: 'special' },
   ];

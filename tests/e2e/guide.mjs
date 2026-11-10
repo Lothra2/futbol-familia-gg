@@ -29,7 +29,7 @@ for (const [w, h, touch] of [[1280, 720, false], [667, 375, true], [844, 390, tr
       const full = await page.evaluate(() => document.querySelectorAll('.phone .tb').length);
       await page.click('#gt [data-easy="1"]');
       const easy = await page.evaluate(() => document.querySelectorAll('.phone .tb').length);
-      ok(`${w}x${h}: controles faciles tiene menos botones (${full} a ${easy})`, easy === 3 && full === 5, `${full} ${easy}`);
+      ok(`${w}x${h}: controles faciles tiene menos botones (${full} a ${easy})`, easy === 3 && full === 6, `${full} ${easy}`);
       await page.click('#gt [data-easy="0"]');
     }
     await page.screenshot({ path: `docs/qa/shots/guia_${tab}_${w}x${h}.png` });
@@ -50,9 +50,9 @@ for (const [w, h, touch] of [[1280, 720, false], [667, 375, true], [844, 390, tr
   const t1 = await page.evaluate(() => window.__futbol.match.tick);
   ok('el tour pausa el partido', t1 === t0, `${t0} ${t1}`);
   const steps = await page.evaluate(() => document.querySelector('.cstep').textContent);
-  ok('el tour tiene 5 pasos con controles completos', /1 de 5/.test(steps), steps);
+  ok('el tour tiene 6 pasos con controles completos', /1 de 6/.test(steps), steps);
   await page.screenshot({ path: 'docs/qa/shots/guia_tour_1.png' });
-  for (let i = 0; i < 4; i++) await page.click('#cnext');
+  for (let i = 0; i < 5; i++) await page.click('#cnext');
   const last = await page.evaluate(() => document.querySelector('#cnext').textContent);
   ok('el ultimo paso dice A jugar', /jugar/.test(last), last);
   await page.screenshot({ path: 'docs/qa/shots/guia_tour_4.png' });

@@ -12,6 +12,8 @@ export interface InputFrame {
   shootPressed: boolean; passPressed: boolean; specialPressed: boolean;
   /** Only the AI sets it: the player asks for a slide tackle instead of a frontal steal. */
   slide?: boolean;
+  /** The jump (Nekketsu): held, and pressed in this step. Tiro and Pase pressed together are a jump too (A + B on the NES). */
+  jump?: boolean; jumpPressed?: boolean;
 }
 export const emptyInput = (): InputFrame => ({
   mx: 0, my: 0, shoot: false, pass: false, sprint: false, special: false, shootPressed: false, passPressed: false, specialPressed: false,

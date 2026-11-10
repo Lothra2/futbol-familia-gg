@@ -2,7 +2,7 @@ import { T } from '../tuning';
 import { DT } from '../step';
 import { MID, PITCH, SY, attackDir, goalX, ownGoalX, slotPos } from '../field';
 import { superOpen } from '../specials';
-import { hitTarget } from '../actions';
+import { airZone, hitTarget } from '../actions';
 import { DIFFICULTY } from '../tuning';
 import { choosePass, segDist } from '../actions';
 import { emptyInput, type InputFrame } from '../types';
@@ -63,14 +63,14 @@ export function aiInput(m: Match, p: Player, humanize = false): InputFrame {
   if (A.holdLeft > 0) {
     A.holdLeft -= DT;
     const on = A.holdLeft > 0;
-    const f = { ...A.held, shootPressed: false, passPressed: false, specialPressed: false, shoot: A.holdBtn === 'shoot' && on, pass: A.holdBtn === 'pass' && on };
+    const f = { ...A.held, shootPressed: false, passPressed: false, specialPressed: false, jumpPressed: false, shoot: A.holdBtn === 'shoot' && on, pass: A.holdBtn === 'pass' && on };
     if (!on) A.holdBtn = null;
     return f;
   }
   if (m.t >= A.nextThink) {
     const f = brainThink(m, p, humanize);
     A.nextThink = m.t + 0.1 + m.rng.range(0, 0.04);
-    A.held = { ...f, shootPressed: false, passPressed: false, specialPressed: false };
+    A.held = { ...f, shootPressed: false, passPressed: false, specialPressed: false, jumpPressed: false };
     return f;
   }
   return { ...A.held };
@@ -124,6 +124,8 @@ function brainThink(m: Match, p: Player, humanize: boolean): InputFrame {
   if (carrier && carrier.id === p.id) {
     const dGoal = Math.abs(gx - p.x);
     const near = foes.filter((q) => q.role !== 'gk' && (q.x - p.x) * dir > -6 && Math.hypot(q.x - p.x, (q.y - p.y) / T.yFactor) < 34).sort((a, c) => Math.hypot(a.x - p.x, a.y - p.y) - Math.hypot(c.x - p.x, c.y - p.y))[0];
+    // he jumped with the ball: up there it is the spinning kick, to one side of the keeper or the other
+    if (p.z > 8) { f.mx = dir; f.my = m.rng.chance(0.5) ? 0.55 : -0.55; f.shootPressed = true; A.armedAt = 0; return f; }
     // the súper patada: when he flashes he shoots it (Nekketsu)
     if (superOpen(m, p) && m.rng.chance(p.team === 1 ? DIFFICULTY[m.difficulty].superTake : T.super.aiTake)) { f.mx = dir; f.my = 0; f.shootPressed = true; f.shoot = false; A.armedAt = 0; return f; }
     // the special, when the bar is full, close enough and after a short wait
@@ -154,6 +156,8 @@ function brainThink(m: Match, p: Player, humanize: boolean): InputFrame {
     }
     const shootRange = p.role === 'def' ? par.shootRange * 0.8 : par.shootRange;
     if (dGoal <= shootRange && ready(true)) {
+      // now and then he jumps first, for the spinning kick (Nekketsu)
+      if (dGoal > 110 && p.z <= 0 && p.cd.jump <= 0 && !near && m.rng.chance(par.jumpShot)) { f.mx = dir; f.jumpPressed = true; return f; }
       const gk = foes.find((q) => q.role === 'gk');
       f.my = 0.55 * (gk && Math.abs(gk.y - MID) > 8 && m.rng.chance(0.4) ? (gk.y < MID ? 1 : -1) : m.rng.chance(0.5) ? 0 : m.rng.chance(0.5) ? 1 : -1);   // 0.55 of the stick is the 68 / 92 of the old three-point aim
       f.mx = dir; f.shootPressed = true; f.shoot = true;
@@ -260,7 +264,10 @@ function brainThink(m: Match, p: Player, humanize: boolean): InputFrame {
   if (eta <= best + 0.0001 || eta < 0.6 || untouched) {
     const tgt = ballAt(m, Math.min(0.5, eta));
     go(tgt.x, tgt.y, eta > 0.8);
-    if (b.state === 'free' && b.z >= T.aerial.zMin && b.z <= T.aerial.headerZ && Math.abs(b.x - p.x) < 20 && Math.abs(b.y - p.y) < 16 && ready(true)) { f.shootPressed = true; f.shoot = false; A.armedAt = 0; }
+    if (p.z > 0) { if (airZone(m, p)) f.shootPressed = true; }
+    else if (b.state === 'free' && b.z >= T.aerial.zMin && b.z <= T.aerial.headerZ && Math.abs(b.x - p.x) < 20 && Math.abs(b.y - p.y) < 16 && ready(true)) { f.shootPressed = true; f.shoot = false; A.armedAt = 0; }
+    // a ball too high for a header from the ground, coming down on him: he jumps for it
+    else if (b.state === 'free' && b.vz < 0 && b.z > T.aerial.headerZ && b.z <= T.aerial.headerZ + 30 && Math.abs(b.x - p.x) < 16 && Math.abs(b.y - p.y) < 13 && p.cd.jump <= 0) f.jumpPressed = true;
     return f;
   }
   const t = formationTarget(m, p, 'neutral'); go(t.x, t.y);

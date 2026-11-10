@@ -18,7 +18,7 @@ function resetPlayers(m: Match): void {
   for (const p of m.players) {
     const s = slotPos(p.team, p.slot, m.form[p.team]);
     p.x = s.x; p.y = s.y; p.z = 0; p.vx = p.vy = p.vz = 0; p.state = 'idle'; p.act = null; p.dirX = attackDir(p.team); p.dirY = 0; p.facing = attackDir(p.team);
-    p.shoot.down = false; p.pass.down = false; p.cd = { slide: 0, steal: 0, bump: 0 }; p.holdT = 0;
+    p.shoot.down = false; p.pass.down = false; p.cd = { slide: 0, steal: 0, bump: 0, jump: 0 }; p.holdT = 0;
   }
 }
 

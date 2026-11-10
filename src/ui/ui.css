@@ -50,6 +50,7 @@ html, body { margin: 0; height: 100%; background: #1c1230; overflow: hidden; ove
 .tbtn.pass { width: 72px; height: 72px; right: calc(124px + var(--sr)); bottom: calc(30px + var(--sb)); }
 .tbtn.special { width: 72px; height: 72px; right: calc(36px + var(--sr)); bottom: calc(124px + var(--sb)); }
 .tbtn.sprint { width: 64px; height: 64px; right: calc(140px + var(--sr)); bottom: calc(116px + var(--sb)); }
+.tbtn.jump { width: 66px; height: 66px; right: calc(210px + var(--sr)); bottom: calc(34px + var(--sb)); }
 /* one player, easy controls */
 .tslot.easy .tbtn.shoot { width: 104px; height: 104px; right: calc(22px + var(--sr)); bottom: calc(22px + var(--sb)); }
 .tslot.easy .tbtn.special { width: 80px; height: 80px; right: calc(40px + var(--sr)); bottom: calc(140px + var(--sb)); }
@@ -58,13 +59,14 @@ html, body { margin: 0; height: 100%; background: #1c1230; overflow: hidden; ove
 .tslot.two .tbtn.pass { width: 60px; height: 60px; right: calc(82px + var(--sr)); bottom: calc(10px + var(--sb)); }
 .tslot.two .tbtn.special { width: 60px; height: 60px; right: calc(14px + var(--sr)); bottom: calc(82px + var(--sb)); }
 .tslot.two .tbtn.sprint { width: 60px; height: 60px; right: calc(82px + var(--sr)); bottom: calc(78px + var(--sb)); }
+.tslot.two .tbtn.jump { width: 54px; height: 54px; right: calc(150px + var(--sr)); bottom: calc(14px + var(--sb)); }
 .tslot.two.easy .tbtn.shoot { width: 72px; height: 72px; }
 .tslot.two.easy .tbtn.special { width: 60px; height: 60px; right: calc(14px + var(--sr)); bottom: calc(90px + var(--sb)); }
 .tslot.two .tbtn em { font-size: 10px; }
 /* mirrored player 2: buttons on the left of its half */
 .tslot.mir .tbtn { right: auto; }
 .tslot.two.mir .tbtn.shoot { left: calc(10px + var(--sl)); } .tslot.two.mir .tbtn.pass { left: calc(82px + var(--sl)); }
-.tslot.two.mir .tbtn.special { left: calc(14px + var(--sl)); } .tslot.two.mir .tbtn.sprint { left: calc(82px + var(--sl)); }
+.tslot.two.mir .tbtn.special { left: calc(14px + var(--sl)); } .tslot.two.mir .tbtn.sprint { left: calc(82px + var(--sl)); } .tslot.two.mir .tbtn.jump { left: calc(150px + var(--sl)); }
 .tdivider { position: absolute; top: 0; bottom: 0; left: 50%; width: 3px; background: rgba(255,255,255,.35); pointer-events: none; }
 
 /* ---------- full screen help (iPhone has no full screen button) ---------- */
@@ -320,6 +322,7 @@ input[type=range] { width: 100%; height: 28px; accent-color: #5DDB43; }
   #touch[data-look="suave"] .tslot:not(.two) .tbtn.pass, #touch[data-look="minimo"] .tslot:not(.two) .tbtn.pass { width: 60px; height: 60px; right: calc(106px + var(--sr)); bottom: calc(24px + var(--sb)); }
   #touch[data-look="suave"] .tslot:not(.two) .tbtn.special, #touch[data-look="minimo"] .tslot:not(.two) .tbtn.special { width: 60px; height: 60px; right: calc(30px + var(--sr)); bottom: calc(104px + var(--sb)); }
   #touch[data-look="suave"] .tslot:not(.two) .tbtn.sprint, #touch[data-look="minimo"] .tslot:not(.two) .tbtn.sprint { width: 54px; height: 54px; right: calc(118px + var(--sr)); bottom: calc(96px + var(--sb)); }
+  #touch[data-look="suave"] .tslot:not(.two) .tbtn.jump, #touch[data-look="minimo"] .tslot:not(.two) .tbtn.jump { width: 56px; height: 56px; right: calc(178px + var(--sr)); bottom: calc(26px + var(--sb)); }
   #touch[data-look="suave"] .tslot.easy:not(.two) .tbtn.shoot, #touch[data-look="minimo"] .tslot.easy:not(.two) .tbtn.shoot { width: 88px; height: 88px; }
   #touch[data-look="suave"] .tslot.easy:not(.two) .tbtn.special, #touch[data-look="minimo"] .tslot.easy:not(.two) .tbtn.special { width: 66px; height: 66px; right: calc(34px + var(--sr)); bottom: calc(118px + var(--sb)); }
 }

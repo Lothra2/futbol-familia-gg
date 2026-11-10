@@ -4,6 +4,17 @@ export const T = Object.freeze({
   accel: 600, brake: 900, yFactor: 0.9, carrySpeed: 0.92,
   staminaMax: 100, staminaRecover: 30, staminaWait: 0.5, staminaUnlock: 35,
   jumpV: 220, jumpG: 760,
+  /** El salto (Nekketsu): Salto, or Tiro and Pase together, lifts the player `v` (he comes down in a bit over half a second; `cd` s on the ground
+   *  before the next one). In the air he steers `air` of what he does on the ground and with the ball goes at `carry` of his speed. A ball
+   *  between `lo` and `hi` px over his feet can be struck: from `headZ` up with the head, below with the foot, `prep` s after the press. He
+   *  takes down a ball that is at most `ctrl` px over his feet (or `lo` under them). */
+  jump: { v: 220, cd: 0.22, air: 0.4, carry: 0.85, lo: -8, hi: 46, headZ: 18, prep: 0.07 },
+  /** La patada giratoria: Tiro in the air with the ball. Harder and straighter than a shot from the ground, and it counts as a shot first time
+   *  for the keeper (he is slower to it). The player hangs in the air for the kick: he is lifted `hang` again when he starts it. */
+  spin: { v: 430, vz: 24, err: 9, prep: 0.15, hang: 90 },
+  /** La patada voladora: Tiro in the air without the ball. It knocks down the first rival it meets within `reach` px in front (`dy` to the
+   *  sides, at most `z` px of difference in height) before the player lands, for at most `dur` s. */
+  flyKick: { reach: 24, dy: 14, z: 26, dur: 0.45 },
   /** Golpes y patadas (Nekketsu): Tiro without the ball next to a rival hits him. `reach`/`dy` in front, `p` lands, the victim stays down `down` s
    *  (`ko` s once he has taken `koAfter` hits within `combo` s), the attacker is busy `self` s and waits `cd` s. A child on easy controls who
    *  carries the ball is hit with `easyP`. */
@@ -89,11 +100,11 @@ export const KEEPERS = {
   buho: { reaction: 0.24, reach: 50, skill: 0.70 }, dragon: { reaction: 0.22, reach: 48, skill: 0.75 },
 } as const;
 /** How the family mates (always AI-controlled) play. They do not change with the difficulty of the rivals. */
-export const MATES = { speed: 0.92, reaction: 0.30, shotErr: 15, slideHuman: 0, press: 1, keeperSkill: 1, keeperReact: 0, star: 1, special: 0.5 } as const;
+export const MATES = { jumpShot: 0.25, speed: 0.92, reaction: 0.30, shotErr: 15, slideHuman: 0, press: 1, keeperSkill: 1, keeperReact: 0, star: 1, special: 0.5 } as const;
 export const DIFFICULTY = {
-  tranquilos: { punch: 0.05, superTake: 0.15, speed: 0.70, reaction: 0.55, shotErr: 24, slideHuman: 0, press: 1, keeperSkill: 0.72, keeperReact: 0.12, star: 0.5, special: 0.35 },
-  normales: { punch: 0.3, superTake: 0.7, speed: 1.0, reaction: 0.25, shotErr: 14, slideHuman: 0.25, press: 1, keeperSkill: 1.2, keeperReact: 0.02, star: 0.75, special: 0.50 },
-  campeones: { punch: 0.5, superTake: 0.75, speed: 1.00, reaction: 0.18, shotErr: 9, slideHuman: 0.5, press: 2, keeperSkill: 1.3, keeperReact: -0.05, star: 1.0, special: 0.60 },
+  tranquilos: { jumpShot: 0.1, punch: 0.05, superTake: 0.15, speed: 0.70, reaction: 0.55, shotErr: 24, slideHuman: 0, press: 1, keeperSkill: 0.72, keeperReact: 0.12, star: 0.5, special: 0.35 },
+  normales: { jumpShot: 0.25, punch: 0.3, superTake: 0.7, speed: 1.0, reaction: 0.25, shotErr: 14, slideHuman: 0.25, press: 1, keeperSkill: 1.2, keeperReact: 0.02, star: 0.75, special: 0.50 },
+  campeones: { jumpShot: 0.35, punch: 0.5, superTake: 0.75, speed: 1.00, reaction: 0.18, shotErr: 9, slideHuman: 0.5, press: 2, keeperSkill: 1.3, keeperReact: -0.05, star: 1.0, special: 0.60 },
 } as const;
 
 /** How each kingdom plays (mejora 5). The rivals of a species follow their style on top of the difficulty: `press` more players press the carrier, `steal` multiplies

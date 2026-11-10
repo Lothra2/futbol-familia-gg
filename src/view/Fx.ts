@@ -35,6 +35,8 @@ export class Fx {
     const x = wx(e.x, e.y), y = sy(e.y, e.z), gy = sy(e.y);
     switch (e.k) {
       case 'slide': case 'bump': for (let i = 0; i < 4; i++) this.spawn('dust', x + (rnd() - 0.5) * 8, gy - 2, (rnd() - 0.5) * 40, -10 - rnd() * 20, 20, 0.35); break;
+      case 'jump': for (let i = 0; i < 3; i++) this.spawn('dust', x + (rnd() - 0.5) * 10, gy - 1, (rnd() - 0.5) * 50, -6 - rnd() * 10, 16, 0.3); break;
+      case 'spinkick': for (let i = 0; i < 6; i++) { const a = (i / 6) * Math.PI * 2; this.spawn('spark', x, y, Math.cos(a) * 90, Math.sin(a) * 60, 0, 0.25); } this.spawn('ring', x, y, 0, 0, 0, 0.3, 0xffe45c, 610); break;
       case 'bounce': if ((e.v ?? 0) > 120) this.spawn('dust', x, gy - 1, 0, -8, 10, 0.25); break;
       case 'post': case 'bar': for (let i = 0; i < 4; i++) this.spawn('spark', x, y, (rnd() - 0.5) * 120, -40 - rnd() * 40, 160, 0.3); break;
       case 'zas': for (let i = 0; i < 8; i++) { const a = (i / 8) * Math.PI * 2; this.spawn('dust', x, gy - 4, Math.cos(a) * 50, Math.sin(a) * 30, 0, 0.35); } break;

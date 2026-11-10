@@ -2,14 +2,14 @@ import type { InputRouter, Btn } from './router';
 import { BTNS } from './router';
 
 export type KeyMode = '1p' | '2p';
-interface Map1 { up: string[]; down: string[]; left: string[]; right: string[]; shoot: string[]; pass: string[]; sprint: string[]; special: string[] }
+interface Map1 { up: string[]; down: string[]; left: string[]; right: string[]; shoot: string[]; pass: string[]; sprint: string[]; special: string[]; jump: string[] }
 
 /** KeyboardEvent.code based, so it works with Spanish and English layouts. See GAME_DESIGN section 4. */
 export const KEYMAPS: Record<KeyMode, Map1[]> = {
-  '1p': [{ up: ['KeyW', 'ArrowUp'], down: ['KeyS', 'ArrowDown'], left: ['KeyA', 'ArrowLeft'], right: ['KeyD', 'ArrowRight'], shoot: ['KeyJ', 'Space'], pass: ['KeyK'], sprint: ['KeyL', 'ShiftLeft', 'ShiftRight'], special: ['KeyI', 'Enter'] }],
+  '1p': [{ up: ['KeyW', 'ArrowUp'], down: ['KeyS', 'ArrowDown'], left: ['KeyA', 'ArrowLeft'], right: ['KeyD', 'ArrowRight'], shoot: ['KeyJ', 'Space'], pass: ['KeyK'], sprint: ['KeyL', 'ShiftLeft', 'ShiftRight'], special: ['KeyI', 'Enter'], jump: ['KeyU', 'KeyM'] }],
   '2p': [
-    { up: ['KeyW'], down: ['KeyS'], left: ['KeyA'], right: ['KeyD'], shoot: ['KeyF'], pass: ['KeyG'], sprint: ['KeyH'], special: ['KeyT'] },
-    { up: ['ArrowUp'], down: ['ArrowDown'], left: ['ArrowLeft'], right: ['ArrowRight'], shoot: ['Comma'], pass: ['Period'], sprint: ['Slash'], special: ['Semicolon'] },
+    { up: ['KeyW'], down: ['KeyS'], left: ['KeyA'], right: ['KeyD'], shoot: ['KeyF'], pass: ['KeyG'], sprint: ['KeyH'], special: ['KeyT'], jump: ['KeyR'] },
+    { up: ['ArrowUp'], down: ['ArrowDown'], left: ['ArrowLeft'], right: ['ArrowRight'], shoot: ['Comma'], pass: ['Period'], sprint: ['Slash'], special: ['Semicolon'], jump: ['KeyL'] },
   ],
 };
 const PAUSE = ['Escape', 'KeyP'];
@@ -29,7 +29,7 @@ export class KeyboardInput {
     const tag = (e.target as HTMLElement | null)?.tagName;
     if (tag === 'INPUT' || tag === 'TEXTAREA') return;
     if (isDown && PAUSE.includes(e.code) && !e.repeat) { this.router.pause(); return; }
-    const used = KEYMAPS[this.mode].some((m) => [...m.up, ...m.down, ...m.left, ...m.right, ...m.shoot, ...m.pass, ...m.sprint, ...m.special].includes(e.code));
+    const used = KEYMAPS[this.mode].some((m) => [...m.up, ...m.down, ...m.left, ...m.right, ...m.shoot, ...m.pass, ...m.sprint, ...m.special, ...m.jump].includes(e.code));
     if (this.active && used) e.preventDefault();
     if (e.repeat && isDown) return;
     if (isDown) this.down.add(e.code); else this.down.delete(e.code);

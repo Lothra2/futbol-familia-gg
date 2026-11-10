@@ -49,7 +49,7 @@ function makePlayer(m: Match, team: Team, seat: ReturnType<typeof roster>[number
     x: pos.x, y: pos.y, z: 0, vx: 0, vy: 0, vz: 0, facing: attackDir(team), dirX: attackDir(team), dirY: 0,
     state: 'idle', stateT: 0, act: null, input: emptyInput(), stamina: T.staminaMax, sprintLock: false, noSprintT: 0,
     speedMult: human ? 1 : team === 1 ? rivalSpeed : MATES.speed, reactionT: 0,
-    cd: { slide: 0, steal: 0, bump: 0 }, immuneT: 0, noControlT: 0, dizzyT: 0, shoot: { down: false, t: 0 }, pass: { down: false, t: 0 },
+    cd: { slide: 0, steal: 0, bump: 0, jump: 0 }, immuneT: 0, noControlT: 0, dizzyT: 0, shoot: { down: false, t: 0 }, pass: { down: false, t: 0 },
     stats2: { goals: 0, assists: 0, steals: 0, saves: 0, shots: 0, passes: 0, specials: 0, spGoals: 0, chips: 0 }, holdT: 0,
     ai: newMind(), baseSpeed: human ? 1 : team === 1 ? rivalSpeed : MATES.speed,
     aiErr: team === 1 ? diff.shotErr : MATES.shotErr, slideRate: team === 1 ? 0.15 : 0,

@@ -26,16 +26,20 @@ describe('sala de espera (Nintendo World Cup)', () => {
     expect(m.players.filter((p) => p.team === 1 && p.role === 'fwd').length).toBe(1);
   });
   it('estrategia: con "pase" los compañeros IA de la familia pasan más que con "gambeta"', () => {
+    // the same play forty times: a midfielder of the family with the ball, nobody pressing him and a forward free ahead. With "pase" he
+    // plays it forward soon; with "gambeta" he keeps it. (Counting the passes of whole matches drowns the effect in the luck of the play.)
     const passes = (atk: 'pase' | 'gambeta'): number => {
       let n = 0;
-      // six matches: the effect is clear over several matches, three are too few against the luck of the play
-      for (const seed of [1, 2, 3, 4, 5, 6]) {
-        const m = createMatch({ seed, ai: 'brain', halfLength: 45, strategy: { atk, def: 'mixto' } });
-        for (let i = 0; i < 60 * 100 && m.phase !== 'over'; i++) { step(m); for (const e of m.events) if (e.k === 'pass' && m.players.find((p) => p.id === e.who)?.team === 0) n++; m.events = []; }
+      for (let seed = 1; seed <= 40; seed++) {
+        const m = createMatch({ seed, ai: 'brain', training: true, strategy: { atk, def: 'mixto' } });
+        const c = m.players.find((p) => p.team === 0 && p.role === 'mid')!;
+        for (const o of m.players) { if (o.team === 1 && o.role !== 'gk') { o.x = 40; o.y = 10; } if (o.team === 0 && o.role === 'fwd') o.x = 630; }
+        c.x = 480; c.y = 80; Object.assign(m.ball, { state: 'owned', owner: c.id, x: c.x, y: c.y, z: 0 });
+        for (let i = 0, done = false; i < 90 && !done && m.ball.owner === c.id; i++) { step(m); if (m.events.some((e) => e.k === 'pass' && e.who === c.id)) { done = true; n++; } m.events = []; }
       }
       return n;
     };
-    expect(passes('pase')).toBeGreaterThan(passes('gambeta'));
+    expect(passes('pase')).toBeGreaterThan(passes('gambeta') + 8);
   });
 });
 

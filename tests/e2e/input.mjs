@@ -71,6 +71,11 @@ const stage = async (page, slot = 0, bx = 400) => { await page.evaluate(({ slot,
   await page.evaluate(() => window.__setPad([0, 0], [0])); await page.waitForTimeout(150);
   await page.evaluate(() => window.__setPad([0, 0], [])); await page.waitForTimeout(500);
   const g = await hum(page); ok('mando simulado: A patea', g.shots + g.passes > 0, `${g.shots + g.passes}`);
+  await stage(page); await page.waitForTimeout(150);
+  await page.evaluate(() => window.__setPad([0, 0], [4])); await page.waitForTimeout(140);
+  const jz = await page.evaluate(() => window.__futbol.match.players.find((q) => q.humanSlot === 0).z);
+  await page.evaluate(() => window.__setPad([0, 0], [])); await page.waitForTimeout(700);
+  ok('mando simulado: LB salta', jz > 5, `z ${Math.round(jz)}`);
   await page.evaluate(() => { window.__mockPads = [null]; }); await page.waitForTimeout(300);
   ok('mando simulado: desconectar pausa', await page.evaluate(() => window.__futbol.scene.paused));
   ok('sin errores de consola (mando)', errors.length === 0, errors.join('|'));
@@ -99,6 +104,19 @@ const stage = async (page, slot = 0, bx = 400) => { await page.evaluate(({ slot,
   const p0 = await hum(page); const [px, py] = await center('.tbtn.pass');
   await touch('touchStart', [[px, py, 4]]); await page.waitForTimeout(90); await touch('touchEnd', []); await page.waitForTimeout(700);
   const p1 = await hum(page); ok('tactil: Pase pasa', p1.passes > p0.passes, `${p0.passes} -> ${p1.passes}`);
+  // Salto: its own button, clear of the others; in the air with the ball Tiro is the spinning kick
+  const boxes = {};
+  for (const k of ['shoot', 'pass', 'jump', 'sprint', 'special']) boxes[k] = await page.locator(`.tbtn.${k}`).boundingBox();
+  const over = (a, c) => a.x < c.x + c.width && c.x < a.x + a.width && a.y < c.y + c.height && c.y < a.y + a.height;
+  ok('tactil: el botón Salto está en pantalla y no pisa a ninguno', !!boxes.jump && boxes.jump.x > 422 && boxes.jump.x + boxes.jump.width <= 844 && boxes.jump.y + boxes.jump.height <= 390 && ['shoot', 'pass', 'sprint', 'special'].every((k) => !over(boxes.jump, boxes[k])), JSON.stringify(boxes.jump));
+  await stage(page); await page.waitForTimeout(250);
+  const [jx, jy] = await center('.tbtn.jump');
+  await touch('touchStart', [[jx, jy, 6]]); await page.waitForTimeout(160); await touch('touchEnd', []);
+  const up = await page.evaluate(() => { const m = window.__futbol.match, p = m.players.find((q) => q.humanSlot === 0); return { z: p.z, state: p.state, own: m.ball.owner === p.id, bz: m.ball.z }; });
+  ok('tactil: Salto levanta al jugador con el balón', up.z > 8 && up.own && up.bz > 8, JSON.stringify(up));
+  await touch('touchStart', [[tx, ty, 7]]); await page.waitForTimeout(90); await touch('touchEnd', []); await page.waitForTimeout(500);
+  const spun = await page.evaluate(() => window.__futbol.match.ball.kick?.kind);
+  ok('tactil: Tiro en el aire es la patada giratoria', spun === 'spin', String(spun));
   // special: full bar, near the rival goal, ball at the feet
   await stage(page, 0, 800); await page.evaluate(() => { window.__futbol.match.bar[0] = 100; }); await page.waitForTimeout(250);
   const [ex, ey] = await center('.tbtn.special');

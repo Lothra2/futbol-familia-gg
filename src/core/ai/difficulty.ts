@@ -3,7 +3,9 @@ import type { Match, Player } from '../state';
 
 export interface AIParams { reaction: number; shotErr: number; press: number; slideRate: number; humanSlideRate: number; shootRange: number; star: number; special: number;
   /** The style of the kingdom of a rival (tuning.ts STYLE): how often it plays progressive passes and crosses (1 = as usual) and whether it counters after winning the ball. */
-  passBias: number; crossBias: number; counter: number }
+  passBias: number; crossBias: number; counter: number;
+  /** How often he jumps before a shot from range, for the spinning kick. */
+  jumpShot: number }
 
 /** Parameters of the AI of one player. The rivals follow the chosen difficulty and the family mates always play as Normales (GAME_DESIGN section 9). */
 export function aiParams(m: Match, p: Player): AIParams {
@@ -21,7 +23,7 @@ export function aiParams(m: Match, p: Player): AIParams {
   return {
     reaction: Math.max(0.08, d.reaction - arc), shotErr: d.shotErr, press: Math.max(0, d.press + (st && soft === 1 ? st.press : 0) + def.press), slideRate: p.team === 1 ? 0.3 : 0.1 + def.slide, humanSlideRate: p.team === 1 ? d.slideHuman : 0,
     shootRange: range * k(st?.range ?? 1) * atk.range, star: p.team === 1 ? d.star : 1, special: d.special,
-    passBias: k(st?.pass ?? 1) * atk.pass, crossBias: k(st?.cross ?? 1), counter: st ? st.counter * soft : 0,
+    passBias: k(st?.pass ?? 1) * atk.pass, crossBias: k(st?.cross ?? 1), counter: st ? st.counter * soft : 0, jumpShot: d.jumpShot,
   };
 }
 

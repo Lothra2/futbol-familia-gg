@@ -26,16 +26,17 @@ describe('entrenamiento con Thor', () => {
     expect(t.update(m)).toMatchObject({ justDone: true, index: 1 });
     f[0].stats2.chips = 2; expect(t.update(m).justDone).toBe(true);
     f[1].stats2.goals = 3; expect(t.update(m).justDone).toBe(true);
+    m.data.spins = 2; expect(t.update(m).justDone).toBe(true);
     f[1].stats2.spGoals = 1; expect(t.update(m).justDone).toBe(true);
     m.data.penGoals = 2; const v = t.update(m);
     expect(v.allDone).toBe(true); expect(v.title).toContain('completo');
-    expect(CHALLENGES.length).toBe(5);
+    expect(CHALLENGES.length).toBe(6);
   });
-  it('con controles faciles se salta el pase alto', () => { const m = mk(); const t = new Training(m, true); expect(t.total).toBe(4); });
+  it('con controles faciles se saltan el pase alto y la patada giratoria (no tienen esos botones)', () => { const m = mk(); const t = new Training(m, true); expect(t.total).toBe(4); });
   it('el reto de penales empieza una práctica: solo patea la familia, nadie gana y se vuelve al juego al meter 2', () => {
     const m = mk(); const t = new Training(m); const st = newBot('sophie');
     const f = m.players.filter((p) => p.team === 0 && p.role !== 'gk');
-    f[0].stats2.passes = 5; t.update(m); f[0].stats2.chips = 2; t.update(m); f[1].stats2.goals = 3; t.update(m); f[1].stats2.spGoals = 1; t.update(m);
+    f[0].stats2.passes = 5; t.update(m); f[0].stats2.chips = 2; t.update(m); f[1].stats2.goals = 3; t.update(m); m.data.spins = 2; t.update(m); f[1].stats2.spGoals = 1; t.update(m);
     for (let i = 0; i < 60 * 20 && m.phase !== 'penalties'; i++) { setHumanInput(m, 0, botFrame(m, m.humans[0], st)); step(m); if (i % 6 === 0) t.update(m); }
     expect(m.phase).toBe('penalties'); expect(m.pen!.practice).toBe(true);
     let done = false, sawRival = false;

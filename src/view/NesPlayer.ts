@@ -26,6 +26,7 @@ export function dirOf(dx: number, dy: number, prev: number | null = null): numbe
 /** Seconds of the flight of a knocked down player (the 5 frames of `tumble` at 12 fps) and of getting up (2 frames of `fall_getup` at 8 fps). */
 const TUMBLE_T = 0.42, GETUP_T = 0.25;
 
+const FALLBACK: Record<string, string> = { super: 'shot', spin_kick: 'chilena', chilena: 'shot', air_kick: 'kick_hit', kick_hit: 'shot', jump_rise: 'jump', jump_fall: 'jump' };
 /** What the player is doing, in the names of the forja atlas (the same for the family and the rivals; keepers add the keeper_ rows, Thor has his own). */
 export function nesAnim(p: Player, m: Match | null, isThor: boolean): { name: string; loop: boolean; t: number } {
   const t = p.act ? p.act.t : p.stateT;
@@ -58,12 +59,17 @@ export function nesAnim(p: Player, m: Match | null, isThor: boolean): { name: st
       const s = p.act?.sub;
       if (s === 'restart' && m?.restart?.kind === 'throwin') return { name: 'throw_in', loop: false, t };
       if (gk && s === 'restart') return { name: m?.restart?.kind === 'goalkick' ? 'keeper_punt' : 'keeper_throw', loop: false, t };
+      // the spinning kick of a player who jumped with the ball, and the kick of the air of one who jumped for it
+      if (s === 'spin') return { name: 'spin_kick', loop: false, t };
+      if (p.act?.plan?.jumped && (s === 'volley' || s === 'pass')) return { name: 'air_kick', loop: false, t };
       const n = s === 'pass' || s === 'restart' ? 'pass' : s === 'chip' ? 'chip' : s === 'volley' ? 'volley' : s === 'header' ? 'header' : s === 'chilena' ? 'chilena' : 'shot';
       return { name: n, loop: false, t };
     }
     case 'special': return { name: 'super', loop: false, t };
     case 'slide': return { name: 'slide', loop: false, t };
-    case 'bump': return { name: p.act?.kind === 'hit' ? (p.act.blow === 'kick' ? 'kick_hit' : 'punch') : 'tackle', loop: false, t };
+    case 'bump': return { name: p.act?.kind === 'hit' ? (p.act.air ? 'air_kick' : p.act.blow === 'kick' ? 'kick_hit' : 'punch') : 'tackle', loop: false, t };
+    // the jump: up, the top, down
+    case 'jump': return { name: p.vz > 70 ? 'jump_rise' : p.vz < -70 ? 'jump_fall' : 'jump', loop: false, t: p.vz > 70 ? t : 9 };
     case 'stagger': return { name: 'stagger', loop: false, t };
     case 'dizzy': return { name: 'dizzy', loop: true, t };
     case 'tumble': {
@@ -137,7 +143,8 @@ export class NesPlayer {
     const want = DIRS[this.dir], mirrored = this.meta.mirror[want];
     const st = nesAnim(p, m, this.isThor);
     let key = `${st.name}_${mirrored ?? want}`;
-    if (!this.meta.anims[key] && st.name === 'super') key = `shot_${mirrored ?? want}`;
+    // an atlas without one of the newer animations shows the closest one it has
+    for (let n = FALLBACK[st.name]; n && !this.meta.anims[key]; n = FALLBACK[n]) key = `${n}_${mirrored ?? want}`;
     if (!this.meta.anims[key]) key = `idle_${mirrored ?? want}`;
     const a = this.meta.anims[key];
     const speed = Math.hypot(p.vx, p.vy);
@@ -160,7 +167,7 @@ export class NesPlayer {
     this.hitT = Math.max(0, this.hitT - dt); this.landT = Math.max(0, this.landT - dt);
     let ox = 0, oy = 0, sxk = 1, syk = 1;
     if (this.hitT > 0) ox = (Math.floor(this.hitT * 60) % 2 ? 2 : -2);
-    if (air && p.state !== 'tumble') { sxk = 0.92; syk = 1.08; }
+    if (air && p.state !== 'tumble' && p.state !== 'kick' && p.state !== 'bump') { sxk = 0.92; syk = 1.08; }
     if (this.landT > 0) { sxk = 1.14; syk = 0.86; }
     if (p.state === 'celebrate') oy = -Math.round(Math.abs(Math.sin((m?.t ?? 0) * 9 + p.id)) * 4);
     if (this.isThor && st.name === 'run') oy = -Math.round(Math.abs(Math.sin((m?.t ?? 0) * 16)) * 2);
