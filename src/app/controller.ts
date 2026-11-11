@@ -39,6 +39,8 @@ export interface MatchConfig {
   reducedMotion?: boolean;
   /** From the settings: the voice of the match. */
   narrator?: boolean; narratorVolume?: number; replay?: boolean;
+  /** The traps of the pitch of each kingdom (core/hazards.ts). On unless the person turns them off in the settings. */
+  traps?: boolean;
   /** Tests: fast forward runs without freezes. */
   fastForward?: boolean;
   /** From the save: the outfit and the level of each family character (the outfit is a different atlas, the level opens the golden celebration and trail). */
@@ -79,7 +81,7 @@ export class MatchController {
       const c = (squad as string[]).includes(wanted) && !humans.some((h) => h.slot === seats[wanted as FieldChar]) ? (wanted as FieldChar) : free[0];
       humans.push({ team: 0, slot: seats[c]!, humanSlot: i, controls: cfg.controls[i] ?? 'full' });
     }
-    this.m = createMatch({ seed: cfg.seed, halfLength: cfg.half, humans, squad, formation: [cfg.formation ?? '2-1-2', RIVAL_FORM[cfg.rival as string] ?? '2-1-2'], strategy: cfg.strategy, weather: cfg.weather, ai: 'brain', difficulty: cfg.difficulty, away: cfg.rival, cine: cfg.cine, knockout: cfg.knockout, training: cfg.training, arc: cfg.arc });
+    this.m = createMatch({ seed: cfg.seed, halfLength: cfg.half, humans, squad, formation: [cfg.formation ?? '2-1-2', RIVAL_FORM[cfg.rival as string] ?? '2-1-2'], strategy: cfg.strategy, weather: cfg.weather, ai: 'brain', difficulty: cfg.difficulty, away: cfg.rival, cine: cfg.cine, knockout: cfg.knockout, training: cfg.training, arc: cfg.arc, world: cfg.traps === false ? undefined : cfg.stadium ?? 'volcan' });
     if (cfg.autoplay) this.bots = humans.map(() => newBot(cfg.autoplay!));
     if (cfg.forceSpecial) this.force(cfg.forceSpecial);
   }

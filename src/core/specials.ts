@@ -100,7 +100,7 @@ export function trackSuper(m: Match, p: Player, dt: number): void {
   if (sup.until > 0) { if (m.t > sup.until) { sup.until = 0; sup.run = 0; } return; }
   if (sp < 40) { sup.still += dt; if (sup.still > T.super.still) sup.run = 0; return; }
   sup.still = 0; sup.run += sp * dt;
-  if (sup.run >= T.super.at && Math.abs(goalX(p.team) - p.x) <= T.super.range) {
+  if (sup.run >= T.super.at * ((m.fury?.[p.team] ?? 0) > m.t ? T.fury.superAt : 1) && Math.abs(goalX(p.team) - p.x) <= T.super.range) {
     const easy = p.control === 'human' && p.controls === 'easy';
     sup.until = m.t + (easy ? T.super.easyWindow : T.super.window);
     emit(m, 'superready', p.x, p.y, 0, p.id);
@@ -109,11 +109,11 @@ export function trackSuper(m: Match, p: Player, dt: number): void {
 
 /** The súper patada: no cinematic, the ball flies at once along the path of the power of the shooter, knocks down whoever is in the way and,
  *  when it goes in, takes the keeper into the net with it. The result is rolled now (closer is better). */
-export function superShot(m: Match, s: Player): void {
+export function superShot(m: Match, s: Player, bonus = 0): void {
   const team = s.team, dir = attackDir(team), gx = goalX(team), b = m.ball;
   const keeper = m.players.find((q) => q.team !== team && q.role === 'gk') ?? null;
   const d = Math.abs(gx - s.x), kind = specialKind(s);
-  let p = T.super.base - T.super.fall * Math.min(1, d / T.super.range);
+  let p = T.super.base + bonus - T.super.fall * Math.min(1, d / T.super.range);
   if (team === 1 && !humanTeam(m, 1)) p *= 0.75 + 0.25 * (DIFFICULTY[m.difficulty].special / 0.5);
   if (s.control === 'human' && s.controls === 'easy') p += T.super.easyBonus;
   const outcome = m.rng.chance(Math.min(T.super.cap, p)) ? 'goal' : 'save';

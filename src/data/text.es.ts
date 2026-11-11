@@ -8,7 +8,7 @@ export const T_ES = {
   } as Record<string, string>,
   banners: { kickoff: '¡A JUGAR!', goal: '¡GOOOL!', throwin: '¡Saque de banda!', goalkick: '¡Saque de arco!', corner: '¡Córner!', freekick: '¡Tiro libre!', freekickFull: 'Apunta con el stick (arriba y abajo) y empuja hacia el arco para dar efecto. Toca Tiro, y otra vez Tiro cuando el medidor esté en verde', freekickEasy: 'Mueve la mira y toca Tiro', halftime: '¡Medio tiempo!', final: '¡Se acabó!', far: '¡Acércate más!', help: '', save: '¡Atajada!', post: '¡Al palo!' },
   hud: { half1: '1T', half2: '2T', pos: { gk: 'POR', def: 'DEF', mid: 'MED', fwd: 'DEL' } as Record<string, string> },
-  hints: { star: '¡Especial listo!' },
+  hints: { star: '¡Especial listo!', mash: '¡Aprieta los botones para levantarte!', fury: '¡SANGRE CALIENTE!', furyRival: '¡Los rivales se encienden!' },
   result: {
     title: '¡Fin del partido!', win: '¡Qué partidazo, ganaron!', draw: '¡Empate! ¡Qué partidazo!', lose: '¡Casi casi! ¡La revancha es tuya!', again: 'Otra vez', menu: 'Menú', mvp: 'La mejor',
     goals: (n: number) => (n === 1 ? '1 gol' : `${n} goles`),

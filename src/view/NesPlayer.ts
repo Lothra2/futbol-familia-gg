@@ -26,7 +26,7 @@ export function dirOf(dx: number, dy: number, prev: number | null = null): numbe
 /** Seconds of the flight of a knocked down player (the 5 frames of `tumble` at 12 fps) and of getting up (2 frames of `fall_getup` at 8 fps). */
 const TUMBLE_T = 0.42, GETUP_T = 0.25;
 
-const FALLBACK: Record<string, string> = { super: 'shot', spin_kick: 'chilena', chilena: 'shot', air_kick: 'kick_hit', kick_hit: 'shot', jump_rise: 'jump', jump_fall: 'jump', walk: 'run', land: 'idle', trap: 'idle', run_shot: 'shot', pump: 'celebrate', sit: 'idle' };
+const FALLBACK: Record<string, string> = { super: 'shot', spin_kick: 'chilena', chilena: 'shot', air_kick: 'kick_hit', kick_hit: 'shot', jump_rise: 'jump', jump_fall: 'jump', walk: 'run', land: 'idle', trap: 'idle', run_shot: 'shot', pump: 'celebrate', sit: 'idle', laugh: 'celebrate' };
 /** What the view knows that the core does not: he has just landed from a jump or taken the ball down (seconds since), and he was running when he shot. */
 export interface AnimHint { land?: number; trap?: number; runShot?: boolean }
 /** What the player is doing, in the names of the forja atlas (the same for the family and the rivals; keepers add the keeper_ rows, Thor has his own). */
@@ -75,7 +75,9 @@ export function nesAnim(p: Player, m: Match | null, isThor: boolean, hint: AnimH
     }
     case 'special': return { name: 'super', loop: false, t };
     case 'slide': return { name: 'slide', loop: false, t };
-    case 'bump': return { name: p.act?.kind === 'hit' ? (p.act.air ? 'air_kick' : p.act.blow === 'kick' ? 'kick_hit' : 'punch') : 'tackle', loop: false, t };
+    // the laugh at a rival who is flat at his feet
+    case 'bump': if (p.act?.kind === 'taunt') return { name: 'laugh', loop: true, t };
+      return { name: p.act?.kind === 'hit' ? (p.act.air ? 'air_kick' : p.act.blow === 'kick' ? 'kick_hit' : 'punch') : 'tackle', loop: false, t };
     // the jump: up, the top, down
     case 'jump': return { name: p.vz > 70 ? 'jump_rise' : p.vz < -70 ? 'jump_fall' : 'jump', loop: false, t: p.vz > 70 ? t : 9 };
     case 'stagger': return { name: 'stagger', loop: false, t };
@@ -130,7 +132,7 @@ export class NesPlayer {
   private isThor: boolean;
   /** How tall the drawing is over the feet: 30 px in the sheets drawn in code, about 42 in the ones from pixel art. */
   private tall: number;
-  gold = false; private goldT = 0; private flashT = 0;
+  gold = false; private goldT = 0; private flashT = 0; private hotT = 0;
   /** A direction the scene imposes (the penalty shootout: the shooter from behind, the keeper facing us). */
   forceDir: number | null = null;
 
@@ -144,6 +146,8 @@ export class NesPlayer {
     this.ring = scene.add.graphics();
     this.dir = p.team === 0 ? 0 : 4;
   }
+  /** A little shake: the person is hammering the buttons to get him up. */
+  jolt(): void { this.hitT = Math.max(this.hitT, 0.08); }
   destroy(): void { this.sprite.destroy(); this.shadow.destroy(); this.mark.destroy(); this.bar.destroy(); this.ring.destroy(); }
 
   /** Which way the drawing looks: where he runs, else where he aims, else at the ball (keepers and anybody standing). */
@@ -211,6 +215,12 @@ export class NesPlayer {
     const flash = !!m && !!p.sup && p.sup.until > 0 && m.t <= p.sup.until && m.ball.owner === p.id;
     if (flash) { this.flashT += dt; this.sprite.setTint(Math.floor(this.flashT * 14) % 2 ? 0xffffff : 0xffe45c); if (this.fx && Math.floor(this.flashT * 10) !== Math.floor((this.flashT - dt) * 10)) this.fx.sparkle(x + (Math.random() - 0.5) * 18, y - 8 - Math.random() * 24); }
     else if (this.flashT > 0) { this.flashT = 0; this.sprite.clearTint(); }
+    // sangre caliente: the whole team burns red, with steam off their heads
+    const hot = !!m && (m.fury?.[p.team] ?? 0) > m.t && !flash && m.phase !== 'goal';
+    if (hot) {
+      this.hotT += dt; this.sprite.setTint(Math.floor(this.hotT * 9) % 2 ? 0xff8f6e : 0xffd2b8);
+      if (this.fx && Math.floor(this.hotT * 5) !== Math.floor((this.hotT - dt) * 5)) this.fx.puff(x + (Math.random() - 0.5) * 8, y - this.tall + 4, 0, 1);
+    } else if (this.hotT > 0) { this.hotT = 0; this.sprite.clearTint(); }
     if (this.gold && p.state === 'celebrate') {
       this.goldT += dt;
       this.sprite.setTint(Math.sin(this.goldT * 14) > 0 ? 0xfff3b0 : 0xffd447);

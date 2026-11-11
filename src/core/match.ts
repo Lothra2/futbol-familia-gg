@@ -15,6 +15,7 @@ import { applyRubber } from './ai/difficulty';
 import { updateControl } from './control';
 import { stepFlight, superOpen, superShot, trackSuper, trySpecials, updateBar } from './specials';
 import { stepPenalties } from './penalties';
+import { aiMindsHazards, layoutHazards, stepHazards, type World } from './hazards';
 import type { ControlMode, DifficultyId, Match, Player, Strategy, Team, Weather } from './state';
 
 export interface HumanSeat { team: Team; slot: number; humanSlot: number; controls: ControlMode }
@@ -33,6 +34,8 @@ export interface MatchOptions {
   training?: boolean;
   /** The date of the Cup (0 to 3): the rivals get a little faster and quicker with every kingdom (tuning.ts ARC). */
   arc?: number;
+  /** The kingdom whose pitch this is: it brings its traps (hazards.ts). Without it the pitch is clean. */
+  world?: World;
   /** Tests: start straight in open play with the ball in the middle. */
   skipKickoff?: boolean;
 }
@@ -61,7 +64,7 @@ export function createMatch(o: MatchOptions = {}): Match {
     t: 0, tick: 0, rng: new Rng(o.seed ?? 1), phase: 'kickoff', phaseT: 0, half: 1, clock: 0, halfLength: o.halfLength ?? 90, graceT: 0,
     score: [0, 0], firstKick: o.firstKick ?? 0, restart: null, players: [], ball: newBall(), events: [], nextId: 1,
     ai: o.ai ?? 'brain', difficulty: o.difficulty ?? 'normales', lastPass: null, lastGoal: null,
-    humans: [], hin: [null, null], bar: [0, 0], special: null, flight: null, knockout: o.knockout ?? false, training: o.training ?? false, golden: false, pen: null, penWinner: null, cine: o.cine ?? 'full', specialsUsed: [0, 0],
+    humans: [], hin: [null, null], bar: [0, 0], fury: [0, 0], hazards: o.world && !o.training ? layoutHazards(o.world) : [], special: null, flight: null, knockout: o.knockout ?? false, training: o.training ?? false, golden: false, pen: null, penWinner: null, cine: o.cine ?? 'full', specialsUsed: [0, 0],
     stats: { goals: [0, 0], shots: [0, 0], saves: [0, 0], specials: [0, 0] }, form: o.formation ?? ['2-1-2', '2-1-2'], weather: o.weather ?? 'sol', strat: o.strategy ?? { atk: 'mixto', def: 'mixto' }, data: { arc: Math.max(0, Math.min(3, o.arc ?? 0)) },
   };
   for (const [team, kind] of [[0, o.home ?? 'family'], [1, o.away ?? 'dragon']] as [Team, TeamKind][]) {
@@ -98,7 +101,7 @@ export function step(m: Match, dt: number = DT): void {
   if (m.phase !== 'over') {
     if (m.phase !== 'cinematic') {
       if (m.ai === 'dumb') for (const p of m.players) { if (p.control === 'ai') p.input = dumbThink(m, p); }
-      else if (m.ai === 'brain') for (const p of m.players) { if (p.control === 'ai') p.input = aiInput(m, p); }
+      else if (m.ai === 'brain') for (const p of m.players) { if (p.control === 'ai') { p.input = aiInput(m, p); if (m.hazards.length) aiMindsHazards(m, p, p.input); } }
       if (m.training) for (const p of m.players) if (p.team === 1 && p.role !== 'gk') p.input = emptyInput();
       if (m.tick % 30 === 0) applyRubber(m);
       trySpecials(m);
@@ -108,6 +111,7 @@ export function step(m: Match, dt: number = DT): void {
     }
     stepFlight(m, dt);
     const live = movesIn(m);
+    stepHazards(m, dt);
     const takerId = m.restart && (m.phase === 'restart' || m.phase === 'kickoff') ? m.restart.taker : -1;
     for (const p of m.players) updatePlayer(m, p, dt, live && p.id !== takerId);
     separate(m, dt);

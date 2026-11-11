@@ -2,6 +2,7 @@ import type { Rng } from './rng';
 import type { FormationId } from './field';
 import type { CharId, InputFrame, MatchEvent, Species } from './types';
 import type { Cele } from './celebrate';
+import type { Hazard } from './hazards';
 
 export type Team = 0 | 1;
 export type Role = 'gk' | 'def' | 'mid' | 'fwd';
@@ -27,7 +28,9 @@ export interface KickPlan {
   jumped?: boolean;
 }
 export interface Act {
-  kind: 'kick' | 'slide' | 'bump' | 'stagger' | 'tumble' | 'dizzy' | 'getup' | 'steal' | 'dive' | 'hit';
+  kind: 'kick' | 'slide' | 'bump' | 'stagger' | 'tumble' | 'dizzy' | 'getup' | 'steal' | 'dive' | 'hit' | 'taunt';
+  /** A fall: somebody has already laughed at him (the bar is charged once per fall). */
+  taunted?: boolean;
   /** A hit: a punch or a kick (they take turns). `air`: the flying kick of a player who jumped, it lands on whoever it meets before he comes down. */
   blow?: 'punch' | 'kick'; air?: boolean;
   t: number; dur: number; contact?: number; plan?: KickPlan; done?: boolean; dx?: number; dy?: number; sub?: KickKind;
@@ -62,6 +65,8 @@ export interface Player {
   hits?: { n: number; t: number };
   /** The last blow thrown (punch and kick take turns). */
   blow?: 'punch' | 'kick';
+  /** The traps of the pitch (hazards.ts): how much the mud slows him this step (1 = not at all) and until when no trap gets him again. */
+  mud?: number; hazT?: number;
   /** His part in the celebration of a goal (celebrate.ts). */
   cele?: Cele | null;
 }
@@ -72,6 +77,8 @@ export interface AIMind {
   threat: boolean; rolled: boolean; armedAtThreat: number; diveT: number; specialAt: number; goalDist: number; wasWanting: boolean; thinkT: number; pathLen: number;
   /** The keeper: when he may go out at the feet of a carrier again, whether he goes at this carrier, and whether he goes for this high ball (each decided once). */
   rushCd?: number; rushOn?: { id: number; t: number; go: boolean }; claimOn?: { t: number; go: boolean };
+  /** The puddle he is coming to, and whether he remembered to stop sprinting before it (hazards.ts). */
+  puddle?: { i: number; t: number; careful: boolean };
   /** A run into space behind the last defender (mejora 2): until when, and where to. */
   runUntil?: number; runX?: number; runY?: number;
 }
@@ -126,6 +133,10 @@ export interface Match {
   ai: 'dumb' | 'none' | 'brain'; difficulty: DifficultyId;
   humans: HumanCtl[]; hin: (InputFrame | null)[];
   bar: [number, number]; special: SpecialState | null; flight: Flight | null;
+  /** The traps that lie on this pitch (hazards.ts). None in a practice, or when they are turned off. */
+  hazards: Hazard[];
+  /** Sangre caliente: until when (match time) each team burns. */
+  fury: [number, number];
   /** A knockout match (the Cup): a tie goes to a golden goal and then to penalties. */
   knockout: boolean; training: boolean; golden: boolean; pen: Pen | null; penWinner: Team | null; cine: 'full' | 'short' | 'off'; specialsUsed: [number, number];
   lastPass: { from: number; to: number; t: number; team: Team; done?: boolean } | null;

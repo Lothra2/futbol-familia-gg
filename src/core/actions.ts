@@ -2,7 +2,7 @@ import { T } from './tuning';
 import { ESCAPE, GOAL, MID, PITCH, SY, attackDir, goalX, ownGoalX } from './field';
 import { lobLaunch, speedToReach } from './ball';
 import { emit } from './events';
-import { addBar } from './specials';
+import { addBar, superShot } from './specials';
 import { shotQuality } from './chance';
 import { ballAt } from './ai/predict';
 import type { Act, KickKind, KickPlan, Match, Player } from './state';
@@ -17,6 +17,8 @@ export const playerById = (m: Match, id: number | null): Player | undefined => (
 const mates = (m: Match, p: Player): Player[] => m.players.filter((q) => q.team === p.team && q.id !== p.id);
 const foes = (m: Match, p: Player): Player[] => m.players.filter((q) => q.team !== p.team);
 const LOCK = new Set(['stagger', 'tumble', 'dizzy', 'getup', 'hold', 'dive', 'special']);
+/** Sangre caliente: is this team burning right now? */
+export const furyOn = (m: Match, team: number): boolean => (m.fury?.[team] ?? 0) > m.t;
 
 // ------------------------------------------------------------------------------------------------ touches and acts
 export function setTouch(m: Match, p: Player): void {
@@ -90,7 +92,7 @@ function launch(m: Match, p: Player, plan: KickPlan): void {
   else if (plan.kind === 'chip') { const l = lobLaunch(Math.min(d, T.lobMaxD)); v = l.v; vz = l.vz; }
   else if (plan.kind === 'restart' && plan.lob) { const l = lobLaunch(Math.min(d, T.lobMaxD)); v = l.v; vz = l.vz; }
   else if (plan.kind === 'restart') { v = clamp(speedToReach(d, T.passEnd), T.passMin, T.passMax); vz = 0; }
-  else v = Math.min(T.kickCap, plan.speed * (plan.assist ? 1.1 : 1) * p.stats.power);
+  else v = Math.min(T.kickCap, plan.speed * (plan.assist ? 1.1 : 1) * p.stats.power * (furyOn(m, p.team) ? T.fury.power : 1));
   if ((plan.kind === 'pass' || plan.kind === 'chip') && !plan.vaselina) { m.lastPass = { from: p.id, to: plan.target ?? -1, t: m.t, team: p.team }; p.stats2.passes++; if (plan.kind === 'chip') p.stats2.chips++; }
   if (plan.kind === 'shot' || plan.kind === 'spin' || plan.kind === 'volley' || plan.kind === 'chilena' || plan.vaselina || (plan.kind === 'header' && plan.target === undefined)) {
     p.stats2.shots++;
@@ -307,7 +309,7 @@ function slideContacts(m: Match, p: Player, a: Act): void {
 export function knockDown(m: Match, o: Player, from: Player | null, kx: number, ky: number, vz: number, extra = 1): void {
   const h = (o.hits ??= { n: 0, t: -99 });
   h.n = m.t - h.t < T.hit.combo ? h.n + 1 : 1; h.t = m.t;
-  const ko = h.n >= T.hit.koAfter, dur = (ko ? T.hit.ko : T.hit.down) * extra;
+  const ko = h.n >= T.hit.koAfter, dur = (ko ? T.hit.ko : T.hit.down) * extra * (furyOn(m, o.team) ? T.fury.down : 1);
   if (ko) h.n = 0;
   startTumble(m, o, dur, kx, ky, vz);
   o.immuneT = dur + 0.4;   // nobody hits a player who is down
@@ -340,7 +342,7 @@ export function tryHit(m: Match, p: Player, slack = false): boolean {
   begin(p, { kind: 'hit', t: 0, dur: T.hit.self, blow: p.blow }, 'bump');
   const easyCarrier = had && o.control === 'human' && o.controls === 'easy';
   const contained = (p.containT ?? 0) >= T.contain.after ? T.contain.stealBonus : 1;
-  if (m.rng.chance(Math.min(0.97, (easyCarrier ? T.hit.easyP : T.hit.p) * contained))) {
+  if (m.rng.chance(Math.min(0.97, (easyCarrier ? T.hit.easyP : T.hit.p) * contained * (furyOn(m, p.team) ? T.fury.hit : 1)))) {
     landBlow(m, p, o, contained > 1);
   } else {
     p.act = null; startStagger(m, p, T.steal.fail);
@@ -378,6 +380,26 @@ function flyKickTarget(m: Match, p: Player): Player | null {
     if (fx >= -4 && fx <= T.flyKick.reach && Math.abs(o.y - p.y) <= T.flyKick.dy) return o;
   }
   return null;
+}
+
+/** The rival flat on the ground next to this player, to laugh at. */
+export function downedNear(m: Match, p: Player): Player | null {
+  for (const o of foes(m, p)) {
+    if (o.state !== 'tumble' || o.z > 2 || !o.act || o.act.t < 0.5) continue;
+    if (Math.abs(o.x - p.x) <= T.taunt.reach && Math.abs(o.y - p.y) <= T.taunt.dy) return o;
+  }
+  return null;
+}
+/** La burla (Kunio does it all the time): he laughs at the rival he has at his feet. Returns whether he did. */
+export function startTaunt(m: Match, p: Player): boolean {
+  const o = p.cd.steal > 0 || p.z > 0 || m.phase !== 'play' ? null : downedNear(m, p);
+  if (!o) return false;
+  p.cd.steal = T.taunt.cd;
+  if (Math.abs(o.x - p.x) > 2) { p.facing = o.x > p.x ? 1 : -1; p.dirX = p.facing; p.dirY = 0; }
+  begin(p, { kind: 'taunt', t: 0, dur: T.taunt.dur }, 'bump');
+  if (o.act && !o.act.taunted) { o.act.taunted = true; addBar(m, p.team, T.taunt.bar); }
+  emit(m, 'taunt', p.x, p.y, 0, p.id, o.id);
+  return true;
 }
 
 /** The old names: a steal is a hit now. */
@@ -433,7 +455,7 @@ export function handleInput(m: Match, p: Player, dt: number): void {
       return;
     }
     if (zone) { const a = planAerial(m, p, zone, false); startKick(m, p, a.plan, a.prep, a.floor); return; }
-    tryFrontSteal(m, p);
+    if (!tryFrontSteal(m, p)) startTaunt(m, p);
     return;
   }
 
@@ -487,8 +509,9 @@ export function handleInput(m: Match, p: Player, dt: number): void {
     if (p.control === 'ai') { if (inp.slide) startSlide(m, p); else tryHit(m, p); }
     else {
       // "close hits, far slides" (Nekketsu): a rival right in front gets a punch or a kick, anywhere else it is a slide
+      // and with a rival flat at his feet he laughs at him instead
       if (hitTarget(m, p, true)) tryHit(m, p, true);
-      else startSlide(m, p);
+      else if (!startTaunt(m, p)) startSlide(m, p);
     }
   }
 }
@@ -545,6 +568,14 @@ export function updateAct(m: Match, p: Player, dt: number): { moveScale: number;
   return { moveScale, override };
 }
 
+/** Is the ball this player strikes a pass of a mate that nobody else has touched, close enough to the goal for a power shot? (The one the
+ *  pass was for takes a high ball down as it reaches him: it still counts when he had already started to strike it.) */
+export function comboReady(m: Match, p: Player): boolean {
+  const lp = m.lastPass, b = m.ball;
+  if (!lp || lp.team !== p.team || lp.from === p.id || m.t - lp.t >= 3 || p.role === 'gk' || Math.abs(goalX(p.team) - p.x) > T.super.range) return false;
+  return b.lastTouch.player === lp.from || (b.lastTouch.player === p.id && b.prevTouch.player === lp.from && m.t - b.lastTouch.t < 0.6);
+}
+
 /** Contact of a kick. If the ball is no longer there the kick is a whiff. */
 function resolveKick(m: Match, p: Player, plan: KickPlan): void {
   const b = m.ball;
@@ -556,6 +587,12 @@ function resolveKick(m: Match, p: Player, plan: KickPlan): void {
   }
   if (!ok && plan.kind === 'restart' && b.state === 'dead') ok = true;
   if (!ok) { emit(m, 'whiff', p.x, p.y, p.z, p.id); return; }
+  // el remate combinado (Nekketsu): a mate's pass struck in the air at goal is the power shot of whoever strikes it
+  if (plan.air && plan.target === undefined && (plan.kind === 'header' || plan.kind === 'volley' || plan.kind === 'chilena') && comboReady(m, p)) {
+    emit(m, 'combo', p.x, p.y, p.z, p.id);
+    superShot(m, p, T.combo.bonus);
+    return;
+  }
   launch(m, p, plan);
 }
 

@@ -8,6 +8,7 @@ import { NesPlayer, type NesMeta } from '../NesPlayer';
 import { COLORS, J_COLORS } from '../colors';
 import type { WorldId } from '../worlds';
 import { BallView } from '../BallView';
+import { HazardView } from '../HazardView';
 import { Fx } from '../Fx';
 import { WeatherView } from '../WeatherView';
 import { setView, wx, sy } from '../../core/proj';
@@ -38,6 +39,7 @@ export class MatchScene extends Phaser.Scene {
   private stadium!: TopPitch;
   private views: NesPlayer[] = [];
   private ballView!: BallView;
+  private haz!: HazardView;
   private fx!: Fx;
   private weather!: WeatherView; private lastCam = { x: 0, y: 0 };
   cine!: Cinematic;
@@ -86,6 +88,7 @@ export class MatchScene extends Phaser.Scene {
       this.views.push(v);
     }
     this.ballView = new BallView(this, m.ball);
+    this.haz = new HazardView(this, m);
     this.cine = new Cinematic(this);
     this.aim = new Aim(this);
     this.pen = new PenView(this, [T_ES.teams.family, T_ES.teams[this.cfg.rival] ?? '']);
@@ -153,6 +156,14 @@ export class MatchScene extends Phaser.Scene {
         case 'post': case 'bar': if (this.ctl.m.phase !== 'penalties') this.hud.banner(B.post, 600); shakeCamera(this.cam, 0.1); this.stadium.gasp(); this.ballView.wobble(); break;
         case 'deflect': this.ballView.wobble(); break;
         case 'thud': shakeCamera(this.cam, 0.06); break;
+        case 'combo': this.pow(e.x, e.y, '¡COMBO!', '#7be3ff'); break;
+        case 'slip': this.pow(e.x, e.y, '¡SPLASH!', '#7be3ff'); break;
+        case 'geyser': if (e.v !== 2) this.pow(e.x, e.y, '¡AY!', '#ffb030'); shakeCamera(this.cam, 0.08); break;
+        case 'boing': { const v = this.ctl.m.players.find((q) => q.id === e.who); if (v?.control === 'human') this.pow(e.x, e.y, '¡BOING!', '#ffffff'); break; }
+        case 'taunt': this.pow(e.x, e.y, '¡JA JA!', '#ffffff'); break;
+        case 'fury': this.hud.hint(e.v === 0 ? T_ES.hints.fury : T_ES.hints.furyRival, 3200); this.stadium.gasp(); break;
+        case 'down': case 'ko': { const v = this.ctl.m.players.find((q) => q.id === e.who); if (v?.control === 'human') this.hud.hint(T_ES.hints.mash, 1300); break; }
+        case 'mash': { const v = this.views.find((q) => q.p.id === e.who); v?.jolt(); break; }
         case 'smother': { const k = this.ctl.m.players.find((q) => q.id === e.who); this.pow(e.x, e.y, k?.art === 'thor' ? '¡MÍA!' : '¡FUERA!', '#ffe45c'); break; }
         case 'spinkick': this.pow(e.x, e.y, '¡GIRO!', '#ffe45c'); shakeCamera(this.cam, 0.12); break;
         case 'starfull': if (e.v === 0) this.hud.hint(T_ES.hints.star, 1500); break;
@@ -193,6 +204,7 @@ export class MatchScene extends Phaser.Scene {
       this.stadium.update(dt);
       this.weather.update(dt, this.scale.width, this.scale.height, this.cam.x - this.lastCam.x, this.cam.y - this.lastCam.y); this.lastCam = { x: this.cam.x, y: this.cam.y };
       this.ballView.update(m.flight ? m.flight.kind : null, m.t);
+      this.haz.update(this.time.now / 1000);
       this.updateCine(m, dt);
       if (m.phase === 'play') this.rec.record(m, dt);
       if (this.prevPhase === 'goal' && m.phase !== 'goal' && this.pending) {

@@ -36,6 +36,30 @@ export const T = Object.freeze({
   carryOff: { walk: 8, run: 11, sprint: 14, easyWalk: 6, easyRun: 8, easySprint: 10 },
   ctrl: { dx: 9, dy: 9, z: 16, zTarget: 36, maxSpeed: 360, easyDx: 14, easyDy: 14, easyMaxSpeed: 480 },
   deflectVx: -0.35, deflectVy: 110, immune: 0.35,
+  /** Machacar (Nekketsu): every button a person presses while his player is down takes `cut` s off the time he stays there, never under `min` s in all. */
+  mash: { cut: 0.16, min: 0.78 },
+  /** La burla: Tiro next to a rival who is flat on the ground (within `reach` px, `dy` to the sides). The player laughs at him for `dur` s; the
+   *  first laugh at each fall charges the star bar `bar`. */
+  taunt: { reach: 26, dy: 16, dur: 0.75, bar: 4, cd: 0.6 },
+  /** El remate combinado: a mate's pass struck in the air at goal (a header, a volley, an overhead kick) is the power shot of whoever strikes it,
+   *  with `bonus` more chance than one off the dribble. */
+  combo: { bonus: 0.15 },
+  /** Sangre caliente (that is what Nekketsu means): a team that concedes and is `gap` goals behind burns for `dur` s. Its players run and
+   *  shoot harder, hit more often, get up sooner and need less dribble for the súper patada. */
+  fury: { gap: 2, dur: 20, speed: 1.12, power: 1.12, hit: 1.25, down: 0.7, superAt: 0.6 },
+  /** Las trampas de cada cancha (hazards.ts). `size`: half the width and the depth of each on the ground. A puddle makes whoever sprints across
+   *  it slip: he falls for `dur` s keeping `keep` of his speed, and the ball loses speed in it (`drag` per s).
+   *  A geyser sleeps, smokes `warn` s and blows `blow` s every `period` s; whoever is on it goes up with `vz` and is down `dur` s; the ball
+   *  goes up with `ball`. Mud slows everybody to `slow` of his speed (`easy` for a child) and stops the ball (`drag`). A cloud throws
+   *  whoever steps on it up with `vz` (the ball with `ball`). After a trap gets a player he is safe from them for `cd` s. */
+  haz: {
+    size: { charco: [22, 12], geiser: [13, 9], barro: [40, 22], nube: [15, 9] } as Record<string, readonly number[]>,
+    slip: { dur: 0.9, keep: 0.9, vz: 110, drag: 2.6 },
+    geyser: { period: 7, warn: 0.9, blow: 0.8, vz: 270, dur: 1.0, ball: 300 },
+    mud: { slow: 0.6, easy: 0.82, drag: 3.2 },
+    cloud: { vz: 300, ball: 240, cd: 0.5 },
+    cd: 1.6,
+  },
   /** El balonazo (Nekketsu): a ball of a rival faster than `v` that hits a field player he cannot control knocks him down (`vz` lifts the ball). */
   ballHit: { v: 430, vz: 110 },
   // ---- kicks (6.4)
@@ -119,11 +143,11 @@ export const KEEPERS = {
   buho: { reaction: 0.24, reach: 50, skill: 0.70 }, dragon: { reaction: 0.22, reach: 48, skill: 0.75 },
 } as const;
 /** How the family mates (always AI-controlled) play. They do not change with the difficulty of the rivals. */
-export const MATES = { gkRush: 1, gkClaim: 0.9, jumpShot: 0.25, speed: 0.92, reaction: 0.30, shotErr: 15, slideHuman: 0, press: 1, keeperSkill: 1, keeperReact: 0, star: 1, special: 0.5 } as const;
+export const MATES = { puddle: 0.75, gkRush: 1, gkClaim: 0.9, jumpShot: 0.25, speed: 0.92, reaction: 0.30, shotErr: 15, slideHuman: 0, press: 1, keeperSkill: 1, keeperReact: 0, star: 1, special: 0.5 } as const;
 export const DIFFICULTY = {
-  tranquilos: { gkRush: 0, gkClaim: 0.15, jumpShot: 0.1, punch: 0.05, superTake: 0.15, speed: 0.70, reaction: 0.55, shotErr: 24, slideHuman: 0, press: 1, keeperSkill: 0.72, keeperReact: 0.12, star: 0.5, special: 0.35 },
-  normales: { gkRush: 0.5, gkClaim: 0.4, jumpShot: 0.25, punch: 0.3, superTake: 0.7, speed: 1.0, reaction: 0.25, shotErr: 14, slideHuman: 0.25, press: 1, keeperSkill: 1.2, keeperReact: 0.02, star: 0.75, special: 0.50 },
-  campeones: { gkRush: 0.85, gkClaim: 0.6, jumpShot: 0.35, punch: 0.5, superTake: 0.75, speed: 1.00, reaction: 0.18, shotErr: 9, slideHuman: 0.5, press: 2, keeperSkill: 1.3, keeperReact: -0.05, star: 1.0, special: 0.60 },
+  tranquilos: { puddle: 0.5, gkRush: 0, gkClaim: 0.15, jumpShot: 0.1, punch: 0.05, superTake: 0.15, speed: 0.70, reaction: 0.55, shotErr: 24, slideHuman: 0, press: 1, keeperSkill: 0.72, keeperReact: 0.12, star: 0.5, special: 0.35 },
+  normales: { puddle: 0.75, gkRush: 0.5, gkClaim: 0.4, jumpShot: 0.25, punch: 0.3, superTake: 0.7, speed: 1.0, reaction: 0.25, shotErr: 14, slideHuman: 0.25, press: 1, keeperSkill: 1.2, keeperReact: 0.02, star: 0.75, special: 0.50 },
+  campeones: { puddle: 0.9, gkRush: 0.85, gkClaim: 0.6, jumpShot: 0.35, punch: 0.5, superTake: 0.75, speed: 1.00, reaction: 0.18, shotErr: 9, slideHuman: 0.5, press: 2, keeperSkill: 1.3, keeperReact: -0.05, star: 1.0, special: 0.60 },
 } as const;
 
 /** How each kingdom plays (mejora 5). The rivals of a species follow their style on top of the difficulty: `press` more players press the carrier, `steal` multiplies

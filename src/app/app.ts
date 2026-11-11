@@ -92,7 +92,7 @@ export class App {
     }
     this.coachNext = coach;
     const cfg = this.test ? { ...cfg0, ...this.test } : { ...cfg0 };
-    const st = this.store.data.settings; cfg.reducedMotion = st.reducedMotion; cfg.narrator = st.narrator && !st.muted; cfg.narratorVolume = st.sfx; cfg.replay = st.replay; cfg.fastForward = cfg.ff > 1;
+    const st = this.store.data.settings; cfg.reducedMotion = st.reducedMotion; cfg.narrator = st.narrator && !st.muted; cfg.narratorVolume = st.sfx; cfg.replay = st.replay; cfg.traps = st.traps; cfg.fastForward = cfg.ff > 1;
     const ch = this.store.data.characters;
     cfg.outfits = Object.fromEntries(Object.entries(ch).map(([k, v]) => [k, v.outfit])); cfg.levels = Object.fromEntries(Object.entries(ch).map(([k, v]) => [k, v.level]));
     this.cfg = cfg;

@@ -108,6 +108,11 @@ function endHalf(m: Match): void {
 function goalScored(m: Match, team: Team): void {
   const b = m.ball;
   m.score[team]++; m.stats.goals[team]++;
+  // sangre caliente: the team that concedes and is now two or more behind burns for a while (the rivals of Tranquilos never do)
+  const loser = other(team);
+  if (m.score[team] - m.score[loser] >= T.fury.gap && !m.training && (loser === 0 || m.difficulty !== 'tranquilos' || m.players.some((q) => q.team === 1 && q.control === 'human'))) {
+    m.fury[loser] = m.t + T.fury.dur + T.goalT; emit(m, 'fury', b.x, b.y, 0, undefined, loser);
+  }
   const last = playerById(m, b.lastTouch.player);
   const scorer = last ? last.id : null;
   let assist: number | null = null;

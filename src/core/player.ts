@@ -2,7 +2,7 @@ import { T } from './tuning';
 import { ESCAPE, MID, ownGoalX } from './field';
 import { emptyInput } from './types';
 import type { Match, Player } from './state';
-import { handleInput, playerById, updateAct } from './actions';
+import { furyOn, handleInput, playerById, updateAct } from './actions';
 import { emit } from './events';
 
 const LOCKED = new Set(['stagger', 'tumble', 'dizzy', 'getup', 'celebrate', 'sad', 'hold', 'special']);
@@ -32,6 +32,12 @@ export function updatePlayer(m: Match, p: Player, dt: number, live: boolean): vo
     p.noSprintT += dt;
     if (p.noSprintT >= T.staminaWait) p.stamina = Math.min(T.staminaMax, p.stamina + T.staminaRecover * dt);
     if (p.sprintLock && p.stamina >= T.staminaUnlock) p.sprintLock = false;
+  }
+
+  // machacar (Nekketsu): a person whose player is down gets him up sooner by hammering the buttons
+  if (live && p.control === 'human' && p.act?.kind === 'tumble' && (inp.shootPressed || inp.passPressed || inp.jumpPressed || inp.specialPressed)) {
+    const a = p.act, min = Math.max(a.t + T.getupFloor, T.mash.min);
+    if (a.dur > min) { a.dur = Math.max(min, a.dur - T.mash.cut); p.immuneT = Math.max(0, a.dur - a.t) + 0.4; emit(m, 'mash', p.x, p.y, 0, p.id); }
   }
 
   // actions in progress (kicks, slides, falls) drive the player; otherwise input may start one
@@ -78,7 +84,7 @@ export function updatePlayer(m: Match, p: Player, dt: number, live: boolean): vo
     const mag = Math.hypot(mx, my);
     if (mag > 1) { mx /= mag; my /= mag; }
     sprinting = wantSprint && mag > 0.2;
-    const speed = p.stats.run * (sprinting ? p.stats.sprint : 1) * (hasBall(m, p) ? T.carrySpeed * (jumping ? T.jump.carry : 1) : 1) * p.speedMult * moveScale * (containing ? T.contain.speed : 1) * (p.slowT ? T.contain.slow : 1);
+    const speed = p.stats.run * (sprinting ? p.stats.sprint : 1) * (hasBall(m, p) ? T.carrySpeed * (jumping ? T.jump.carry : 1) : 1) * p.speedMult * moveScale * (containing ? T.contain.speed : 1) * (p.slowT ? T.contain.slow : 1) * (furyOn(m, p.team) ? T.fury.speed : 1) * (p.mud ?? 1);
     tvx = mx * speed; tvy = my * speed * T.yFactor;
     if (Math.abs(mx) > 0.2) p.facing = mx > 0 ? 1 : -1;
     if (mag > 0.2) { const n = Math.hypot(mx, my); p.dirX = mx / n; p.dirY = my / n; }

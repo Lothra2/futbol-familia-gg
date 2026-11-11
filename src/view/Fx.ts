@@ -35,6 +35,9 @@ export class Fx {
     const x = wx(e.x, e.y), y = sy(e.y, e.z), gy = sy(e.y);
     switch (e.k) {
       case 'slide': case 'bump': for (let i = 0; i < 4; i++) this.spawn('dust', x + (rnd() - 0.5) * 8, gy - 2, (rnd() - 0.5) * 40, -10 - rnd() * 20, 20, 0.35); break;
+      case 'slip': for (let i = 0; i < 9; i++) { const a = (i / 9) * Math.PI; this.spawn('dust', x + (rnd() - 0.5) * 10, gy - 2, Math.cos(a) * 70, -30 - rnd() * 60, 220, 0.5, 0x7bc8ff); } break;
+      case 'geyser': for (let i = 0; i < 8; i++) { const a = (i / 8) * Math.PI * 2; this.spawn('spark', x, gy - 8, Math.cos(a) * 70, Math.sin(a) * 40 - 60, 200, 0.45); } break;
+      case 'boing': for (let i = 0; i < 5; i++) this.spawn('dust', x + (rnd() - 0.5) * 16, gy - 2, (rnd() - 0.5) * 60, -14 - rnd() * 20, 20, 0.35, 0xffffff); break;
       case 'thud': for (let i = 0; i < 6; i++) { const a = (i / 6) * Math.PI * 2; this.spawn('dust', x, gy - 2, Math.cos(a) * 46, Math.sin(a) * 16 - 8, 20, 0.34); } break;
       case 'celemove': for (let i = 0; i < 8; i++) { const a = (i / 8) * Math.PI * 2; this.spawn('spark', x, gy - 16, Math.cos(a) * 80, Math.sin(a) * 50 - 30, 120, 0.4); } break;
       case 'jump': for (let i = 0; i < 3; i++) this.spawn('dust', x + (rnd() - 0.5) * 10, gy - 1, (rnd() - 0.5) * 50, -6 - rnd() * 10, 16, 0.3); break;
