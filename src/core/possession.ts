@@ -2,7 +2,7 @@ import { T } from './tuning';
 import { ESCAPE, ownGoalX } from './field';
 import { addBar } from './specials';
 import { emit } from './events';
-import { checkBump, dropBall, playerById, setTouch } from './actions';
+import { checkBump, dropBall, knockDown, playerById, setTouch } from './actions';
 import type { Match, Player } from './state';
 
 const NO_CONTROL = new Set(['stagger', 'tumble', 'dizzy', 'getup', 'celebrate', 'sad', 'slide', 'dive', 'hold', 'special']);
@@ -16,7 +16,9 @@ export function updatePossession(m: Match, dt: number): void {
     const k = playerById(m, b.owner);
     if (!k) { b.state = 'free'; b.owner = null; return; }
     k.holdT += dt;
-    b.x = k.x + k.dirX * 6; b.y = k.y; b.z = 14; b.vx = b.vy = b.vz = 0;
+    // in the hands of a keeper, or in the mouth of Thor (lower and further in front of him)
+    const dog = k.charId === 'thor';
+    b.x = k.x + k.dirX * (dog ? 13 : 6); b.y = k.y; b.z = dog ? 6 : 14; b.vx = b.vy = b.vz = 0;
     return;
   }
   if (m.phase === 'play') for (const p of m.players) checkBump(m, p);
@@ -74,6 +76,12 @@ function tryControl(m: Match): void {
   if (!best) return;
   const sp = Math.hypot(b.vx, b.vy);
   if (sp > (isEasy(best) ? T.ctrl.easyMaxSpeed : T.ctrl.maxSpeed)) {
+    // el balonazo (Nekketsu): a really hard ball of a rival does not just bounce off him, it takes him off his feet
+    if (sp >= T.ballHit.v && best.role !== 'gk' && b.lastTouch.team !== null && b.lastTouch.team !== best.team && best.immuneT <= 0) {
+      knockDown(m, best, playerById(m, b.lastTouch.player) ?? null, (b.vx / sp) * T.fly.steal, (b.vy / sp) * T.fly.steal, T.fly.stealVz);
+      b.vz = Math.max(b.vz, T.ballHit.vz);
+      emit(m, 'superhit', best.x, best.y, 0, best.id);
+    }
     // too fast to control: it bounces off the body
     b.vx *= T.deflectVx; b.vy = m.rng.range(-T.deflectVy, T.deflectVy);
     setTouch(m, best); best.noControlT = 0.15;

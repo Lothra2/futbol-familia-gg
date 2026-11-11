@@ -44,6 +44,14 @@ export const startGetup = (p: Player, dur: number): void => begin(p, { kind: 'ge
 /** A keeper stretches towards y. The save itself is rolled by ai/keeper.ts; the dive moves him and plays the pose. */
 export const startDive = (m: Match, p: Player, ty: number): void => { begin(p, { kind: 'dive', t: 0, dur: T.gk.diveT, dy: ty }, 'dive'); emit(m, 'dive', p.x, p.y, 0, p.id); };
 
+/** A keeper has the ball in his hands (or Thor in his mouth): it is his until he lets it go. */
+export function holdBall(m: Match, p: Player): void {
+  const b = m.ball;
+  b.state = 'held'; b.owner = p.id; b.vx = b.vy = b.vz = 0; b.spin = 0; b.inNet = false;
+  p.act = null; p.state = 'hold'; p.immuneT = 99; p.holdT = 0; p.ai.armedAt = 0; p.vx = p.vy = 0;
+  setTouch(m, p);
+}
+
 // ------------------------------------------------------------------------------------------------ launching the ball
 /** Lets the ball go with a given velocity. Everything that kicks goes through here. */
 export function releaseBall(m: Match, p: Player, vx: number, vy: number, vz: number, spin = 0, kind: string = 'kick'): void {

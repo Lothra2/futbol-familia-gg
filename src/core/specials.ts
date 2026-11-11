@@ -1,7 +1,7 @@
 import { DIFFICULTY, SPECIAL_BASE, STYLE, T } from './tuning';
 import { MID, PITCH, attackDir, goalX, ownGoalX, slotPos } from './field';
 import { emit } from './events';
-import { knockDown, playerById, setTouch, startDive, startStagger, startTumble } from './actions';
+import { holdBall, knockDown, playerById, setTouch, startDive, startStagger, startTumble } from './actions';
 import type { Flight, Match, Player, SpecialKind, Team } from './state';
 
 const KIND_FAMILY: Record<string, SpecialKind> = { sophie: 'arcoiris', alana: 'burbuja', papa: 'canonazo', mama: 'estrellas', juandi: 'relampago', thor: 'carrera' };
@@ -237,8 +237,14 @@ function endFlight(m: Match, f: Flight, s: Player): void {
   } else {
     const inward = -dir as 1 | -1;
     b.x = f.x1; b.y = f.y1; b.vx = inward * 60; b.vy = m.rng.range(-40, 40); b.vz = 80; b.inNet = false;
-    if (keeper) { keeper.noControlT = 0.3; keeper.stats2.saves++; m.stats.saves[keeper.team]++; startStagger(m, keeper, 0.3); emit(m, 'save', b.x, b.y, 0, keeper.id, 2); }
     b.lastTouch = { team: keeper ? keeper.team : null, player: keeper ? keeper.id : null, t: m.t };
+    if (keeper) {
+      keeper.stats2.saves++; m.stats.saves[keeper.team]++;
+      // now and then he does not just parry it: he keeps it (the better the keeper, the more often)
+      if (m.rng.chance((keeper.stats.keeper?.skill ?? 0.6) * T.gk.superHold)) { b.x = keeper.x + inward * 6; b.y = keeper.y; holdBall(m, keeper); }
+      else { keeper.noControlT = 0.3; startStagger(m, keeper, 0.3); }
+      emit(m, 'save', b.x, b.y, 0, keeper.id, 2);
+    }
   }
 }
 void ownGoalX;

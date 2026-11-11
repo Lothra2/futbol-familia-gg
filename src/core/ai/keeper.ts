@@ -1,10 +1,10 @@
-import { DIFFICULTY, T } from '../tuning';
+import { DIFFICULTY, MATES, T } from '../tuning';
 import { GOAL, MID, ownGoalX } from '../field';
-import { choosePass, restartKick, setTouch, startDive } from '../actions';
+import { choosePass, holdBall, restartKick, setTouch, startDive, startStagger } from '../actions';
 import { emit } from '../events';
 import { addBar } from '../specials';
 import { emptyInput, type InputFrame } from '../types';
-import { crossing } from './predict';
+import { crossing, trajectory } from './predict';
 import { rubber } from './difficulty';
 import type { Match, Player } from '../state';
 
@@ -44,9 +44,7 @@ function incoming(m: Match, p: Player): { q: number; first: boolean } | null {
 
 function catchBall(m: Match, p: Player): void {
   const b = m.ball;
-  b.state = 'held'; b.owner = p.id; b.vx = b.vy = b.vz = 0; b.spin = 0; b.inNet = false;
-  p.act = null; p.state = 'hold'; p.immuneT = 99; p.holdT = 0; p.ai.armedAt = 0; p.vx = p.vy = 0;
-  setTouch(m, p);
+  holdBall(m, p);
   p.stats2.saves++; m.stats.saves[p.team]++;
   if (p.team === 0) addBar(m, 0, T.bar.save);   // Thor's saves charge the star bar of the family
   emit(m, 'save', b.x, b.y, b.z, p.id, 1);
@@ -87,7 +85,27 @@ function tryRoll(m: Match, p: Player, K: KeeperParams, inward: 1 | -1): void {
   const speed = Math.hypot(b.vx, b.vy);
   m.data.rolls = ((m.data.rolls as number) ?? 0) + 1;
   if (invisibleHelp(m, b.lastTouch.team)) { m.data.helpUsed = true; emit(m, 'help', b.x, b.y, 0, p.id); return; }
-  if (m.rng.chance(saveChance(K, speed, b.z, Math.abs(b.y - A.diveT), incoming(m, p)?.q))) { if (speed < T.gk.catchV) catchBall(m, p); else punchBall(m, p, inward); }
+  const by = b.y;
+  if (m.rng.chance(saveChance(K, speed, b.z, Math.abs(b.y - A.diveT), incoming(m, p)?.q))) { if (speed < T.gk.catchV) catchBall(m, p); else { punchBall(m, p, inward); if (!p.act) startDive(m, p, by); } }
+  // beaten: he still throws himself at it (late), he does not stand and watch it go in
+  else if (!p.act) startDive(m, p, by);
+}
+
+/** He takes a ball that was not a shot (a cross he came for, a loose ball): it is his, nobody counts a save. */
+function claimBall(m: Match, p: Player): void {
+  holdBall(m, p);
+  emit(m, 'catch', m.ball.x, m.ball.y, m.ball.z, p.id);
+}
+
+/** The one on one: he throws himself at the feet of the carrier. With luck the ball is his; without it he is on the ground and the goal is open. */
+function smother(m: Match, p: Player, car: Player, K: KeeperParams): void {
+  const R = T.gk.rush, easy = car.control === 'human' && car.controls === 'easy';
+  p.ai.rushCd = m.t + R.cd; p.ai.rushOn = undefined;
+  if (m.rng.chance(Math.min(0.9, K.skill * (easy ? R.easyP : R.p)))) {
+    startStagger(m, car, 0.5);
+    catchBall(m, p);
+    emit(m, 'smother', p.x, p.y, 0, p.id);
+  } else { startDive(m, p, m.ball.y); emit(m, 'whiff', p.x, p.y, 0, p.id); }
 }
 
 /** The whole behaviour of a goalkeeper (always AI): position, read the shot, react, dive, catch or punch, and throw the ball back. */
@@ -128,16 +146,57 @@ export function keeperThink(m: Match, p: Player): InputFrame {
     const ty = clamp(cr!.y, GOAL.y0 - 6, GOAL.y1 + 6);
     if (m.t - A.armedAtThreat >= K.reaction + (incoming(m, p)?.first ? T.chance.firstReact : 0)) {
       const dy = ty - p.y;
-      if (Math.abs(dy) > 14 && cr!.t < 0.7) { startDive(m, p, ty); return f; }
+      if (Math.abs(dy) > T.gk.diveAt && cr!.t < T.gk.diveIn) { startDive(m, p, ty); return f; }
       if (Math.abs(dy) > 2) f.my = Math.sign(dy);
     }
     tryRoll(m, p, K, inward);
     return f;
   }
   A.threat = false;
-  const looseNear = b.state === 'free' && b.z < 16 && Math.hypot(b.vx, b.vy) < T.gk.looseV && Math.abs(b.x - x0) < T.gk.area && Math.abs(b.y - MID) < 84 && p.noControlT <= 0;
-  if (looseNear) { go(b.x, b.y); return f; }
-  const out = clamp(Math.abs(b.x - x0) * T.gk.out, T.gk.outMin, T.gk.outMax);
-  go(x0 + inward * out, clamp(MID + (b.y - MID) * 0.35, MID - 30, MID + 30));
+  const speed = Math.hypot(b.vx, b.vy), foes = m.players.filter((q) => q.team !== p.team && q.role !== 'gk');
+  const tries = (key: 'gkRush' | 'gkClaim'): number => (p.team === 0 ? MATES[key] : DIFFICULTY[m.difficulty][key]);
+
+  // the one on one: a rival brings the ball into the box with no defender on him, and the keeper goes out at his feet
+  const car = b.state === 'owned' ? m.players.find((q) => q.id === b.owner) : undefined;
+  if (car && car.team !== p.team && m.phase === 'play' && m.t >= (A.rushCd ?? 0) && Math.abs(car.x - x0) < T.gk.rush.zone && Math.abs(car.y - MID) < T.gk.rush.wide) {
+    if (!A.rushOn || A.rushOn.id !== car.id || m.t - A.rushOn.t > 4) A.rushOn = { id: car.id, t: m.t, go: m.rng.chance(tries('gkRush')) };
+    const covered = m.players.some((q) => q.team === p.team && q.role !== 'gk' && q.state !== 'tumble' && Math.hypot(q.x - car.x, q.y - car.y) < T.gk.rush.free);
+    if (A.rushOn.go && !covered) {
+      if (Math.hypot(b.x - p.x, b.y - p.y) <= T.gk.rush.contact) { smother(m, p, car, K); return f; }
+      go(b.x, b.y); f.sprint = true;
+      return f;
+    }
+  }
+
+  // a high ball that comes down in his box (a cross, a lob): he goes under it and takes it
+  if (b.state === 'free' && b.z > 12 && p.noControlT <= 0) {
+    const C = T.gk.claim, pts = trajectory(m);
+    let land = -1;
+    for (let i = 1; i < pts.length; i++) if (pts[i].z <= 14) { land = i; break; }
+    if (land > 0 && Math.abs(pts[land].x - x0) < C.area && Math.abs(pts[land].y - MID) < C.wide) {
+      if (!A.claimOn || A.claimOn.t !== b.lastTouch.t) A.claimOn = { t: b.lastTouch.t, go: m.rng.chance(tries('gkClaim')) };
+      if (A.claimOn.go) {
+        if (Math.abs(b.x - p.x) < C.reach && Math.abs(b.y - p.y) < C.reach && b.z < C.z && speed < C.v) { claimBall(m, p); return f; }
+        go(pts[land].x, pts[land].y); f.sprint = true;
+        return f;
+      }
+    }
+  }
+
+  // a loose ball in his box: his when it is slow, or when he gets to it before any rival
+  const L = T.gk.loose;
+  if (b.state === 'free' && b.z < 16 && p.noControlT <= 0) {
+    const slow = speed < T.gk.looseV && Math.abs(b.x - x0) < T.gk.area && Math.abs(b.y - MID) < 84;
+    const dMe = Math.hypot(b.x - p.x, b.y - p.y), dFoe = Math.min(999, ...foes.filter((q) => q.state !== 'tumble').map((q) => Math.hypot(b.x - q.x, b.y - q.y)));
+    const first = speed < L.v && Math.abs(b.x - x0) < L.area && Math.abs(b.y - MID) < L.wide && dMe < dFoe + L.edge;
+    if (slow || first) { go(b.x + b.vx * 0.15, b.y + b.vy * 0.15); f.sprint = dMe > 24; return f; }
+  }
+
+  // nothing to go for: he keeps the angle, on the line from the ball to the middle of his goal, further out when a rival brings it close
+  const G = T.gk.angle, dist = Math.hypot(b.x - x0, b.y - MID);
+  const k = clamp(G.k0 + (G.k1 - G.k0) * (1 - dist / G.near), G.k0, G.k1);
+  let out = clamp(Math.abs(b.x - x0) * T.gk.out, T.gk.outMin, T.gk.outMax);
+  if (car && car.team !== p.team && dist < G.carrier) out = Math.max(out, G.outNear * (1 - dist / G.carrier) + T.gk.outMin);
+  go(x0 + inward * out, clamp(MID + (b.y - MID) * k, MID - G.max, MID + G.max));
   return f;
 }

@@ -26,8 +26,9 @@ export const T = Object.freeze({
   /** Súper patada (Nekketsu): after `at` px of dribble without stopping, inside `range` of the goal, the player flashes for `window` s (`easyWindow`
    *  for a child) and Tiro then is a super shot. Its goal chance is `base` falling by `fall` across the range; it flies `durK` of a special's time. */
   super: { at: 200, still: 0.3, window: 0.6, easyWindow: 1.0, range: 420, base: 0.33, fall: 0.2, cap: 0.85, easyBonus: 0.1, durK: 0.8, hitR: 16, aiTake: 0.3 },
-  /** Players sent flying (Nintendo World Cup): the push of a slide and of a power shot along the ground, how fast it fades, and the lift. */
-  fly: { slide: 150, slideVz: 190, shot: 230, shotVz: 280, fade: 0.45, steal: 110, stealVz: 150, bump: 160, bumpVz: 170 },
+  /** Players sent flying (Nintendo World Cup): the push of a slide and of a power shot along the ground, how fast it fades, and the lift. One who
+   *  comes down faster than `bounceMin` bounces once, with `bounce` of the speed he fell with. */
+  fly: { slide: 150, slideVz: 190, shot: 230, shotVz: 280, fade: 0.45, steal: 110, stealVz: 150, bump: 160, bumpVz: 170, bounce: 0.4, bounceMin: 140 },
   // ---- ball (6.2)
   ballR: 3, gravity: 520, airDrag: 0.12, rollA: 40, rollB: 0.9, bounceV: 0.55, bounceH: 0.85, bounceMin: 50, spinAccel: 260, spinDecay: 1.2,
   ballMax: 600, postE: 0.7, netDamp: 0.2, postR: 2, postH: 28, barZ: 28,
@@ -35,6 +36,8 @@ export const T = Object.freeze({
   carryOff: { walk: 8, run: 11, sprint: 14, easyWalk: 6, easyRun: 8, easySprint: 10 },
   ctrl: { dx: 9, dy: 9, z: 16, zTarget: 36, maxSpeed: 360, easyDx: 14, easyDy: 14, easyMaxSpeed: 480 },
   deflectVx: -0.35, deflectVy: 110, immune: 0.35,
+  /** El balonazo (Nekketsu): a ball of a rival faster than `v` that hits a field player he cannot control knocks him down (`vz` lifts the ball). */
+  ballHit: { v: 430, vz: 110 },
   // ---- kicks (6.4)
   kickCap: 560, passMin: 160, passMax: 360, passEnd: 70, lobSpeed: 170, lobMaxD: 320, passCone: 30 * Math.PI / 180, passConeWide: 50 * Math.PI / 180,
   passPrep: 0.08, shotPrep: 0.12, volleyPrep: 0.10, headerPrep: 0.25, chilenaPrep: 0.30, chilenaFloor: 0.5, kickRecover: 0.18,
@@ -79,7 +82,23 @@ export const T = Object.freeze({
   special: { zone: 0.7, own: 0.85, ayuda: 0.10, cap: 0.92, skipAfter: 0.3, keeperMult: { tranquilos: 1.15, normales: 1.0, campeones: 0.9 } as Record<string, number>, aiRange: 400, aiDelayMin: 1, aiDelayMax: 3 },
   // ---- keepers (6.7)
   gk: { humanHold: 4, humanLock: 0.3, punt: 260, out: 0.12, outMin: 6, outMax: 28, area: 96, moveV: 150, diveV: 330, diveT: 0.6, land: 0.5, holdMin: 1.0, holdMax: 1.5, catchV: 380, looseV: 120,
-        contact: 20, zReach: 30, punch: { vx: 160, vy: 230, vz: 120 }, tipOver: 0.25, speedPen: 300, speedPenSpan: 500, highPen: 0.8, farPen: 0.8, farFree: 6, rebound: 42 },
+        contact: 20, zReach: 30, punch: { vx: 160, vy: 230, vz: 120 }, tipOver: 0.25, speedPen: 300, speedPenSpan: 500, highPen: 0.8, farPen: 0.8, farFree: 6, rebound: 42,
+        /** He stretches for any shot more than `diveAt` px from him that arrives within `diveIn` s (he no longer stands and watches it). */
+        diveAt: 8, diveIn: 0.9,
+        /** A power shot he stops stays in his hands with this times his skill; the rest he parries back into play. */
+        superHold: 0.5,
+        /** The angle: he stands on the line from the ball to the middle of his goal, `k0` of the way across with the ball far and `k1` with it
+         *  inside `near` px (never more than `max` px from the middle), and comes `outNear` px off his line when a rival brings it that close. */
+        angle: { k0: 0.35, k1: 0.62, near: 220, max: 30, outNear: 38, carrier: 170 },
+        /** The one on one: a rival who carries the ball inside `zone` px of the goal line (`wide` px each side of the middle) with no defender
+         *  within `free` px gets the keeper at his feet. At `contact` px he takes it with `p` times his skill (`easyP` from a child on easy
+         *  controls); if he misses he is on the ground and the goal is open. He waits `cd` s before the next one. */
+        rush: { zone: 105, wide: 70, free: 26, contact: 13, p: 0.8, easyP: 0.5, cd: 2.5 },
+        /** A loose ball in his box slower than `v` is his when he is nearer to it than any rival (by `edge` px). */
+        loose: { v: 220, area: 112, wide: 95, edge: 14 },
+        /** A high ball that comes down inside `area` px of his line and `wide` px of the middle: he goes under it and takes it once it is
+         *  below `z` px and within `reach` px of him, when it is slower than `v`. */
+        claim: { area: 84, wide: 80, z: 40, reach: 12, v: 320 } },
 });
 export const SPECIAL_BASE = { arcoiris: 0.70, burbuja: 0.75, canonazo: 0.72, estrellas: 0.70, carrera: 0.72, relampago: 0.72 } as const;
 
@@ -96,15 +115,15 @@ export const FIELD_RIVAL = { run: 94, sprint: 1.3, stamina: 2.4, power: 1.0, pas
 /** The weather of the Waiting Room: rain multiplies the rolling friction, wind pushes a ball in the air (px/s² along x). */
 export const WEATHER = { rainRoll: 1.45, wind: 70, rainSpeed: 0.96 } as const;
 export const KEEPERS = {
-  thor: { reaction: 0.20, reach: 41, skill: 0.75 }, mapache: { reaction: 0.32, reach: 42, skill: 0.60 }, tiburon: { reaction: 0.28, reach: 45, skill: 0.65 },
+  thor: { reaction: 0.16, reach: 46, skill: 0.86 }, mapache: { reaction: 0.32, reach: 42, skill: 0.60 }, tiburon: { reaction: 0.28, reach: 45, skill: 0.65 },
   buho: { reaction: 0.24, reach: 50, skill: 0.70 }, dragon: { reaction: 0.22, reach: 48, skill: 0.75 },
 } as const;
 /** How the family mates (always AI-controlled) play. They do not change with the difficulty of the rivals. */
-export const MATES = { jumpShot: 0.25, speed: 0.92, reaction: 0.30, shotErr: 15, slideHuman: 0, press: 1, keeperSkill: 1, keeperReact: 0, star: 1, special: 0.5 } as const;
+export const MATES = { gkRush: 1, gkClaim: 0.9, jumpShot: 0.25, speed: 0.92, reaction: 0.30, shotErr: 15, slideHuman: 0, press: 1, keeperSkill: 1, keeperReact: 0, star: 1, special: 0.5 } as const;
 export const DIFFICULTY = {
-  tranquilos: { jumpShot: 0.1, punch: 0.05, superTake: 0.15, speed: 0.70, reaction: 0.55, shotErr: 24, slideHuman: 0, press: 1, keeperSkill: 0.72, keeperReact: 0.12, star: 0.5, special: 0.35 },
-  normales: { jumpShot: 0.25, punch: 0.3, superTake: 0.7, speed: 1.0, reaction: 0.25, shotErr: 14, slideHuman: 0.25, press: 1, keeperSkill: 1.2, keeperReact: 0.02, star: 0.75, special: 0.50 },
-  campeones: { jumpShot: 0.35, punch: 0.5, superTake: 0.75, speed: 1.00, reaction: 0.18, shotErr: 9, slideHuman: 0.5, press: 2, keeperSkill: 1.3, keeperReact: -0.05, star: 1.0, special: 0.60 },
+  tranquilos: { gkRush: 0, gkClaim: 0.15, jumpShot: 0.1, punch: 0.05, superTake: 0.15, speed: 0.70, reaction: 0.55, shotErr: 24, slideHuman: 0, press: 1, keeperSkill: 0.72, keeperReact: 0.12, star: 0.5, special: 0.35 },
+  normales: { gkRush: 0.5, gkClaim: 0.4, jumpShot: 0.25, punch: 0.3, superTake: 0.7, speed: 1.0, reaction: 0.25, shotErr: 14, slideHuman: 0.25, press: 1, keeperSkill: 1.2, keeperReact: 0.02, star: 0.75, special: 0.50 },
+  campeones: { gkRush: 0.85, gkClaim: 0.6, jumpShot: 0.35, punch: 0.5, superTake: 0.75, speed: 1.00, reaction: 0.18, shotErr: 9, slideHuman: 0.5, press: 2, keeperSkill: 1.3, keeperReact: -0.05, star: 1.0, special: 0.60 },
 } as const;
 
 /** How each kingdom plays (mejora 5). The rivals of a species follow their style on top of the difficulty: `press` more players press the carrier, `steal` multiplies

@@ -28,13 +28,13 @@ function shootAtThor(seed: number, ty: number, speed = 300): { result: 'save' | 
 
 describe('porteros (B19)', () => {
   const rate = (ty: number, n = 500): number => { let saves = 0; for (let s = 1; s <= n; s++) if (shootAtThor(s, ty).result === 'save') saves++; return saves / n; };
-  it('500 tiros a 300 px/s al centro con habilidad 0,75: ataja entre 60 % y 80 %', () => {
+  it('500 tiros a 300 px/s al centro con la habilidad de Thor (0,86): ataja entre 78 % y 95 %', () => {
     const r = rate(MID);
-    expect(r).toBeGreaterThan(0.6); expect(r).toBeLessThan(0.8);
+    expect(r).toBeGreaterThan(0.78); expect(r).toBeLessThan(0.95);
   });
-  it('500 tiros a los palos (donde apunta el tiro colocado): ataja entre 30 % y 55 %', () => {
+  it('500 tiros a los palos (donde apunta el tiro colocado): ataja entre 45 % y 72 %, menos que al centro', () => {
     const r = (rate(MID - T.chance.aim) + rate(MID + T.chance.aim)) / 2;
-    expect(r).toBeGreaterThan(0.3); expect(r).toBeLessThan(0.55);
+    expect(r).toBeGreaterThan(0.45); expect(r).toBeLessThan(0.72); expect(r).toBeLessThan(rate(MID, 200) - 0.1);
   });
   it('un tiro lento se agarra y se queda en las manos, uno rápido se despeja', () => {
     let held = 0, punched = 0;

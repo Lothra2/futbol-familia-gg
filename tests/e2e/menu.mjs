@@ -10,7 +10,19 @@ for (const [w, h] of [[667, 375], [844, 390], [926, 428], [1024, 768], [1180, 82
   await page.waitForSelector('#s-title', { timeout: 15000 });
   await page.evaluate(() => { window.__futbol.store.data.stats.guideSeen = true; });   // the tour of the first match has its own test (guide.mjs)
   await page.screenshot({ path: `docs/qa/shots/m7_title_${w}x${h}.png` });
-  ok(`${w}x${h}: la portada muestra el titulo y "PRESIONA START"`, await page.evaluate(() => !!document.querySelector('.nlogo .t1') && /PRESIONA START/.test(document.querySelector('.tap')?.textContent ?? '')));
+  ok(`${w}x${h}: la portada muestra el titulo y como empezar`, await page.evaluate(() => !!document.querySelector('.nlogo .t1') && /PRESIONA START|TOCA PARA JUGAR/.test(document.querySelector('.tap')?.textContent ?? '')));
+  // the land of a kingdom behind, the family of six on the grass (each one a cell of his sheet) and the ball that rolls by, all inside the screen
+  await page.waitForTimeout(400);
+  const tt = await page.evaluate(() => {
+    const r = (e) => { const b = e.getBoundingClientRect(); return { left: b.left, top: b.top, right: b.right, bottom: b.bottom, w: b.width, h: b.height }; };
+    const sp = [...document.querySelectorAll('#s-title .tsp')];
+    const cv = document.querySelector('#s-title .tballc'), px = cv.getContext('2d').getImageData(0, 0, 64, 64).data; let painted = 0; for (let i = 3; i < px.length; i += 4) if (px[i]) painted++;
+    return { land: getComputedStyle(document.querySelector('#s-title .tland')).backgroundImage, sprites: sp.map((e) => ({ ...r(e), img: e.style.backgroundImage, pos: e.style.backgroundPosition })), logo: r(document.querySelector('.nlogo')), tap: r(document.querySelector('.tap')), painted };
+  });
+  ok(`${w}x${h}: la portada tiene el paisaje de un reino`, /assets\/stadium\/bg2?_[a-z]+\.png/.test(tt.land), tt.land);
+  ok(`${w}x${h}: la familia de seis esta formada en el pasto, dentro de la pantalla`, tt.sprites.length === 6 && tt.sprites.every((q) => q.w >= 96 && /assets\/nes\//.test(q.img) && q.pos && q.left >= -20 && q.right <= w + 20 && q.bottom <= h && q.top > h * 0.45), JSON.stringify(tt.sprites.map((q) => [Math.round(q.left), Math.round(q.top), q.w])));
+  ok(`${w}x${h}: el logo y el aviso caben y no se pisan con la familia`, inView(tt.logo, w, h) && tt.logo.bottom <= tt.tap.top + 2 && tt.tap.bottom <= Math.min(...tt.sprites.map((q) => q.top)) + 26, JSON.stringify([tt.logo.bottom, tt.tap.top, tt.tap.bottom, Math.min(...tt.sprites.map((q) => q.top))].map(Math.round)));
+  ok(`${w}x${h}: el balon nuevo esta pintado en la portada`, tt.painted > 150 && tt.painted < 400, String(tt.painted));
   await page.click('#s-title');
   await page.waitForSelector('#s-main');
   const mb = await page.evaluate(() => [...document.querySelectorAll('#s-main .mbtn')].map((e) => { const r = e.getBoundingClientRect(); return { l: r.left, t: r.top, r: r.right, b: r.bottom }; }));

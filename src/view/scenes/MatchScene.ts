@@ -152,6 +152,8 @@ export class MatchScene extends Phaser.Scene {
         }
         case 'post': case 'bar': if (this.ctl.m.phase !== 'penalties') this.hud.banner(B.post, 600); shakeCamera(this.cam, 0.1); this.stadium.gasp(); this.ballView.wobble(); break;
         case 'deflect': this.ballView.wobble(); break;
+        case 'thud': shakeCamera(this.cam, 0.06); break;
+        case 'smother': { const k = this.ctl.m.players.find((q) => q.id === e.who); this.pow(e.x, e.y, k?.art === 'thor' ? '¡MÍA!' : '¡FUERA!', '#ffe45c'); break; }
         case 'spinkick': this.pow(e.x, e.y, '¡GIRO!', '#ffe45c'); shakeCamera(this.cam, 0.12); break;
         case 'starfull': if (e.v === 0) this.hud.hint(T_ES.hints.star, 1500); break;
         case 'super': this.hud.banner(T_ES.specials[KIND_INDEX[e.v ?? 0]] ?? '¡SÚPER PATADA!', 1000); this.hud.flash(120); shakeCamera(this.cam, 0.3); this.stadium.gasp(); break;

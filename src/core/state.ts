@@ -1,6 +1,7 @@
 import type { Rng } from './rng';
 import type { FormationId } from './field';
 import type { CharId, InputFrame, MatchEvent, Species } from './types';
+import type { Cele } from './celebrate';
 
 export type Team = 0 | 1;
 export type Role = 'gk' | 'def' | 'mid' | 'fwd';
@@ -61,12 +62,16 @@ export interface Player {
   hits?: { n: number; t: number };
   /** The last blow thrown (punch and kick take turns). */
   blow?: 'punch' | 'kick';
+  /** His part in the celebration of a goal (celebrate.ts). */
+  cele?: Cele | null;
 }
 
 export interface AIMind {
   nextThink: number; held: InputFrame; armedAt: number; holdLeft: number; holdBtn: 'shoot' | 'pass' | null;
   lastX: number; lastY: number; lastT: number; sidestepUntil: number; sidestepDx: number; sidestepDy: number;
   threat: boolean; rolled: boolean; armedAtThreat: number; diveT: number; specialAt: number; goalDist: number; wasWanting: boolean; thinkT: number; pathLen: number;
+  /** The keeper: when he may go out at the feet of a carrier again, whether he goes at this carrier, and whether he goes for this high ball (each decided once). */
+  rushCd?: number; rushOn?: { id: number; t: number; go: boolean }; claimOn?: { t: number; go: boolean };
   /** A run into space behind the last defender (mejora 2): until when, and where to. */
   runUntil?: number; runX?: number; runY?: number;
 }

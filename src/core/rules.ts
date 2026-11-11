@@ -1,3 +1,4 @@
+import { startCelebration, stepCelebration } from './celebrate';
 import { T } from './tuning';
 import { CENTER, ESCAPE, GOAL, MID, PITCH, SY, attackDir, goalX, ownGoalX, slotPos } from './field';
 import { emit } from './events';
@@ -18,7 +19,7 @@ function resetPlayers(m: Match): void {
   for (const p of m.players) {
     const s = slotPos(p.team, p.slot, m.form[p.team]);
     p.x = s.x; p.y = s.y; p.z = 0; p.vx = p.vy = p.vz = 0; p.state = 'idle'; p.act = null; p.dirX = attackDir(p.team); p.dirY = 0; p.facing = attackDir(p.team);
-    p.shoot.down = false; p.pass.down = false; p.cd = { slide: 0, steal: 0, bump: 0, jump: 0 }; p.holdT = 0;
+    p.shoot.down = false; p.pass.down = false; p.cd = { slide: 0, steal: 0, bump: 0, jump: 0 }; p.holdT = 0; p.cele = null;
   }
 }
 
@@ -120,6 +121,7 @@ function goalScored(m: Match, team: Team): void {
   m.phase = 'goal'; m.phaseT = 0;
   emit(m, 'goal', b.x, b.y, b.z, scorer ?? undefined, team);
   for (const p of m.players) { p.state = p.team === team ? 'celebrate' : 'sad'; p.act = null; p.vx = p.vy = 0; }
+  startCelebration(m, team, last && last.team === team ? scorer : null);
 }
 
 /** The kick that puts the ball back in play (GAME_DESIGN section 5). */
@@ -183,6 +185,7 @@ export function preStep(m: Match, dt: number): void {
   if (m.phase === 'kickoff' || m.phase === 'restart') stepRestart(m, dt);
   else if (m.phase === 'cinematic') stepCinematic(m, dt);
   else if (m.phase === 'goal') {
+    stepCelebration(m, dt);
     const skip = m.phaseT >= T.goalSkip && m.hin.some((f) => !!f && (f.shootPressed || f.passPressed || f.specialPressed));
     if (m.phaseT >= T.goalT || skip) { if (m.golden) { m.phase = 'over'; m.phaseT = 0; emit(m, 'whistle', m.ball.x, m.ball.y, 0, undefined, 3); emit(m, 'final', m.ball.x, m.ball.y); } else setupKickoff(m, other(m.lastGoal!.team)); }
   } else if (m.phase === 'halftime') {

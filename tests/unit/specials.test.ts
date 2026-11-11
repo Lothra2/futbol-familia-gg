@@ -142,18 +142,21 @@ describe('la cinemática es una fase de tiempo fijo', () => {
     }
     throw new Error('no goal in 40 seeds');
   });
-  it('si era atajada el portero despeja y queda un rebote suelto cerca del área, nunca un balón en sus manos', () => {
+  it('si era atajada el portero la despeja (queda un rebote suelto cerca del área) o, a veces, se queda con el balón en las manos', () => {
+    let loose = 0, held = 0;
     for (let s = 1; s <= MID; s++) {
       const m = ready('papa', 800, { seed: s, cine: 'off' }); press(m);
       if (m.special!.outcome !== 'save') continue;
       const gk = rival(m, 0); const saves = gk.stats2.saves;
       while (m.phase === 'cinematic' || m.flight) step(m);
-      expect(m.phase).toBe('play'); expect(m.ball.state).toBe('free'); expect(m.ball.owner).toBeNull();
-      expect(PITCH.w - m.ball.x).toBeLessThan(60); expect(PITCH.w - m.ball.x).toBeGreaterThan(20);
-      expect(gk.stats2.saves).toBe(saves + 1);
-      return;
+      expect(m.phase).toBe('play'); expect(gk.stats2.saves).toBe(saves + 1);
+      if (m.ball.state === 'held') { held++; expect(m.ball.owner).toBe(gk.id); expect(gk.state).toBe('hold'); }
+      else {
+        loose++; expect(m.ball.state).toBe('free'); expect(m.ball.owner).toBeNull();
+        expect(PITCH.w - m.ball.x).toBeLessThan(60); expect(PITCH.w - m.ball.x).toBeGreaterThan(20);
+      }
     }
-    throw new Error('no save in MID seeds');
+    expect(loose).toBeGreaterThan(held); expect(held).toBeGreaterThan(0);
   });
   it('el Cañonazo tumba a los rivales que están en el camino (cuando no es gol, que si es gol todos celebran o se lamentan)', () => {
     for (let s = 1; s <= 40; s++) {

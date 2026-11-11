@@ -3,6 +3,7 @@ import { ESCAPE, MID, ownGoalX } from './field';
 import { emptyInput } from './types';
 import type { Match, Player } from './state';
 import { handleInput, playerById, updateAct } from './actions';
+import { emit } from './events';
 
 const LOCKED = new Set(['stagger', 'tumble', 'dizzy', 'getup', 'celebrate', 'sad', 'hold', 'special']);
 const approach = (v: number, t: number, d: number): number => (v < t ? Math.min(t, v + d) : Math.max(t, v - d));
@@ -42,7 +43,11 @@ export function updatePlayer(m: Match, p: Player, dt: number, live: boolean): vo
   // vertical motion (headers and the bicycle kick leave the ground)
   if (p.z > 0 || p.vz !== 0) {
     p.vz -= T.jumpG * dt; p.z += p.vz * dt;
-    if (p.z <= 0) { p.z = 0; p.vz = 0; if (!p.act) p.cd.jump = T.jump.cd; }
+    if (p.z <= 0) {
+      // a player thrown hard bounces once off the ground (Nekketsu), when he is going to stay down long enough for it
+      if (p.act?.kind === 'tumble' && !p.act.done && p.vz < -T.fly.bounceMin && p.act.dur - p.act.t > 0.3) { p.act.done = true; p.vz = -p.vz * T.fly.bounce; p.z = 0.1; emit(m, 'thud', p.x, p.y, 0, p.id, p.vz); }
+      else { p.z = 0; p.vz = 0; if (!p.act) p.cd.jump = T.jump.cd; }
+    }
   }
 
   // contain: a human with full controls who holds Pass (past the tap) without the ball stays between the rival who has it and his own goal, a bit slower than a sprint

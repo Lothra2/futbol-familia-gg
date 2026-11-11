@@ -53,4 +53,30 @@ describe('golpes de Nekketsu', () => {
     let top = 0; for (let i = 0; i < 40; i++) { step(m); top = Math.max(top, o.z); }
     expect(top).toBeGreaterThan(15); expect(o.z).toBe(0); expect(o.x).toBeGreaterThan(430);
   });
+  it('el balonazo: un tiro durísimo que le pega a un rival lo tumba, y uno normal solo le rebota', async () => {
+    const { fam, rival, ball } = await import('./helpers');
+    const hit = (v: number): string => {
+      const m = mk(); clear(m); const o = rival(m, 3); o.x = 500; o.y = MID;
+      ball(m, 470, MID, 0, v, 0, 0); m.ball.lastTouch = { team: 0, player: fam(m, 'papa').id, t: m.t };
+      let st = '';
+      for (let i = 0; i < 20 && !st; i++) { step(m); if (o.state === 'tumble') st = 'tumble'; else if (m.events.some((e) => e.k === 'deflect')) st = 'deflect'; m.events = []; }
+      expect(m.ball.vx).toBeLessThan(0);   // either way the ball comes back off him
+      return st;
+    };
+    expect(hit(500)).toBe('tumble'); expect(hit(400)).toBe('deflect');
+  });
+  it('el que sale volando por un golpe rebota una vez contra el piso antes de quedarse tirado', async () => {
+    const { knockDown } = await import('../../src/core/actions');
+    const { T } = await import('../../src/core/tuning');
+    const { fam } = await import('./helpers');
+    const m = mk(); clear(m); const o = fam(m, 'papa'); o.x = 400; o.y = MID;
+    knockDown(m, o, null, T.fly.shot, 0, T.fly.shotVz);
+    let thuds = 0, first = 0, second = 0;
+    for (let i = 0; i < 90; i++) {
+      step(m); if (m.events.some((e) => e.k === 'thud' && e.who === o.id)) thuds++; m.events = [];
+      if (thuds === 0) first = Math.max(first, o.z); else second = Math.max(second, o.z);
+    }
+    expect(thuds).toBe(1); expect(first).toBeGreaterThan(30); expect(second).toBeGreaterThan(3); expect(second).toBeLessThan(first * 0.4);
+    expect(o.z).toBe(0); expect(o.state).toBe('tumble');
+  });
 });

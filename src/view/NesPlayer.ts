@@ -26,11 +26,13 @@ export function dirOf(dx: number, dy: number, prev: number | null = null): numbe
 /** Seconds of the flight of a knocked down player (the 5 frames of `tumble` at 12 fps) and of getting up (2 frames of `fall_getup` at 8 fps). */
 const TUMBLE_T = 0.42, GETUP_T = 0.25;
 
-const FALLBACK: Record<string, string> = { super: 'shot', spin_kick: 'chilena', chilena: 'shot', air_kick: 'kick_hit', kick_hit: 'shot', jump_rise: 'jump', jump_fall: 'jump' };
+const FALLBACK: Record<string, string> = { super: 'shot', spin_kick: 'chilena', chilena: 'shot', air_kick: 'kick_hit', kick_hit: 'shot', jump_rise: 'jump', jump_fall: 'jump', walk: 'run', land: 'idle', trap: 'idle', run_shot: 'shot', pump: 'celebrate', sit: 'idle' };
+/** What the view knows that the core does not: he has just landed from a jump or taken the ball down (seconds since), and he was running when he shot. */
+export interface AnimHint { land?: number; trap?: number; runShot?: boolean }
 /** What the player is doing, in the names of the forja atlas (the same for the family and the rivals; keepers add the keeper_ rows, Thor has his own). */
-export function nesAnim(p: Player, m: Match | null, isThor: boolean): { name: string; loop: boolean; t: number } {
+export function nesAnim(p: Player, m: Match | null, isThor: boolean, hint: AnimHint = {}): { name: string; loop: boolean; t: number } {
   const t = p.act ? p.act.t : p.stateT;
-  const moving = Math.hypot(p.vx, p.vy) > 8, owns = !!m && m.ball.owner === p.id;
+  const speed = Math.hypot(p.vx, p.vy), moving = speed > 8, owns = !!m && m.ball.owner === p.id, cele = p.cele;
   const throwIn = !!m && m.phase === 'restart' && m.restart?.kind === 'throwin' && owns;
   if (isThor) {
     switch (p.state) {
@@ -38,7 +40,10 @@ export function nesAnim(p: Player, m: Match | null, isThor: boolean): { name: st
       case 'dive': return { name: 'pounce', loop: false, t };
       case 'hold': return { name: 'wag', loop: true, t };
       case 'kick': return { name: 'bite', loop: false, t };
-      case 'celebrate': case 'special': return { name: 'celebrate', loop: true, t };
+      // a goal of the family: mad circles in front of his goal
+      case 'celebrate': case 'special': return { name: cele?.move === 'zoom' ? 'run' : 'celebrate', loop: true, t };
+      // after a dive he is flat on the grass for a moment
+      case 'getup': return { name: 'lie', loop: true, t };
       // a goal against: he howls at the sky
       case 'sad': return { name: 'howl', loop: true, t };
       case 'tumble': case 'stagger': case 'dizzy': case 'bump': return { name: 'hurt', loop: false, t };
@@ -49,6 +54,8 @@ export function nesAnim(p: Player, m: Match | null, isThor: boolean): { name: st
         // on guard: he barks when a rival comes at his goal with the ball
         const foe = m && m.ball.owner !== null ? m.players.find((q) => q.id === m.ball.owner) : undefined;
         if (foe && foe.team !== p.team && Math.abs(foe.x - p.x) < 220) return { name: 'bark', loop: true, t };
+        // the ball is at the other end: he sits and waits, wagging; when it comes back he is up
+        if (m && m.phase === 'play' && Math.abs(m.ball.x - p.x) > 520) return { name: 'sit', loop: true, t };
         return { name: 'idle', loop: true, t };
       }
     }
@@ -62,6 +69,7 @@ export function nesAnim(p: Player, m: Match | null, isThor: boolean): { name: st
       // the spinning kick of a player who jumped with the ball, and the kick of the air of one who jumped for it
       if (s === 'spin') return { name: 'spin_kick', loop: false, t };
       if (p.act?.plan?.jumped && (s === 'volley' || s === 'pass')) return { name: 'air_kick', loop: false, t };
+      if (s === 'shot' && hint.runShot) return { name: 'run_shot', loop: false, t };
       const n = s === 'pass' || s === 'restart' ? 'pass' : s === 'chip' ? 'chip' : s === 'volley' ? 'volley' : s === 'header' ? 'header' : s === 'chilena' ? 'chilena' : 'shot';
       return { name: n, loop: false, t };
     }
@@ -80,13 +88,25 @@ export function nesAnim(p: Player, m: Match | null, isThor: boolean): { name: st
       return { name: 'lie', loop: true, t };
     }
     case 'getup': return { name: 'fall_getup', loop: false, t };
-    case 'celebrate': return { name: p.team === 0 ? 'dance' : 'celebrate', loop: true, t };
+    case 'celebrate': {
+      // the celebration of a goal (core/celebrate.ts): the run, the somersault, the slide on the knees, the spinning jump, the fist in the air
+      const c = cele?.move, ct = cele?.t ?? 0;
+      if (c === 'run') return { name: 'run', loop: true, t };
+      if (c === 'flip') return { name: 'spin_kick', loop: false, t: ct * 0.62 };
+      if (c === 'slide') return { name: 'slide', loop: false, t: ct };
+      if (c === 'spin') return { name: 'jump', loop: false, t: 9 };
+      if (c === 'pump') return { name: p.z > 0 ? 'pump' : 'celebrate', loop: p.z <= 0, t: ct };
+      return { name: p.team === 0 && !cele ? 'dance' : 'celebrate', loop: true, t };
+    }
     case 'sad': return { name: 'sad', loop: true, t };
     case 'dive': return { name: gk ? 'keeper_dive' : 'jump', loop: false, t };
     case 'hold': return { name: gk ? 'keeper_catch' : 'idle', loop: false, t: 9 };
     default:
       if (throwIn) return { name: 'throw_in', loop: false, t: 0 };
-      if (moving) return { name: owns ? 'run_ball' : 'run', loop: true, t };
+      if (hint.land !== undefined && speed < 60) return { name: 'land', loop: false, t: hint.land };
+      if (hint.trap !== undefined && speed < 70) return { name: 'trap', loop: false, t: hint.trap };
+      // he walks when he goes slowly and runs when he runs
+      if (moving) return { name: speed < 58 && p.state !== 'sprint' ? 'walk' : owns ? 'run_ball' : 'run', loop: true, t };
       return { name: gk ? 'keeper_ready' : 'idle', loop: true, t };
   }
 }
@@ -101,6 +121,9 @@ export class NesPlayer {
   /** The ring of the team colour under the feet (the athletes wear their own clothes: this says whose side they are on). */
   readonly ring: Phaser.GameObjects.Graphics;
   private wasState = ''; private hitT = 0; private landT = 0; private wasAir = false;
+  /** Seconds since he landed from a jump and since he took the ball down (9 = long ago), whether he was running when he shot, and what he
+   *  and the ball were doing last frame. */
+  private landAge = 9; private trapAge = 9; private runShot = false; private wasOwn = false; private ballFast = false; private lastV = { x: 0, y: 0 };
   private loops = new LoopClock();
   private dir = 0;
   private lastFrame = -1;
@@ -127,6 +150,8 @@ export class NesPlayer {
   private face(m: Match | null): number {
     const p = this.p;
     if (this.forceDir !== null) return this.forceDir;
+    // the spinning jump of a celebration turns him round and round
+    if (p.state === 'celebrate' && p.cele?.move === 'spin') return Math.floor(p.cele.t * 20) % 8;
     if (Math.hypot(p.vx, p.vy) > 20 && p.state !== 'tumble' && p.state !== 'stagger') return dirOf(p.vx, p.vy, this.dir);
     if (p.state === 'kick' || p.state === 'slide' || p.state === 'special' || p.state === 'dive') return dirOf(p.dirX || p.facing, p.dirY, this.dir);
     if (m && (p.state === 'idle' || p.state === 'run' || p.state === 'hold') && m.ball.owner !== p.id) {
@@ -141,7 +166,16 @@ export class NesPlayer {
     const p = this.p;
     this.dir = this.face(m);
     const want = DIRS[this.dir], mirrored = this.meta.mirror[want];
-    const st = nesAnim(p, m, this.isThor);
+    // what only the view sees: the landing of a jump, the ball taken down, a shot on the run
+    const speed0 = Math.hypot(p.vx, p.vy), owns = !!m && m.ball.owner === p.id;
+    this.landAge += dt; this.trapAge += dt;
+    if (owns && !this.wasOwn && this.ballFast) this.trapAge = 0;
+    if (p.state === 'kick' && this.wasState !== 'kick') this.runShot = Math.hypot(this.lastV.x, this.lastV.y) > 60;
+    this.wasOwn = owns; this.ballFast = !!m && m.ball.state === 'free' && (Math.hypot(m.ball.vx, m.ball.vy) > 110 || m.ball.z > 6);
+    const st = nesAnim(p, m, this.isThor, { land: this.landAge < 0.18 ? this.landAge : undefined, trap: this.trapAge < 0.28 ? this.trapAge : undefined, runShot: this.runShot });
+    // dust when he turns hard at speed (a skid), like the players of the NES
+    if (this.fx && p.z <= 0 && speed0 > 70 && (p.state === 'run' || p.state === 'sprint') && p.vx * this.lastV.x + p.vy * this.lastV.y < -0.2 * speed0 * Math.hypot(this.lastV.x, this.lastV.y)) this.fx.puff(Math.round(wx(p.x, p.y)), Math.round(sy(p.y)), -p.vx * 0.3, 3);
+    if (speed0 > 30 || Math.hypot(this.lastV.x, this.lastV.y) < 30) this.lastV = { x: p.vx, y: p.vy };
     let key = `${st.name}_${mirrored ?? want}`;
     // an atlas without one of the newer animations shows the closest one it has
     for (let n = FALLBACK[st.name]; n && !this.meta.anims[key]; n = FALLBACK[n]) key = `${n}_${mirrored ?? want}`;
@@ -162,14 +196,14 @@ export class NesPlayer {
     if ((p.state === 'tumble' || p.state === 'stagger') && this.wasState !== p.state) this.hitT = 0.28;
     this.wasState = p.state;
     const air = p.z > 3;
-    if (this.wasAir && !air) this.landT = 0.14;
+    if (this.wasAir && !air) { this.landT = 0.14; if (p.state !== 'tumble') this.landAge = 0; this.fx?.puff(x, gy, 0, 3); }
     this.wasAir = air;
     this.hitT = Math.max(0, this.hitT - dt); this.landT = Math.max(0, this.landT - dt);
     let ox = 0, oy = 0, sxk = 1, syk = 1;
     if (this.hitT > 0) ox = (Math.floor(this.hitT * 60) % 2 ? 2 : -2);
     if (air && p.state !== 'tumble' && p.state !== 'kick' && p.state !== 'bump') { sxk = 0.92; syk = 1.08; }
     if (this.landT > 0) { sxk = 1.14; syk = 0.86; }
-    if (p.state === 'celebrate') oy = -Math.round(Math.abs(Math.sin((m?.t ?? 0) * 9 + p.id)) * 4);
+    if (p.state === 'celebrate' && !p.cele) oy = -Math.round(Math.abs(Math.sin((m?.t ?? 0) * 9 + p.id)) * 4);
     if (this.isThor && st.name === 'run') oy = -Math.round(Math.abs(Math.sin((m?.t ?? 0) * 16)) * 2);
     this.sprite.setFrame(frame).setPosition(x + ox, y + oy).setFlipX(!!mirrored).setDepth(depthAt(p.y)).setScale(sxk, syk);
     this.sprite.setAlpha(this.hitT > 0 && Math.floor(this.hitT * 30) % 2 ? 0.35 : 1);   // the blink of a sprite that has just been hit

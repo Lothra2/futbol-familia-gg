@@ -14,6 +14,13 @@ import { services } from '../app/services';
 import type { TouchUI } from '../input/touch';
 import type { CharId } from '../core/types';
 import { asset } from '../asset';
+import { FACING, paintBall, roll, rotate, tidy, type Mat3 } from '../view/ballart';
+
+/** The landscapes of the four kingdoms (the backdrops of the stadiums) behind the title and the main menu, with the colour of the top of their sky. */
+const LANDS = [{ img: 'bg2_volcan', sky: '#00a0fc' }, { img: 'bg_arrecife', sky: '#32c3ee' }, { img: 'bg2_nubes', sky: '#017de8' }, { img: 'bg_bosque', sky: '#a6dce1' }];
+/** The family on the grass of the title, in the order they line up, and what each does when the wave of the celebration reaches him. */
+const LINE: { id: string; cheer: string }[] = [{ id: 'papa', cheer: 'pump' }, { id: 'mama', cheer: 'dance' }, { id: 'sophie', cheer: 'celebrate' }, { id: 'thor', cheer: 'celebrate' }, { id: 'alana', cheer: 'dance' }, { id: 'juandi', cheer: 'pump' }];
+interface Meta { cols: number; cell: [number, number]; anims: Record<string, { start: number; frames: number; fps: number }> }
 
 type Name = 'title' | 'main' | 'quick' | 'cup' | 'vitrina' | 'settings' | 'training' | 'daily' | 'guide';
 export interface ScreenDeps {
@@ -45,21 +52,25 @@ export class Screens {
   private cur: Name | null = null;
   private onKey = (e: KeyboardEvent): void => this.key(e);
   private gst: { tab: Tab; two: boolean; easy: boolean } = { tab: defaultTab(), two: false, easy: false };
+  /** The clock of what moves on the title and the main menu (the family, the ball), and the landscape drawn this time. */
+  private anim = 0; private land = LANDS[Math.floor(Math.random() * LANDS.length)];
 
   constructor(private d: ScreenDeps) { window.addEventListener('keydown', this.onKey); this.ui.classList.add('nesui'); }
 
   get current(): Name | null { return this.cur; }
-  close(): void { this.el?.remove(); this.el = null; this.cur = null; this.stack = []; }
+  close(): void { this.stopAnim(); this.el?.remove(); this.el = null; this.cur = null; this.stack = []; }
+  private stopAnim(): void { if (this.anim) { cancelAnimationFrame(this.anim); this.anim = 0; } }
 
   show(n: Name, push = true): void {
     if (push && this.cur && this.cur !== n && n !== 'main') this.stack.push(this.cur);
     if (n === 'main') this.stack = [];
-    this.el?.remove();
+    this.stopAnim(); this.el?.remove();
     const el = document.createElement('div'); el.className = `screen menu2 m-${n}`; el.id = `s-${n}`;
     this.el = el; this.cur = n;
     el.innerHTML = this[n]();
     this.ui.appendChild(el);
     this.bind(n, el);
+    if (n === 'title' || n === 'main') this.liven(el);
     (el.querySelector('[data-focus]') as HTMLElement | null)?.focus({ preventScroll: true });
     services.audio?.ui?.('tap');
   }
@@ -87,16 +98,73 @@ export class Screens {
   private chips<T>(id: string, opts: { v: T; label: string }[], sel: T): string { return `<div class="chips" id="${id}">${opts.map((o, i) => `<button class="chip-o${o.v === sel ? ' sel' : ''}" data-i="${i}">${o.label}</button>`).join('')}</div>`; }
 
   // ------------------------------------------------------------------ screens
+  /** The landscape of a kingdom scrolling slowly, and the grass in front of it. */
+  private backdrop(): string {
+    // the picture goes in the style of the element itself: a url() inside a CSS variable would be looked for next to the stylesheet
+    return `<div class="tbg" style="background:${this.land.sky}"><div class="tland" style="background-image:url(${asset(`assets/stadium/${this.land.img}.png`)})"></div><div class="tgrass"></div></div>`;
+  }
+  /** The family lined up on the grass (each one a cell of his sheet; liven() moves them) and the ball that crosses in front of them. */
+  private lineupHtml(): string {
+    return `<div class="tline">${LINE.map((c) => `<i class="tsp" data-id="${c.id}" data-cheer="${c.cheer}"></i>`).join('')}</div><canvas class="tballc" width="64" height="64"></canvas>`;
+  }
   private title(): string {
-    // the title of a NES cartridge: the logo over black, the spinning ball, the blinking START and the line of the makers
-    return `<div class="nlogo"><div class="nball"></div><div class="t1">FUTBOL</div><div class="t2">FAMILIA GG</div><div class="t3">COPA DE LOS CUATRO REINOS</div></div>
-      <div class="tap" data-focus tabindex="0">PRESIONA START</div><div class="ver">© 2026 FAMILIA GG · PARA SOPHIE, ALANA Y JUANDI</div>`;
+    // the title: the logo over the land of one of the four kingdoms, the family on the grass, the ball rolling by and the blinking START
+    const touch = typeof matchMedia === 'function' && matchMedia('(pointer: coarse)').matches;
+    return `${this.backdrop()}<div class="nlogo"><div class="t1">FUTBOL</div><div class="t2">FAMILIA GG</div><div class="t3">COPA DE LOS CUATRO REINOS</div></div>
+      ${this.lineupHtml()}<div class="tap" data-focus tabindex="0">${touch ? 'TOCA PARA JUGAR' : 'PRESIONA START'}</div><div class="ver">© 2026 FAMILIA GG · PARA SOPHIE, ALANA Y JUANDI</div>`;
+  }
+
+  /** Moves what is alive on the title and the main menu: the family breathes and cheers in a wave, and the ball rolls and bounces across. */
+  private liven(el: HTMLElement): void {
+    const k = window.innerHeight < 520 ? 2 : window.innerHeight < 900 ? 3 : 4;
+    const sprites = [...el.querySelectorAll<HTMLElement>('.tsp')].map((e, i) => {
+      const meta = this.d.game.cache.json.get(`nes_${e.dataset.id}_meta`) as Meta | undefined;
+      if (!meta) { e.style.display = 'none'; return null; }
+      const c = meta.cell[0] * k;
+      e.style.width = e.style.height = `${c}px`; e.style.margin = `0 ${-Math.round(c * 0.14)}px`;   // the cell is wider than the footballer
+      e.style.backgroundImage = `url(${asset(`assets/nes/${e.dataset.id}.png`)})`; e.style.backgroundSize = `${meta.cols * c}px auto`;
+      // facing us from the first moment (before the clock below starts)
+      const st = meta.anims.idle_down?.start ?? 0; e.style.backgroundPosition = `-${(st % meta.cols) * c}px -${Math.floor(st / meta.cols) * c}px`;
+      return { e, i, meta, c, cheer: e.dataset.cheer! };
+    }).filter((x): x is NonNullable<typeof x> => !!x);
+    const cv = el.querySelector<HTMLCanvasElement>('.tballc'), ctx = cv?.getContext('2d') ?? null;
+    const img = ctx ? ctx.createImageData(64, 64) : null;
+    // the ball is in the middle of its square: the square goes down so the ball rolls on the grass, in front of their feet
+    if (cv) { cv.style.width = cv.style.height = `${64 * k}px`; cv.style.bottom = `${Math.round(window.innerHeight * 0.04 - 23 * k)}px`; }
+    let rot: Mat3 = rotate(FACING, 1, 0, 0, 0.5), last = performance.now(), t = 0, bx = -0.1, turns = 0;
+    const frame = (now: number): void => {
+      if (!el.isConnected) { this.anim = 0; return; }
+      const dt = Math.min(0.05, (now - last) / 1000); last = now; t += dt;
+      // a wave of cheers runs along the line every six seconds: whoever it reaches cheers and jumps
+      for (const s of sprites) {
+        const u = (t - s.i * 0.35) % 6, on = u > 1 && u < 2.3;
+        const a = s.meta.anims[`${on ? s.cheer : 'idle'}_down`] ?? s.meta.anims.celebrate_down ?? s.meta.anims.idle_down;
+        if (!a) continue;
+        const f = a.start + Math.floor(t * (on ? Math.max(8, a.fps) : a.fps)) % a.frames, col = f % s.meta.cols, row = Math.floor(f / s.meta.cols);
+        s.e.style.backgroundPosition = `-${col * s.c}px -${row * s.c}px`;
+        s.e.style.transform = `translateY(${on ? -Math.round(Math.abs(Math.sin((u - 1) * Math.PI * 2.3)) * 7) * k : 0}px)`;
+      }
+      // the ball crosses the grass from left to right, bouncing lower and lower, and comes back in from the left
+      if (ctx && img && cv) {
+        const w = el.clientWidth, span = 1.25, v = 0.11;
+        bx += v * dt; if (bx > span - 0.1) bx = -0.12;
+        const dxPx = v * dt * w / k;
+        rot = roll(rot, dxPx, 0, 9); if (++turns % 300 === 0) rot = tidy(rot);
+        const ph = (bx * 5.2) % 1, h = Math.abs(Math.sin(ph * Math.PI)) * (22 - 14 * Math.min(1, Math.max(0, bx)));
+        const flat = h < 1.2 && ph > 0.02;
+        paintBall(img.data, 64, rot, flat ? { r: 9, sx: 1.16, sy: 0.86 } : { r: 9 });
+        ctx.putImageData(img, 0, 0);
+        cv.style.transform = `translate(${Math.round(bx * w - 32 * k)}px, ${-Math.round(h) * k}px)`;
+      }
+      this.anim = requestAnimationFrame(frame);
+    };
+    this.anim = requestAnimationFrame(frame);
   }
 
   private main(): string {
     const s = this.d.store.data, cupSub = cupInProgress(s) ? `SIGUE: ${cupKingdom(s).name.normalize('NFD').replace(/[\u0300-\u036f]/g, '').toUpperCase()}` : s.trophies.copa > 0 ? `CAMPEONES X${s.trophies.copa}` : '4 REINOS';
     const b = (act: string, label: string, sub: string, focus = false): string => `<button class="mbtn" data-act="${act}"${focus ? ' data-focus' : ''}><span class="tx"><b>${label}</b><em>${sub}</em></span></button>`;
-    return `<div class="side"><div class="mini-logo"><b>FUTBOL</b><span>FAMILIA GG</span></div>
+    return `${this.backdrop()}<div class="tdim"></div>${this.lineupHtml()}<div class="side"><div class="mini-logo"><b>FUTBOL</b><span>FAMILIA GG</span></div>
       <div class="nbox">
       ${b('quick', 'PARTIDO RAPIDO', '1 O 2 JUGADORES', true)}
       ${b('cup', 'LA COPA', cupSub)}

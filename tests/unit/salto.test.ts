@@ -113,7 +113,7 @@ describe('el salto de Nekketsu', () => {
   });
   it('la IA también salta: en varios partidos hay saltos y patadas giratorias', () => {
     let jumps = 0, spins = 0;
-    for (const seed of [2, 5, 9, 11]) {
+    for (const seed of [2, 5, 9, 11, 14, 17]) {
       const m = createMatch({ seed, ai: 'brain', halfLength: 45 });
       for (let i = 0; i < 60 * 100 && m.phase !== 'over'; i++) { step(m); for (const e of m.events) { if (e.k === 'jump') jumps++; if (e.k === 'spinkick') spins++; } m.events = []; }
     }
