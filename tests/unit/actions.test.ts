@@ -105,9 +105,9 @@ describe('pases', () => {
 });
 
 describe('jugadas en el aire (B10)', () => {
-  const aerial = (z: number, facing: 1 | -1 = 1, viaPass = false) => {
-    const m = mk({}, true); clear(m); const p = fam(m, 'sophie'); put(p, 600, MID); p.facing = facing;
-    ball(m, 604, MID, z, 0, 0, 0);
+  const aerial = (z: number, facing: 1 | -1 = 1, viaPass = false, x = 600) => {
+    const m = mk({}, true); clear(m); const p = fam(m, 'sophie'); put(p, x, MID); p.facing = facing;
+    ball(m, x + 4, MID, z, 0, 0, 0);
     p.input = inp(viaPass ? { passPressed: true } : { shootPressed: true }); step(m); p.input = inp();
     return { m, p };
   };
@@ -122,15 +122,22 @@ describe('jugadas en el aire (B10)', () => {
     const v = aerial(14); step(v.m); expect(v.p.z).toBe(0);
   });
   it('la chilena deja al jugador 0,5 s en el piso y los cabezazos tienen su preparación', () => {
-    const { m, p } = aerial(36, -1);
+    const { m, p } = aerial(36, -1, false, 300);   // far from the goal: near it the overhead kick is a power shot
     secs(m, 0.35); expect(p.act?.kind === 'kick' || p.state === 'getup').toBe(true);
     secs(m, 0.9); expect(p.state).toBe('idle');
   });
-  it('un cabezazo cerca del arco rival baja el balón hacia el arco', () => {
-    const m = mk({}, true); clear(m); const p = fam(m, 'sophie'); put(p, 800, MID); ball(m, 804, MID, 36, 0, 0, 0);
-    p.input = inp({ shootPressed: true }); step(m); p.input = inp();
+  it('un cabezazo o una chilena cerca del arco rival es el remate de poder de quien remata (Nekketsu); hacia atrás es un cabezazo normal', () => {
+    for (const facing of [1, -1] as const) {
+      const m = mk({}, true); clear(m); const p = fam(m, 'sophie'); put(p, 800, MID); p.facing = facing; ball(m, 804, MID, 36, 0, 0, 0);
+      p.input = inp({ shootPressed: true }); step(m); p.input = inp();
+      for (let i = 0; i < 40 && !m.flight; i++) step(m);
+      expect(m.flight).not.toBeNull(); expect(m.flight!.shooter).toBe(p.id); expect(p.supAnim).toBe(facing === 1 ? 'header' : 'chilena');
+    }
+    // 300 px from the goal with the stick pointing back: he heads it away, no power
+    const m = mk({}, true); clear(m); const p = fam(m, 'sophie'); put(p, PITCH.w - 300, MID); ball(m, p.x + 4, MID, 36, 0, 0, 0);
+    p.input = inp({ shootPressed: true, mx: -1 }); step(m); p.input = inp();
     const k = untilKick(m)!;
-    expect(k.vx).toBeGreaterThan(150); expect(k.vz).toBeLessThan(10);
+    expect(m.flight).toBeNull(); expect(k.vx).toBeLessThan(0);
   });
   it('si el balón ya no está al llegar el contacto, el golpe es en falso', () => {
     const { m } = aerial(36); ball(m, 700, MID, 60, 0, 0, 0); secs(m, 0.4);

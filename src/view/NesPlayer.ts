@@ -41,7 +41,9 @@ export function nesAnim(p: Player, m: Match | null, isThor: boolean, hint: AnimH
       case 'hold': return { name: 'wag', loop: true, t };
       case 'kick': return { name: 'bite', loop: false, t };
       // a goal of the family: mad circles in front of his goal
-      case 'celebrate': case 'special': return { name: cele?.move === 'zoom' ? 'run' : 'celebrate', loop: true, t };
+      case 'celebrate': return { name: cele?.move === 'zoom' ? 'run' : 'celebrate', loop: true, t };
+      // his power: he barks while it loads and then he is off with the ball
+      case 'special': return { name: m?.special?.shooter === p.id ? 'bark' : 'run', loop: true, t };
       // after a dive he is flat on the grass for a moment
       case 'getup': return { name: 'lie', loop: true, t };
       // a goal against: he howls at the sky
@@ -73,7 +75,12 @@ export function nesAnim(p: Player, m: Match | null, isThor: boolean, hint: AnimH
       const n = s === 'pass' || s === 'restart' ? 'pass' : s === 'chip' ? 'chip' : s === 'volley' ? 'volley' : s === 'header' ? 'header' : s === 'chilena' ? 'chilena' : 'shot';
       return { name: n, loop: false, t };
     }
-    case 'special': return { name: 'super', loop: false, t };
+    case 'special': {
+      // loading the power: crouched, gathering it (the view makes him tremble); then the blow it was struck with
+      if (m?.special?.shooter === p.id) return { name: 'land', loop: false, t: 0 };
+      const a = p.supAnim;
+      return { name: a === 'spin' ? 'spin_kick' : a === 'header' ? 'header' : a === 'chilena' ? 'chilena' : a === 'volley' ? 'air_kick' : 'super', loop: false, t };
+    }
     case 'slide': return { name: 'slide', loop: false, t };
     // the laugh at a rival who is flat at his feet
     case 'bump': if (p.act?.kind === 'taunt') return { name: 'laugh', loop: true, t };
@@ -209,14 +216,17 @@ export class NesPlayer {
     if (this.landT > 0) { sxk = 1.14; syk = 0.86; }
     if (p.state === 'celebrate' && !p.cele) oy = -Math.round(Math.abs(Math.sin((m?.t ?? 0) * 9 + p.id)) * 4);
     if (this.isThor && st.name === 'run') oy = -Math.round(Math.abs(Math.sin((m?.t ?? 0) * 16)) * 2);
+    // loading his power: he trembles, squashed, faster as the bar fills
+    const loading = !!m && m.special?.shooter === p.id;
+    if (loading) { const u = m!.special!.t / m!.special!.dur; ox = Math.floor(m!.special!.t * (24 + 30 * u)) % 2 ? 1 : -1; sxk = 1.06; syk = 0.94 - 0.04 * u; }
     this.sprite.setFrame(frame).setPosition(x + ox, y + oy).setFlipX(!!mirrored).setDepth(depthAt(p.y)).setScale(sxk, syk);
     this.sprite.setAlpha(this.hitT > 0 && Math.floor(this.hitT * 30) % 2 ? 0.35 : 1);   // the blink of a sprite that has just been hit
     // the moment of the súper patada: the carrier flashes white and gold (Nekketsu), shoot now
     const flash = !!m && !!p.sup && p.sup.until > 0 && m.t <= p.sup.until && m.ball.owner === p.id;
-    if (flash) { this.flashT += dt; this.sprite.setTint(Math.floor(this.flashT * 14) % 2 ? 0xffffff : 0xffe45c); if (this.fx && Math.floor(this.flashT * 10) !== Math.floor((this.flashT - dt) * 10)) this.fx.sparkle(x + (Math.random() - 0.5) * 18, y - 8 - Math.random() * 24); }
+    if (flash || loading) { this.flashT += dt; this.sprite.setTint(Math.floor(this.flashT * 14) % 2 ? 0xffffff : 0xffe45c); if (this.fx && Math.floor(this.flashT * 10) !== Math.floor((this.flashT - dt) * 10)) this.fx.sparkle(x + (Math.random() - 0.5) * 18, y - 8 - Math.random() * 24); }
     else if (this.flashT > 0) { this.flashT = 0; this.sprite.clearTint(); }
     // sangre caliente: the whole team burns red, with steam off their heads
-    const hot = !!m && (m.fury?.[p.team] ?? 0) > m.t && !flash && m.phase !== 'goal';
+    const hot = !!m && (m.fury?.[p.team] ?? 0) > m.t && !flash && !loading && m.phase !== 'goal';
     if (hot) {
       this.hotT += dt; this.sprite.setTint(Math.floor(this.hotT * 9) % 2 ? 0xff8f6e : 0xffd2b8);
       if (this.fx && Math.floor(this.hotT * 5) !== Math.floor((this.hotT - dt) * 5)) this.fx.puff(x + (Math.random() - 0.5) * 8, y - this.tall + 4, 0, 1);

@@ -122,7 +122,7 @@ const stage = async (page, slot = 0, bx = 400) => { await page.evaluate(({ slot,
   const [ex, ey] = await center('.tbtn.special');
   await touch('touchStart', [[ex, ey, 5]]); await page.waitForTimeout(100); await touch('touchEnd', []); await page.waitForTimeout(600);
   const sp = await page.evaluate(() => ({ used: window.__futbol.match.specialsUsed[0], phase: window.__futbol.match.phase, bar: window.__futbol.match.bar[0] }));
-  ok('tactil: Especial lanza el tiro especial', sp.used >= 1 || sp.phase === 'cinematic' || sp.bar < 100, JSON.stringify(sp));
+  ok('tactil: Especial lanza el tiro especial (sin película: el partido sigue en juego)', sp.used >= 1 && sp.bar < 100 && sp.phase !== 'cinematic', JSON.stringify(sp));
   await page.screenshot({ path: 'docs/qa/shots/m3_touch_844x390.png' });
   ok('sin errores de consola (tactil 1P)', errors.length === 0, errors.join('|'));
   await ctx.close();

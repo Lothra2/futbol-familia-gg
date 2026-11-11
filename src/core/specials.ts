@@ -43,7 +43,7 @@ export function specialChance(m: Match, shooter: Player, from: { x: number }): n
 
 /** Who may throw the special this step, if anybody. 'far' means the button was pressed too far from the goal (the bar is not spent). */
 export function trySpecials(m: Match): void {
-  if (m.phase !== 'play') return;
+  if (m.phase !== 'play' || m.special) return;
   const b = m.ball;
   for (const p of m.players) {
     if (!p.input.specialPressed) continue;
@@ -58,31 +58,27 @@ export function trySpecials(m: Match): void {
     }
     if (!shooter) continue;
     if (specialKind(shooter) !== 'arcoiris' && shooter.role !== 'gk' && Math.abs(goalX(shooter.team) - shooter.x) > PITCH.w * T.special.zone) { emit(m, 'special_far', shooter.x, shooter.y, 0, shooter.id); continue; }
-    launchSpecial(m, shooter);
+    launchSpecial(m, shooter, p.control === 'human' ? p : null);
     return;
   }
 }
 
-export function launchSpecial(m: Match, s: Player): void {
-  const b = m.ball, team = s.team;
+/** The special starts: no film, the match goes on. The shooter winds up with a little bar over his head (`by` is the person who asked for it and
+ *  will let it go; with nobody it goes off by itself) and the ball waits at his feet. */
+export function launchSpecial(m: Match, s: Player, by: Player | null = s.control === 'human' ? s : null): void {
+  const b = m.ball, team = s.team, C = T.charge;
   const keeper = m.players.find((q) => q.team !== team && q.role === 'gk') ?? null;
-  const first = m.specialsUsed[team] === 0;
-  const dur = m.cine === 'off' ? T.cinemaT.off : m.cine === 'short' ? T.cinemaT.short : first ? T.cinemaT.full : T.cinemaT.short;
-  const kind = specialKind(s), base = specialChance(m, s, s);
-  m.special = { kind, team, shooter: s.id, keeper: keeper ? keeper.id : null, outcome: m.rng.chance(base) ? 'goal' : 'save', t: 0, dur, x: s.x, y: s.y, full: dur >= T.cinemaT.full };
-  // the ring: a person who shoots, or who defends against the AI, decides part of the result. Not in "sin cinemáticas" (nothing is shown) and not AI against AI.
-  const defHuman = m.players.find((q) => q.team !== team && q.control === 'human');
-  const who = m.cine === 'off' ? null : s.control === 'human' ? 'atk' : defHuman ? 'def' : null;
-  if (who) {
-    const h = who === 'atk' ? s : defHuman!, easy = h.controls === 'easy', R = T.ring;
-    const center = dur * (dur >= T.cinemaT.full ? R.centerFull : R.centerShort), k = easy ? R.easyMult : 1;
-    m.special.ring = { who, slot: h.humanSlot ?? 0, center, perfect: R.wPerfect * k, good: R.wGood * k, end: center + R.wGood * k, press: null, hit: null, p: who === 'atk' ? Math.min(T.special.cap, base * R.mult) : base, easy };
-  }
-  m.phase = 'cinematic'; m.phaseT = 0;
+  // a special of the AI against a team with a person: the bar is hers, to help her keeper (pressing in time takes chance away from the shot)
+  const def = by ? null : m.humans.find((h) => h.team !== team) ?? null;
+  const kind = specialKind(s), base = specialChance(m, s, s), easy = by ? by.controls === 'easy' : !!def && def.controls === 'easy';
+  // a child gets wider zones round the same middle
+  const wide = (z: readonly number[]): [number, number] => { const mid = (z[0] + z[1]) / 2, h = ((z[1] - z[0]) / 2) * (easy ? C.easyWide : 1); return [Math.max(0.2, mid - h), Math.min(1, mid + h)]; };
+  m.special = { kind, team, shooter: s.id, keeper: keeper ? keeper.id : null, outcome: 'save', t: 0, dur: by ? C.dur : def ? C.defDur : C.aiDur, x: s.x, y: s.y,
+    charge: { slot: by ? by.humanSlot : def ? def.slot : null, def: !!def, hit: null, p: by ? Math.min(T.special.cap, base * C.mult) : base, easy, good: wide(C.good), perfect: wide(C.perfect) } };
   m.bar[team] = 0; m.specialsUsed[team]++; m.stats.specials[team]++; s.stats2.specials++;
   if (b.state === 'owned') { b.state = 'scripted'; }
   b.owner = b.state === 'held' ? b.owner : null;
-  s.state = 'special'; s.act = null; s.vx = s.vy = 0;
+  s.state = 'special'; s.act = null; s.vx = s.vy = 0; s.supAnim = 'kick';
   setTouch(m, s);
   emit(m, 'special', s.x, s.y, 0, s.id, KIND_INDEX.indexOf(kind));
 }
@@ -109,7 +105,7 @@ export function trackSuper(m: Match, p: Player, dt: number): void {
 
 /** The súper patada: no cinematic, the ball flies at once along the path of the power of the shooter, knocks down whoever is in the way and,
  *  when it goes in, takes the keeper into the net with it. The result is rolled now (closer is better). */
-export function superShot(m: Match, s: Player, bonus = 0): void {
+export function superShot(m: Match, s: Player, bonus = 0, anim: NonNullable<Player['supAnim']> = 'kick'): void {
   const team = s.team, dir = attackDir(team), gx = goalX(team), b = m.ball;
   const keeper = m.players.find((q) => q.team !== team && q.role === 'gk') ?? null;
   const d = Math.abs(gx - s.x), kind = specialKind(s);
@@ -123,37 +119,44 @@ export function superShot(m: Match, s: Player, bonus = 0): void {
   const foes = m.players.filter((q) => q.team !== team && q.role !== 'gk');
   const targets = kind === 'estrellas' ? foes.filter((o) => (o.x - s.x) * dir > -40).sort((a, c) => Math.hypot(a.x - s.x, a.y - s.y) - Math.hypot(c.x - s.x, c.y - s.y)).slice(0, 3).map((o) => o.id) : [];
   const kindF = kind === 'carrera' ? 'canonazo' : kind;   // only Thor runs with the ball, and he never dribbles
-  m.flight = { kind: kindF, team, shooter: s.id, keeper: keeper ? keeper.id : null, outcome, t: 0, dur: flightDur(kindF, Math.hypot(x1 - x0, y1 - y0)) * T.super.durK, x0, y0, x1, y1, dived: false, targets, hit: [] };
-  Object.assign(b, { x: x0, y: y0, z: 4, vx: 0, vy: 0, vz: 0, spin: 0, owner: null, state: 'scripted', inNet: false, scored: null });
-  s.sup = null; s.state = 'special'; s.act = null; s.vx = s.vy = 0; s.stats2.shots++; m.stats.shots[team]++;
+  m.flight = { kind: kindF, team, shooter: s.id, keeper: keeper ? keeper.id : null, outcome, t: 0, dur: flightDur(kindF, Math.hypot(x1 - x0, y1 - y0)) * T.super.durK, x0, y0, x1, y1, dived: false, targets, hit: [], z0: s.z > 2 ? s.z + 8 : 0 };
+  Object.assign(b, { x: x0, y: y0, z: 4 + (s.z > 2 ? s.z + 8 : 0), vx: 0, vy: 0, vz: 0, spin: 0, owner: null, state: 'scripted', inNet: false, scored: null });
+  s.sup = null; s.state = 'special'; s.stateT = 0; s.act = null; s.vx = s.vy = 0; s.supAnim = anim; s.stats2.shots++; m.stats.shots[team]++;
   setTouch(m, s);
   emit(m, 'super', s.x, s.y, 0, s.id, KIND_INDEX.indexOf(kindF));
 }
 
-/** Runs the fixed-length cinematic. Nothing moves in the match. Any button after 0.3 s skips it. */
-export function stepCinematic(m: Match, dt: number): void {
-  const sp = m.special;
-  if (!sp) { m.phase = 'play'; return; }
-  sp.t += dt;
-  const rg = sp.ring;
-  if (rg && !rg.hit) {
-    const f = m.hin[rg.slot];
-    // only the first press counts, so pressing over and over does not beat the ring
-    if (rg.press === null && f && (f.shootPressed || f.specialPressed) && sp.t >= 0.1) rg.press = sp.t;
-    if (sp.t >= rg.end) {
-      const off = rg.press === null ? Infinity : Math.abs(rg.press - rg.center);
-      rg.hit = off <= rg.perfect ? 'perfect' : off <= rg.good ? 'good' : rg.easy && rg.who === 'atk' && rg.press === null ? 'good' : 'miss';   // a child who does not press loses nothing
-      const R = T.ring, bonus = rg.who === 'atk' ? (rg.hit === 'perfect' ? R.perfect : rg.hit === 'good' ? R.good : 0) : -(rg.hit === 'perfect' ? R.defPerfect : rg.hit === 'good' ? R.defGood : 0);
-      sp.outcome = m.rng.chance(Math.max(0.02, Math.min(T.special.cap, rg.p + bonus))) ? 'goal' : 'save';
-      emit(m, 'ringhit', sp.x, sp.y, 0, sp.shooter, rg.hit === 'perfect' ? 2 : rg.hit === 'good' ? 1 : 0);
-    }
-  }
-  // while the ring is open nothing skips the cinematic: the press is the answer to the ring
-  const skip = sp.t >= T.special.skipAfter && (!rg || !!rg.hit) && m.hin.some((f) => !!f && (f.shootPressed || f.passPressed || f.specialPressed));
-  if (sp.t >= sp.dur || skip) resolveSpecial(m);
+/** Where on the bar (0 to 1) a press falls: in the yellow, in the green or too soon. */
+export function chargeZone(ch: { good: [number, number]; perfect: [number, number] }, u: number): 'perfect' | 'good' | 'early' {
+  return u >= ch.perfect[0] && u <= ch.perfect[1] ? 'perfect' : u >= ch.good[0] && u <= ch.good[1] ? 'good' : 'early';
 }
 
-/** The cinematic is over: the ball starts its scripted flight (the result was rolled at launch) and the match is live again. */
+/** One step of a special that is loading: the bar fills, the person lets it go (or it goes off at the end), the result is rolled and the ball flies. */
+export function stepCharge(m: Match, dt: number): void {
+  const sp = m.special;
+  if (!sp) return;
+  const s = playerById(m, sp.shooter), ch = sp.charge, C = T.charge;
+  // the half ended, or something took the shooter out of it: the special is lost and the ball is loose at his feet
+  if (m.phase !== 'play' || !s || s.state !== 'special') {
+    m.special = null;
+    if (s && s.state === 'special') s.state = 'idle';
+    if (m.ball.state === 'scripted' && !m.flight) { m.ball.state = 'free'; m.ball.owner = null; }
+    return;
+  }
+  sp.t += dt;
+  const f = ch.slot === null ? null : m.hin[ch.slot];
+  if (f && !ch.hit && sp.t >= C.lock && (f.shootPressed || f.specialPressed)) ch.hit = chargeZone(ch, sp.t / sp.dur);
+  // the shooter lets it go and the ball leaves at once; the one who defends only braces her keeper, the rival shoots when his bar is full
+  if (sp.t < sp.dur && (!ch.hit || ch.def)) return;
+  // a child who never presses loses nothing; anybody else just gets the base
+  if (!ch.hit) ch.hit = ch.slot !== null && ch.easy ? 'good' : 'none';
+  const bonus = ch.slot === null ? 0 : ch.def ? -(ch.hit === 'perfect' ? C.dPerfect : ch.hit === 'good' ? C.dGood : 0) : ch.hit === 'perfect' ? C.pPerfect : ch.hit === 'good' ? C.pGood : 0;
+  sp.outcome = m.rng.chance(Math.max(0.02, Math.min(T.special.cap, ch.p + bonus))) ? 'goal' : 'save';
+  emit(m, ch.def ? 'chargedef' : 'chargehit', s.x, s.y, 0, s.id, ch.hit === 'perfect' ? 2 : ch.hit === 'good' ? 1 : 0);
+  resolveSpecial(m);
+}
+
+/** The charge is let go: the ball starts its scripted flight (the result is already rolled). */
 function resolveSpecial(m: Match): void {
   const sp = m.special!, s = playerById(m, sp.shooter)!, b = m.ball, team = sp.team, dir = attackDir(team), gx = goalX(team);
   const foes = m.players.filter((q) => q.team !== team && q.role !== 'gk');
@@ -164,7 +167,8 @@ function resolveSpecial(m: Match): void {
   const dist = Math.hypot(x1 - x0, y1 - y0);
   const targets = sp.kind === 'estrellas' ? [...foes].filter((o) => (o.x - s.x) * dir > -40).sort((a, c) => Math.hypot(a.x - s.x, a.y - s.y) - Math.hypot(c.x - s.x, c.y - s.y)).slice(0, 3).map((o) => o.id) : [];
   m.flight = { kind: sp.kind, team, shooter: s.id, keeper: sp.keeper, outcome: sp.outcome, t: 0, dur: flightDur(sp.kind, dist), x0, y0, x1, y1, dived: false, targets, hit: [] };
-  m.special = null; m.phase = 'play'; m.phaseT = 0;
+  m.special = null;
+  s.stateT = 0;
   Object.assign(b, { x: x0, y: y0, z: 4, vx: 0, vy: 0, vz: 0, spin: 0, owner: null, state: 'scripted', inNet: false, scored: null });
   setTouch(m, s);
 }
@@ -181,6 +185,11 @@ export function flightDur(kind: SpecialKind, dist: number): number {
 
 /** Where the ball is at u (0 to 1) of its flight. It always lands where the result says (x1, y1) at ground level. */
 export function flightPos(f: Flight, u: number): { x: number; y: number; z: number } {
+  const q = flightPath(f, u);
+  if (f.z0) q.z += f.z0 * Math.max(0, 1 - u / 0.35);
+  return q;
+}
+function flightPath(f: Flight, u: number): { x: number; y: number; z: number } {
   const e = u, base = { x: f.x0 + (f.x1 - f.x0) * e, y: f.y0 + (f.y1 - f.y0) * e };
   const side = f.y1 >= f.y0 ? 1 : -1, fade = 1 - u, s = Math.sin(Math.PI * u);
   switch (f.kind) {

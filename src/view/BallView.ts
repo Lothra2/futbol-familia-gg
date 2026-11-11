@@ -82,7 +82,8 @@ export class BallView {
     this.tex.refresh();
   }
 
-  update(kind: SpecialKind | null = null, t = 0): void {
+  /** `kind`: the power the ball is flying with; `load`: how full the bar of a power that is loading is (0 to 1), or null. */
+  update(kind: SpecialKind | null = null, t = 0, load: number | null = null): void {
     const b = this.ball, F = 1 / 60;
     const x = Math.round(wx(b.x, b.y)), gy = Math.round(sy(b.y)), y = Math.round(sy(b.y, b.z) - BALL_R + 1);
     const k = Math.max(0.5, 0.95 - b.z / 120);
@@ -131,7 +132,12 @@ export class BallView {
       const vx = b.vx * PX, vy = b.vy * PY - b.vz * PZ, sp = Math.hypot(vx, vy), free = b.state === 'free';
       if (sp > 1) { ux = vx / sp; uy = vy / sp; }
       const km = KICK_MOVE[this.kickKind];
-      if (this.squashT > 0) { look = lookOf('tortilla', BALL_R, 0, 1, t); this.sprite.y = y + 2; }
+      if (load !== null) {
+        // a power is loading: the ball burns at his feet, beating faster and bigger as the bar fills
+        look = lookOf('redondo', BALL_R + 1 + Math.round(1.5 * load + Math.sin(t * (18 + 26 * load))), 1, 0, t);
+        look.pals = [PAL_HOT.blanco, PAL_HOT.fuego, PAL_BALL]; look.spin = 0.25 + 0.5 * load;
+      }
+      else if (this.squashT > 0) { look = lookOf('tortilla', BALL_R, 0, 1, t); this.sprite.y = y + 2; }
       else if (this.wobT > 0) { look = lookOf('gelatina', BALL_R, ux, uy, t, 0, this.wobT / 0.3); look.pals = [PAL_BALL]; look.ghosts = 0; }
       else if (free && km && this.kickT < km.dur && sp >= km.min) look = lookOf(km.move, BALL_R, ux, uy, t, this.kickT);
       else if (free && Math.abs(b.spin) > 0.2 && sp > 150 && Math.abs(ux) > 0.3) look = lookOf('banana', BALL_R, ux, uy, t, 0, Math.sign(b.spin) * Math.sign(ux) * Math.min(1, Math.abs(b.spin) / 1.1));

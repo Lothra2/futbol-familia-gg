@@ -65,13 +65,13 @@ for (const [w, h] of [[667, 375], [844, 390], [926, 428], [1024, 768], [1180, 82
   const { page, errors, ctx } = await openGame(b, srv.url, 'menu=main', { viewport: { width: 1280, height: 720 } });
   await page.waitForSelector('#s-main');
   await page.click('#s-main [data-act=settings]'); await page.waitForSelector('#s-settings');
-  await page.click('#cine .chip-o[data-i="2"]'); await page.click('#muted .chip-o[data-i="1"]');
+  await page.click('#replay .chip-o[data-i="1"]'); await page.click('#muted .chip-o[data-i="1"]');
   await page.fill('#music', '30'); await page.dispatchEvent('#music', 'input');
   const s = await page.evaluate(() => JSON.parse(localStorage.getItem('futbol-familia/save')).settings);
-  ok('ajustes: se guardan cinematicas, silencio y volumen', s.cinematics === 'off' && s.muted === true && Math.abs(s.music - 0.3) < 0.01, JSON.stringify(s));
+  ok('ajustes: se guardan repeticion, silencio y volumen', s.replay === false && s.muted === true && Math.abs(s.music - 0.3) < 0.01, JSON.stringify(s));
   await page.reload(); await page.waitForSelector('#s-main');
   await page.click('#s-main [data-act=settings]'); await page.waitForSelector('#s-settings');
-  ok('ajustes: despues de recargar siguen igual', await page.evaluate(() => document.querySelector('#cine .sel').textContent === 'Sin ellas' && document.querySelector('#muted .sel').textContent === 'Silencio' && document.getElementById('music').value === '30'));
+  ok('ajustes: despues de recargar siguen igual', await page.evaluate(() => document.querySelector('#replay .sel').textContent === 'No' && document.querySelector('#muted .sel').textContent === 'Silencio' && document.getElementById('music').value === '30'));
   ok('ajustes sin errores', errors.length === 0, errors.join('|'));
   await ctx.close();
 }

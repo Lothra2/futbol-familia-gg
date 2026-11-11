@@ -3,10 +3,18 @@ import type { Match, Player } from '../core/state';
 import { GOAL, MID } from '../core/field';
 import { PEN } from '../core/penalties';
 import type { NesPlayer } from './NesPlayer';
-import { cropFrame, faceKey } from './Cinematic';
 import { services } from '../app/services';
 
 const INK = 0x2a1b3d;
+
+/** Texture key of the strip of faces of a character (see FACES in Boot). */
+const faceKey = (art: string): string => `caras_${art.replace(/_[ab]$/, '')}`;
+/** A crop of an illustration as a texture frame (created once, named by its rectangle). */
+function cropFrame(scene: Phaser.Scene, key: string, sx: number, sy: number, w: number, h: number): string {
+  const tex = scene.textures.get(key), name = `crop_${sx}_${sy}_${w}_${h}`;
+  if (!tex.has(name)) tex.add(name, 0, sx, sy, w, h);
+  return name;
+}
 const font = (px: number, color = '#ffffff'): Phaser.Types.GameObjects.Text.TextStyle => ({ fontFamily: 'Pixelify, sans-serif', fontSize: `${px}px`, fontStyle: 'bold', color, stroke: '#2A1B3D', strokeThickness: Math.max(3, Math.round(px / 6)) });
 /** The look of each stadium at night: sky top and bottom, the two greens of the grass, the colour of the lights and the colours of the fans. */
 const PAL: Record<string, { sky: [number, number]; grass: [number, number]; glow: number; fans: number[] }> = {

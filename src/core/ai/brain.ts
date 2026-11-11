@@ -125,7 +125,8 @@ function brainThink(m: Match, p: Player, humanize: boolean): InputFrame {
     const dGoal = Math.abs(gx - p.x);
     const near = foes.filter((q) => q.role !== 'gk' && (q.x - p.x) * dir > -6 && Math.hypot(q.x - p.x, (q.y - p.y) / T.yFactor) < 34).sort((a, c) => Math.hypot(a.x - p.x, a.y - p.y) - Math.hypot(c.x - p.x, c.y - p.y))[0];
     // he jumped with the ball: up there it is the spinning kick, to one side of the keeper or the other
-    if (p.z > 8 && dGoal <= par.shootRange * 1.3) { f.mx = dir; f.my = m.rng.chance(0.5) ? 0.55 : -0.55; f.shootPressed = true; A.armedAt = 0; return f; }
+    // (he waits for the top of the jump, where the power shot is worth more; the easy rivals do not know that)
+    if (p.z > 8 && dGoal <= par.shootRange * 1.3 && (p.vz <= T.airPower.apexV || (p.team === 1 && m.difficulty === 'tranquilos'))) { f.mx = dir; f.my = m.rng.chance(0.5) ? 0.55 : -0.55; f.shootPressed = true; A.armedAt = 0; return f; }
     // the súper patada: when he flashes he shoots it (Nekketsu)
     if (superOpen(m, p) && m.rng.chance(p.team === 1 ? DIFFICULTY[m.difficulty].superTake : T.super.aiTake)) { f.mx = dir; f.my = 0; f.shootPressed = true; f.shoot = false; A.armedAt = 0; return f; }
     // the special, when the bar is full, close enough and after a short wait

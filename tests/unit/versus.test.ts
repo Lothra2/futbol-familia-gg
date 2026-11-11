@@ -31,7 +31,7 @@ describe('versus: dos jugadores uno contra otro', () => {
   it('el humano del rival usa su barra (no se la gastan sus companeros IA)', () => {
     const m = createMatch({ seed: 2, humans: [{ team: 0, slot: 4, humanSlot: 0, controls: 'full' }, { team: 1, slot: 3, humanSlot: 1, controls: 'full' }], skipKickoff: true });
     m.bar[1] = 100;
-    for (let i = 0; i < 60 * 40; i++) { step(m); m.events = []; if (m.phase === 'cinematic') { const sp = m.special!; const s = m.players.find((p) => p.id === sp.shooter)!; expect(s.team === 1 ? s.control : 'human').toBe('human'); } }
+    for (let i = 0; i < 60 * 40; i++) { step(m); m.events = []; if (m.special) { const sp = m.special; const s = m.players.find((p) => p.id === sp.shooter)!; expect(s.team === 1 ? s.control : 'human').toBe('human'); } }
     expect(m.specialsUsed[1] === 0 || true).toBe(true);
   });
 });

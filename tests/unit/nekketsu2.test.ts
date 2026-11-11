@@ -84,12 +84,15 @@ describe('remate combinado', () => {
     expect(combo).toBe(true); expect(m.flight).not.toBeNull();
     expect(m.flight!.kind).toBe(specialKind(me)); expect(m.flight!.shooter).toBe(me.id); expect(me.state).toBe('special');
   });
-  it('si el balón no viene de un compañero, o es muy lejos del arco, es un cabezazo normal', () => {
-    for (const s of [cross(false), cross(true, T.super.range + 80)]) {
-      tick(s.m, inp({ shoot: true, shootPressed: true }));
-      for (let i = 0; i < 40; i++) tick(s.m);
-      expect(s.m.flight).toBeNull(); expect(s.m.ball.kick?.kind).toBe('header');
-    }
+  it('si el balón no viene de un compañero también es remate de poder, pero sin el premio del combinado; lejos del arco es un cabezazo normal', () => {
+    const a = cross(false); let combo = false;
+    tick(a.m, inp({ shoot: true, shootPressed: true }));
+    for (let i = 0; i < 40 && !a.m.flight; i++) { tick(a.m); if (a.m.events.some((e) => e.k === 'combo')) combo = true; }
+    expect(a.m.flight).not.toBeNull(); expect(combo).toBe(false); expect(a.me.supAnim).toBe('header');
+    const b = cross(true, T.airPower.range + 80);
+    tick(b.m, inp({ shoot: true, shootPressed: true }));
+    for (let i = 0; i < 40; i++) tick(b.m);
+    expect(b.m.flight).toBeNull(); expect(b.m.ball.kick?.kind).toBe('header');
   });
 });
 

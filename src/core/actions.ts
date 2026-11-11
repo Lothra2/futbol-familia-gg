@@ -465,7 +465,17 @@ export function handleInput(m: Match, p: Player, dt: number): void {
     // in the air: with the ball Tiro is the spinning kick and Pase a pass from up there; a ball within reach is struck with the head or the
     // foot; and with no ball to strike Tiro is the flying kick
     if (own) {
-      if (sh.press) { startKick(m, p, planSpin(m, p), T.spin.prep); p.vz = Math.max(p.vz, T.spin.hang); }
+      if (sh.press) {
+        // near the goal it is his power shot (Nekketsu: jump with the ball and kick it up there), best right at the top of the jump;
+        // from far it is the spinning kick, a hard shot
+        if (inPowerRange(m, p)) {
+          const top = Math.abs(p.vz) <= T.airPower.apexV;
+          if (top) emit(m, 'airtop', p.x, p.y, p.z, p.id);
+          superShot(m, p, top ? T.airPower.apex : 0, 'spin');
+          if (p.team === 0) m.data.spins = ((m.data.spins as number) ?? 0) + 1;
+        } else startKick(m, p, planSpin(m, p), T.spin.prep);
+        p.vz = Math.max(p.vz, T.spin.hang);
+      }
       else if (pa.press) startKick(m, p, { ...planPass(m, p, false), jumped: true }, T.jump.prep);
       return;
     }
@@ -568,11 +578,14 @@ export function updateAct(m: Match, p: Player, dt: number): { moveScale: number;
   return { moveScale, override };
 }
 
+/** Close enough to the goal for a power shot of the air (and not a keeper). */
+export const inPowerRange = (m: Match, p: Player): boolean => p.role !== 'gk' && m.phase === 'play' && Math.abs(goalX(p.team) - p.x) <= T.airPower.range;
+
 /** Is the ball this player strikes a pass of a mate that nobody else has touched, close enough to the goal for a power shot? (The one the
  *  pass was for takes a high ball down as it reaches him: it still counts when he had already started to strike it.) */
 export function comboReady(m: Match, p: Player): boolean {
   const lp = m.lastPass, b = m.ball;
-  if (!lp || lp.team !== p.team || lp.from === p.id || m.t - lp.t >= 3 || p.role === 'gk' || Math.abs(goalX(p.team) - p.x) > T.super.range) return false;
+  if (!lp || lp.team !== p.team || lp.from === p.id || m.t - lp.t >= 3 || !inPowerRange(m, p)) return false;
   return b.lastTouch.player === lp.from || (b.lastTouch.player === p.id && b.prevTouch.player === lp.from && m.t - b.lastTouch.t < 0.6);
 }
 
@@ -588,10 +601,15 @@ function resolveKick(m: Match, p: Player, plan: KickPlan): void {
   if (!ok && plan.kind === 'restart' && b.state === 'dead') ok = true;
   if (!ok) { emit(m, 'whiff', p.x, p.y, p.z, p.id); return; }
   // el remate combinado (Nekketsu): a mate's pass struck in the air at goal is the power shot of whoever strikes it
-  if (plan.air && plan.target === undefined && (plan.kind === 'header' || plan.kind === 'volley' || plan.kind === 'chilena') && comboReady(m, p)) {
-    emit(m, 'combo', p.x, p.y, p.z, p.id);
-    superShot(m, p, T.combo.bonus);
-    return;
+  // los remates de poder (Nekketsu): a header or an overhead kick at goal is the power shot of whoever strikes it, and so is a volley when
+  // the ball is a pass of a mate. The mate's pass (el remate combinado) gives it more chance.
+  if (plan.air && plan.target === undefined && (plan.kind === 'header' || plan.kind === 'volley' || plan.kind === 'chilena') && inPowerRange(m, p) && (plan.tx - p.x) * attackDir(p.team) > 0) {
+    const combo = comboReady(m, p);
+    if (combo || plan.kind !== 'volley') {
+      if (combo) emit(m, 'combo', p.x, p.y, p.z, p.id);
+      superShot(m, p, combo ? T.combo.bonus : 0, plan.kind as 'header' | 'volley' | 'chilena');
+      return;
+    }
   }
   launch(m, p, plan);
 }

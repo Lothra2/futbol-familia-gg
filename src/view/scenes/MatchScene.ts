@@ -13,7 +13,7 @@ import { Fx } from '../Fx';
 import { WeatherView } from '../WeatherView';
 import { setView, wx, sy } from '../../core/proj';
 import { outfitAtlas } from '../outfit';
-import { Cinematic, type CineInfo } from '../Cinematic';
+import { ChargeBar } from '../ChargeBar';
 import { Aim } from '../Aim';
 import { PenView } from '../PenView';
 import { PenCine } from '../PenCine';
@@ -42,7 +42,7 @@ export class MatchScene extends Phaser.Scene {
   private haz!: HazardView;
   private fx!: Fx;
   private weather!: WeatherView; private lastCam = { x: 0, y: 0 };
-  cine!: Cinematic;
+  private chargeBar!: ChargeBar;
   private aim!: Aim;
   private pen!: PenView;
   private penCine?: PenCine;
@@ -55,7 +55,7 @@ export class MatchScene extends Phaser.Scene {
   /** The replay of the goal: the last seconds of play are recorded and shown again in slow motion before the kick-off. */
   private rec = new Recorder(); private replay: ReplayPlayer | null = null; private replayUi!: ReplayOverlay; private pending: Snap[] | null = null; private prevPhase = ''; private replaySkip = false;
   private replayKey = (e: KeyboardEvent): void => { if (this.replay && ['Space', 'Enter', 'KeyJ', 'KeyK', 'KeyF', 'KeyG', 'Comma', 'Period', 'Escape'].includes(e.code)) this.replaySkip = true; };
-  private tapSkip = (e: Event): void => { if ((e.target as HTMLElement | null)?.id === 'pause') return; if (this.replay) { this.replaySkip = true; return; } const r = services.router; if (!r || (this.ctl?.m.phase !== 'cinematic' && this.ctl?.m.phase !== 'goal')) return; r.setButton(0, 'cineskip', 'shoot', true); window.setTimeout(() => r.setButton(0, 'cineskip', 'shoot', false), 80); };
+  private tapSkip = (e: Event): void => { if ((e.target as HTMLElement | null)?.id === 'pause') return; if (this.replay) { this.replaySkip = true; return; } const r = services.router; if (!r || this.ctl?.m.phase !== 'goal') return; r.setButton(0, 'cineskip', 'shoot', true); window.setTimeout(() => r.setButton(0, 'cineskip', 'shoot', false), 80); };
   private hud!: Hud;
   private stepsRun = 0;
   private resultShown = false;
@@ -89,7 +89,7 @@ export class MatchScene extends Phaser.Scene {
     }
     this.ballView = new BallView(this, m.ball);
     this.haz = new HazardView(this, m);
-    this.cine = new Cinematic(this);
+    this.chargeBar = new ChargeBar(this);
     this.aim = new Aim(this);
     this.pen = new PenView(this, [T_ES.teams.family, T_ES.teams[this.cfg.rival] ?? '']);
     this.penCine?.destroy(); this.penCine = new PenCine(this, this.cfg.stadium ?? 'volcan');
@@ -144,7 +144,10 @@ export class MatchScene extends Phaser.Scene {
         case 'corner': this.hud.banner(B.corner, 900); break;
         case 'final': this.hud.banner(B.final, 1800); break;
         case 'whistle': if (e.v === 2) this.hud.banner(B.halftime, 1600); else if (e.v === 1 && this.ctl.m.phase === 'kickoff' && this.cfg.cine !== 'off') this.hud.banner(B.kickoff, 1100); break;
-        case 'special': this.stadium.gasp(); if (this.cfg.cine === 'off') this.hud.banner(T_ES.specials[KIND_INDEX[e.v ?? 0]] ?? '', 1500); this.hud.flash(180); shakeCamera(this.cam, 0.3); break;
+        case 'special': this.stadium.gasp(); this.hud.banner(T_ES.specials[KIND_INDEX[e.v ?? 0]] ?? '', 1100); break;
+        case 'chargehit': this.chargeBar.result(e.v ?? 0); if (e.v === 2) this.pow(e.x, e.y, '¡PERFECTO!', '#ffe45c', 34); else if (e.v === 1) this.pow(e.x, e.y, '¡BIEN!', '#5ddb43', 34); this.hud.flash(140); shakeCamera(this.cam, 0.3); break;
+        case 'chargedef': this.chargeBar.result(e.v ?? 0); if (e.v === 2) this.pow(e.x, e.y, '¡BIEN TAPADO!', '#7bc8ff', 34); else if (e.v === 1) this.pow(e.x, e.y, '¡ATENTOS!', '#7bc8ff', 34); break;
+        case 'airtop': this.pow(e.x, e.y, '¡ARRIBA!', '#ffe45c', (e.z ?? 0) + 22); break;
         case 'special_far': this.hud.hint(B.far); break;
         case 'save': {
           if (e.v !== 2 && this.ctl.m.phase !== 'penalties') this.hud.banner(B.save, 700); this.stadium.gasp();
@@ -203,9 +206,9 @@ export class MatchScene extends Phaser.Scene {
       }
       this.stadium.update(dt);
       this.weather.update(dt, this.scale.width, this.scale.height, this.cam.x - this.lastCam.x, this.cam.y - this.lastCam.y); this.lastCam = { x: this.cam.x, y: this.cam.y };
-      this.ballView.update(m.flight ? m.flight.kind : null, m.t);
+      this.ballView.update(m.flight ? m.flight.kind : null, m.t, m.special ? Math.min(1, m.special.t / m.special.dur) : null);
       this.haz.update(this.time.now / 1000);
-      this.updateCine(m, dt);
+      this.chargeBar.update(m, dt, this.time.now / 1000);
       if (m.phase === 'play') this.rec.record(m, dt);
       if (this.prevPhase === 'goal' && m.phase !== 'goal' && this.pending) {
         if (m.phase !== 'over' && this.cfg.replay !== false && this.cfg.cine !== 'off' && !this.cfg.fastForward && this.pending.length > 20) this.startReplay(this.pending);
@@ -230,15 +233,6 @@ export class MatchScene extends Phaser.Scene {
       }
       this.lastTick = m.tick;
     } catch (e) { console.error('update failed', e); }
-  }
-
-  /** Shows the cinematic while the match is in that phase and puts it away afterwards. */
-  private updateCine(m: Match, dt: number): void {
-    const sp = m.special;
-    if (m.phase === 'cinematic' && sp) {
-      if (!this.cine.active && this.cfg.cine !== 'off') { this.cine.start(sp, this.cineInfo(sp.shooter, sp.keeper)); this.hud.cinema(true); }
-      if (this.cine.active) this.cine.update(sp, this.scale.width, this.scale.height, dt);
-    } else if (this.cine.active) { this.cine.stop(); this.hud.cinema(false); }
   }
 
   private startReplay(clip: Snap[]): void {
@@ -269,10 +263,10 @@ export class MatchScene extends Phaser.Scene {
 
   /** The words of a hit, Nekketsu style: big pixel letters that jump out of the player and fade. */
   private pows: Phaser.GameObjects.Text[] = [];
-  private pow(x: number, y: number, word: string, color: string): void {
+  private pow(x: number, y: number, word: string, color: string, z = 0): void {
     const t = this.pows.find((o) => !o.visible) ?? (this.pows.length < 6 ? this.pows[this.pows.push(this.add.text(0, 0, '', { fontFamily: 'Pixelify, sans-serif', fontSize: '16px', fontStyle: 'bold', color: '#fff', stroke: '#2A1B3D', strokeThickness: 4 }).setOrigin(0.5, 1).setResolution(1).setDepth(1500)) - 1] : this.pows[0]);
     this.tweens.killTweensOf(t);
-    t.setText(word).setColor(color).setVisible(true).setAlpha(1).setScale(0.6).setPosition(Math.round(wx(x, y)), Math.round(sy(y) - 34));
+    t.setText(word).setColor(color).setVisible(true).setAlpha(1).setScale(0.6).setPosition(Math.round(wx(x, y)), Math.round(sy(y, z) - 34));
     this.tweens.add({ targets: t, scale: 1.15, y: t.y - 14, duration: 180, ease: 'Back.Out', onComplete: () => this.tweens.add({ targets: t, alpha: 0, duration: 380, delay: 220, onComplete: () => t.setVisible(false) }) });
   }
 
@@ -285,6 +279,7 @@ export class MatchScene extends Phaser.Scene {
     else if ((e.k === 'post' || e.k === 'bar') && v > 300 && m.phase === 'play') t = 0.06;
     else if (e.k === 'bump') t = 0.06;
     else if (e.k === 'super') t = 0.16;
+    else if (e.k === 'chargehit') t = v === 2 ? 0.14 : 0.08;
     else if (e.k === 'superhit' || e.k === 'slidehit') t = 0.08;
     else if (e.k === 'spinkick') t = 0.09;
     else if (e.k === 'save' && v !== 2 && m.phase === 'play') t = 0.05;
@@ -302,18 +297,6 @@ export class MatchScene extends Phaser.Scene {
     return p ? p.name : this.ctl.m.lastGoal?.team === 1 ? 'DRAGON' : 'GOL';
   }
 
-  private cineInfo(shooterId: number, keeperId: number | null): CineInfo {
-    const m = this.ctl.m, p = m.players.find((q) => q.id === shooterId)!, k = keeperId === null ? null : m.players.find((q) => q.id === keeperId) ?? null;
-    const has = (key: string): boolean => this.textures.exists(`cine_${key}`);
-    const COLORS_ID: Record<string, number> = { sophie: 0x4fd65c, alana: 0xff6fb5, papa: 0xe8423a, mama: 0x9b5de5, juandi: 0x2f6fe0, thor: 0x3fb6f2, dragon: 0xff8a2a, tiburon: 0x2f8fe0, buho: 0xd9a05b, mapache: 0x8aa0a8 };
-    const art = p.team === 0 ? (p.charId === 'thor' ? 'thor_a' : p.charId!) : `riv_${p.species}_a`;
-    const kart = k ? (k.team === 0 ? 'thor_b' : `riv_${k.species}_b`) : null;
-    return {
-      art: has(art) ? art : '', keeperArt: kart && has(kart) ? kart : null,
-      shooterSprite: { key: p.team === 0 ? p.charId! : 'riv_dragon', frame: 5 }, keeperSprite: { key: k && k.team === 0 ? 'thor' : 'riv_dragon', frame: 7 },
-      color: COLORS_ID[p.charId ?? p.species ?? 'sophie'] ?? 0x4fd65c,
-    };
-  }
 
   setPaused(on: boolean): void { this.paused = on; if (!on) this.ctl?.resetClock(); }
   get steps(): number { return this.stepsRun; }

@@ -61,20 +61,20 @@ type Btn = keyof typeof ICONS & ('shoot' | 'pass' | 'sprint' | 'special' | 'kick
 
 const TIPS: [string, string, string][] = [
   ['Súper patada', 'Corre con el balón <b>sin parar</b> hacia el arco. Cuando tu jugador <b>brille</b> y salga <b>¡YA!</b>, toca <b>Tiro</b>: sale su poder y tumba a todos los que estén en el camino. Si esperas mucho, se apaga y hay que volver a correr.', 'shoot'],
-  ['Salta', 'Toca <b>Salto</b> para brincar: pasas por encima de las barridas y de los golpes. Con el balón en el aire, <b>Tiro</b> es la <b>patada giratoria</b>, más fuerte que un tiro normal. Tiro y Pase a la vez también saltan.', 'jump'],
-  ['En el aire', 'Salta por un balón alto: <b>Tiro</b> lo cabecea o lo patea de bolea al arco y <b>Pase</b> se lo baja a un compañero. Sin balón cerca, <b>Tiro</b> en el aire es la <b>patada voladora</b> y tumba al rival de enfrente.', 'jump'],
-  ['Remate combinado', 'Mándale un <b>pase alto</b> a un compañero cerca del arco. Si lo remata en el aire con <b>Tiro</b> (cabezazo, bolea o chilena), sale <b>su poder</b>. Mejor que desde el piso.', 'pass'],
+  ['Salta', 'Toca <b>Salto</b> para brincar: pasas por encima de las barridas y de los golpes. Con el balón en el aire, <b>Tiro</b> es la <b>patada giratoria</b>, y cerca del arco es tu <b>remate de poder</b>: tócalo en lo más alto del salto y vale más. Tiro y Pase a la vez también saltan.', 'jump'],
+  ['En el aire', 'Salta por un balón alto: <b>Tiro</b> lo cabecea o lo patea de bolea al arco y <b>Pase</b> se lo baja a un compañero. Un <b>cabezazo</b> o una <b>chilena</b> al arco desde cerca sale con <b>tu poder</b> y tumba al que se atraviese. Sin balón cerca, <b>Tiro</b> en el aire es la <b>patada voladora</b> y tumba al rival de enfrente.', 'jump'],
+  ['Remate combinado', 'Mándale un <b>pase alto</b> a un compañero cerca del arco. Si lo remata en el aire con <b>Tiro</b> (cabezazo, bolea o chilena), sale <b>su poder</b> con más chance de gol que si lo hace solo.', 'pass'],
   ['Las trampas', 'Cada cancha tiene la suya. <b>Arrecife:</b> no cruces los charcos corriendo a fondo. <b>Volcán:</b> si el géiser echa humo, quítate. <b>Bosque:</b> el barro te frena. <b>Nubes:</b> pisa una nube y rebotas altísimo. Se apagan en Ajustes.', 'move'],
   ['Si te tumban', '<b>Aprieta los botones</b> una y otra vez y te levantas antes. Y con un rival tumbado a tus pies, <b>Tiro</b> es una burla que carga tu barra ★.', 'shoot'],
   ['Sangre caliente', 'Si vas perdiendo por <b>dos goles</b>, tu equipo se enciende un rato: corre más, pega más duro y la súper patada sale antes. Los rivales también.', 'special'],
   ['A pelear', 'Quitarle el balón a un rival lo tira al suelo. Correr fuerte contra el que lleva el balón también. Y la barrida manda a volar.', 'shoot'],
   ['Pase alto', 'Toca <b>Pase</b> para un pase raso. <b>Mantenlo</b> un momento y suéltalo: el balón vuela por arriba y pasa a los rivales.', 'pass'],
   ['Más potencia', 'Mantén <b>Tiro</b> y suéltalo cuando la barra se llene. Si te pasas, dispara solo.', 'shoot'],
-  ['Tu poder', 'Pases, robos y paredes llenan la barra <b>★</b>. Con la barra llena y cerca del arco, toca <b>Especial</b>. En la película, toca <b>Tiro</b> cuando el anillo se cierre: más puntería, más gol.', 'special'],
+  ['Tu poder', 'Pases, robos y paredes llenan la barra <b>★</b>. Con la barra llena y cerca del arco, toca <b>Especial</b>. Sale una barrita sobre tu jugador: toca <b>Tiro</b> cuando la aguja esté en el <b>amarillo</b> y el tiro sale perfecto. El partido no se para. Si el que carga es un <b>rival</b>, su barrita sale azul: toca <b>Tiro</b> en el amarillo y tu portero lo tapa mejor.', 'special'],
   ['Quién eres', 'Controlas al más cercano al balón. El anillo de color te dice quién eres. Sin balón, un toque rápido de <b>Pase</b> cambia de jugador.', 'move'],
   ['Quitar el balón', 'Cerca del rival, <b>Tiro</b> le roba de frente. Lejos, te tiras en barrida. <b>Mantén Pase</b> para marcarlo: te pones entre él y tu arco.', 'shoot'],
   ['Penales', 'Si empatan, se define en penales. Mueve el stick a los lados para apuntar y <b>arriba o abajo</b> para la altura, y toca <b>Tiro</b>. Muy alto se va por encima del travesaño.', 'move'],
-  ['Saltar escenas', 'Toca la pantalla o cualquier botón para saltar las cinemáticas, el gol y la repetición.', ''],
+  ['Saltar escenas', 'Toca la pantalla o cualquier botón para saltar el festejo del gol y la repetición.', ''],
 ];
 
 export function tipsHtml(): string {
@@ -125,9 +125,9 @@ export function runCoach(opt: { touch: boolean; easy: boolean }, onDone: () => v
     { title: 'Mueve a tu jugador', text: opt.touch ? 'Pon el pulgar izquierdo en la pantalla y arrástralo.' : 'Usa W A S D o las flechas.', focus: 'move' },
     { title: opt.easy ? '¡Patea!' : 'Tiro', text: opt.easy ? 'Toca ¡Patea! con el balón: tira al arco o pasa solo, lo mejor en el momento.' : opt.touch ? 'Toca Tiro para patear. Mantenlo para más potencia.' : 'Toca J (o Espacio) para patear. Mantenlo para más potencia.', focus: 'shoot' },
     ...(opt.easy ? [] : [{ title: 'Pase', text: opt.touch ? 'Toca Pase para un pase raso. Mantenlo y suéltalo para un pase alto.' : 'Toca K para un pase raso. Mantenlo y suéltalo para un pase alto.', focus: 'pass' as Focus }]),
-    ...(opt.easy ? [] : [{ title: 'Salto', text: (opt.touch ? 'Toca Salto para brincar por encima de barridas y golpes. En el aire con el balón, Tiro' : 'Toca U para brincar por encima de barridas y golpes. En el aire con el balón, J') + ' es la patada giratoria. Sin balón, cabeceas el que venga alto.', focus: 'jump' as Focus }]),
+    ...(opt.easy ? [] : [{ title: 'Salto', text: (opt.touch ? 'Toca Salto para brincar por encima de barridas y golpes. En el aire con el balón, Tiro' : 'Toca U para brincar por encima de barridas y golpes. En el aire con el balón, J') + ' es la patada giratoria, y cerca del arco es tu remate de poder. Sin balón, cabeceas el que venga alto.', focus: 'jump' as Focus }]),
     { title: 'Súper patada', text: 'Corre con el balón sin parar hacia el arco. Cuando tu jugador brille y salga ¡YA!, ' + (opt.touch ? (opt.easy ? 'toca ¡Patea!' : 'toca Tiro') : 'toca J') + ': ¡sale su poder!', focus: 'shoot' },
-    { title: 'Tu poder', text: 'Cuando se llene la barra ★ de arriba y estés cerca del arco, ' + (opt.touch ? 'toca Especial.' : 'toca I (o Enter).') + ' ¡Sale una película!', focus: 'special' },
+    { title: 'Tu poder', text: 'Cuando se llene la barra ★ de arriba y estés cerca del arco, ' + (opt.touch ? 'toca Especial.' : 'toca I (o Enter).') + ' Sale una barrita sobre tu jugador: ' + (opt.touch ? 'toca Tiro' : 'toca J') + ' cuando la aguja esté en el amarillo.', focus: 'special' },
   ];
   let i = 0;
   const box = document.createElement('div'); box.className = 'screen dim coach'; box.id = 'coach';

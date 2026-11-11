@@ -2,7 +2,7 @@ import { startCelebration, stepCelebration } from './celebrate';
 import { T } from './tuning';
 import { CENTER, ESCAPE, GOAL, MID, PITCH, SY, attackDir, goalX, ownGoalX, slotPos } from './field';
 import { emit } from './events';
-import { addBar, stepCinematic } from './specials';
+import { addBar } from './specials';
 import { startPenalties } from './penalties';
 import { choosePass, playerById, restartKick } from './actions';
 import { emptyInput } from './types';
@@ -24,10 +24,20 @@ function resetPlayers(m: Match): void {
 }
 
 /** Practice with Thor: the rival field players are cones scattered in their half. */
+const CONES: [number, number][] = [[690, 40], [740, 120], [800, 70], [850, 125]];
 export function placeCones(m: Match): void {
-  const spots: [number, number][] = [[690, 40], [740, 120], [800, 70], [850, 125]];
   let i = 0;
-  for (const p of m.players) if (p.team === 1 && p.role !== 'gk') { p.x = spots[i % 4][0]; p.y = spots[i % 4][1]; p.vx = p.vy = 0; i++; }
+  for (const p of m.players) if (p.team === 1 && p.role !== 'gk') { p.x = CONES[i % 4][0]; p.y = CONES[i % 4][1]; p.vx = p.vy = 0; i++; }
+}
+/** A cone that was sent flying (a power shot, a tackle) walks back to its spot once it is on its feet. */
+export function tidyCones(m: Match, dt: number): void {
+  let i = 0;
+  for (const p of m.players) if (p.team === 1 && p.role !== 'gk') {
+    const [hx, hy] = CONES[i++ % 4], d = Math.hypot(hx - p.x, hy - p.y);
+    if (d < 0.5 || p.z > 0 || p.act || (p.state !== 'idle' && p.state !== 'run')) continue;
+    const k = Math.min(1, (90 * dt) / d);
+    p.x += (hx - p.x) * k; p.y += (hy - p.y) * k; p.facing = hx >= p.x ? 1 : -1;
+  }
 }
 
 export function setupKickoff(m: Match, team: Team): void {
@@ -188,7 +198,6 @@ function stepRestart(m: Match, dt: number): void {
 /** Phase machine of the match. Called every step before the players move. */
 export function preStep(m: Match, dt: number): void {
   if (m.phase === 'kickoff' || m.phase === 'restart') stepRestart(m, dt);
-  else if (m.phase === 'cinematic') stepCinematic(m, dt);
   else if (m.phase === 'goal') {
     stepCelebration(m, dt);
     const skip = m.phaseT >= T.goalSkip && m.hin.some((f) => !!f && (f.shootPressed || f.passPressed || f.specialPressed));

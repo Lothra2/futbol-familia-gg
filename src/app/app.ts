@@ -72,7 +72,7 @@ export class App {
       const fo = q.get('formation'); if (fo === '2-1-2' || fo === '1-2-2' || fo === '2-2-1') c.formation = fo;
       const wx = q.get('weather'); if (wx === 'sol' || wx === 'lluvia' || wx === 'viento') c.weather = wx;
       this.startMatch(c);
-    } else { this.cfg.cine = s.cinematics; this.showMenu(q.get('menu') === 'main' ? 'main' : 'title'); }
+    } else { this.cfg.cine = 'full'; this.showMenu(q.get('menu') === 'main' ? 'main' : 'title'); }
   }
 
   /** Matches that start from the menu show the tour of the controls the first time. */

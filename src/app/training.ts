@@ -10,7 +10,7 @@ export const CHALLENGES: Challenge[] = [
   { id: 'pases', title: 'Pasa el balón 5 veces', hint: 'Toca Pase para un pase raso a un compañero', need: 5, read: (m) => sum(m, (s) => s.passes) },
   { id: 'alto', title: 'Haz 2 pases altos', hint: 'Mantén Pase un momento y suéltalo: el balón vuela por arriba', need: 2, read: (m) => sum(m, (s) => s.chips), needsFull: true },
   { id: 'goles', title: 'Marca 3 goles', hint: 'Mantén Tiro para más potencia y suéltalo cerca del arco', need: 3, read: (m) => sum(m, (s) => s.goals) },
-  { id: 'giro', title: 'Haz 2 patadas giratorias', hint: 'Con el balón toca Salto y, en el aire, toca Tiro', need: 2, read: (m) => (m.data.spins as number) ?? 0, needsFull: true },
+  { id: 'giro', title: 'Haz 2 remates en el aire', hint: 'Con el balón toca Salto y, arriba del todo, toca Tiro', need: 2, read: (m) => (m.data.spins as number) ?? 0, needsFull: true },
   { id: 'poder', title: 'Marca un gol con tu poder', hint: 'Acércate al arco con el balón y toca Especial', need: 1, read: (m) => sum(m, (s) => s.spGoals) },
   { id: 'penales', title: 'Mete 2 penales', hint: 'Mueve el stick a los lados para apuntar y arriba o abajo para la altura. Toca Tiro para patear', need: 2, read: (m) => (m.data.penGoals as number) ?? 0,
     tick: (m) => { if (((m.phase === 'play' && !m.restart) || m.phase === 'kickoff') && !m.pen) startPenaltyPractice(m); } },

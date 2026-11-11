@@ -12,10 +12,12 @@ describe('entrenamiento con Thor', () => {
     for (let i = 0; i < 60 * 60 * 5; i++) step(m);
     expect(m.phase).not.toBe('over'); expect(m.bar[0]).toBe(100); expect(m.halfLength).toBeGreaterThan(1e6);
   });
-  it('los rivales de campo son conos: no se mueven ni se quedan con el balon', () => {
+  it('los rivales de campo son conos: no se quedan con el balon y, si los tumban, vuelven a su sitio', () => {
     const m = mk(); const st = newBot('sophie');
     const cones = m.players.filter((p) => p.team === 1 && p.role !== 'gk').map((p) => [p.x, p.y]);
     for (let i = 0; i < 60 * 90; i++) { setHumanInput(m, 0, botFrame(m, m.humans[0], st)); step(m); const o = m.players.find((q) => q.id === m.ball.owner); expect(o && o.team === 1 && o.role !== 'gk').toBeFalsy(); }
+    // a power shot or a tackle may send one flying: it walks back to its spot
+    for (let i = 0; i < 60 * 6; i++) step(m);
     m.players.filter((p) => p.team === 1 && p.role !== 'gk').forEach((p, i) => { expect(Math.hypot(p.x - cones[i][0], p.y - cones[i][1])).toBeLessThan(40); });
   });
   it('los retos avanzan en orden con lo que hace la familia y terminan', () => {

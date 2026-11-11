@@ -8,12 +8,12 @@ import { emptyInput } from './types';
 import { emit, drainEvents } from './events';
 import { updatePlayer } from './player';
 import { updatePossession } from './possession';
-import { movesIn, placeCones, postStep, preStep, setupKickoff } from './rules';
+import { movesIn, placeCones, postStep, preStep, setupKickoff, tidyCones } from './rules';
 import { dumbThink } from './ai/dumb';
 import { aiInput, newMind } from './ai/brain';
 import { applyRubber } from './ai/difficulty';
 import { updateControl } from './control';
-import { stepFlight, superOpen, superShot, trackSuper, trySpecials, updateBar } from './specials';
+import { stepCharge, stepFlight, superOpen, superShot, trackSuper, trySpecials, updateBar } from './specials';
 import { stepPenalties } from './penalties';
 import { aiMindsHazards, layoutHazards, stepHazards, type World } from './hazards';
 import type { ControlMode, DifficultyId, Match, Player, Strategy, Team, Weather } from './state';
@@ -99,16 +99,15 @@ export function step(m: Match, dt: number = DT): void {
   updateControl(m);
   preStep(m, dt);
   if (m.phase !== 'over') {
-    if (m.phase !== 'cinematic') {
-      if (m.ai === 'dumb') for (const p of m.players) { if (p.control === 'ai') p.input = dumbThink(m, p); }
-      else if (m.ai === 'brain') for (const p of m.players) { if (p.control === 'ai') { p.input = aiInput(m, p); if (m.hazards.length) aiMindsHazards(m, p, p.input); } }
-      if (m.training) for (const p of m.players) if (p.team === 1 && p.role !== 'gk') p.input = emptyInput();
-      if (m.tick % 30 === 0) applyRubber(m);
-      trySpecials(m);
-      // the súper patada: Tiro while the carrier flashes
-      const o = m.phase === 'play' ? m.players.find((q) => q.id === m.ball.owner) : undefined;
-      if (o && o.input.shootPressed && superOpen(m, o)) superShot(m, o);
-    }
+    if (m.ai === 'dumb') for (const p of m.players) { if (p.control === 'ai') p.input = dumbThink(m, p); }
+    else if (m.ai === 'brain') for (const p of m.players) { if (p.control === 'ai') { p.input = aiInput(m, p); if (m.hazards.length) aiMindsHazards(m, p, p.input); } }
+    if (m.training) for (const p of m.players) if (p.team === 1 && p.role !== 'gk') p.input = emptyInput();
+    if (m.tick % 30 === 0) applyRubber(m);
+    trySpecials(m);
+    // the súper patada: Tiro while the carrier flashes
+    const o = m.phase === 'play' ? m.players.find((q) => q.id === m.ball.owner) : undefined;
+    if (o && o.input.shootPressed && superOpen(m, o)) superShot(m, o);
+    stepCharge(m, dt);
     stepFlight(m, dt);
     const live = movesIn(m);
     stepHazards(m, dt);
@@ -132,6 +131,7 @@ export function step(m: Match, dt: number = DT): void {
     { const o = m.players.find((q) => q.id === m.ball.owner); if (o && m.ball.state === 'owned') trackSuper(m, o, dt); }
     if (m.training) {
       m.bar[0] = T.bar.max;
+      tidyCones(m, dt);
       // a cone never keeps the ball: it goes to the closest of the family
       const o = m.players.find((q) => q.id === m.ball.owner);
       if (o && o.team === 1 && o.role !== 'gk') {

@@ -34,11 +34,11 @@ export function botFrame(m: Match, h: HumanCtl, s: BotState): InputFrame {
     p.control = 'human';
     void saved;
     // she has learned first time: a pass is on its way to her and the goal is near, so she presses Tiro before the ball arrives (the press is kept, see actions.ts)
-    // the AHORA ring of the cinematic: she presses when it closes, a tenth of a second early or late (the ring is the same for every person)
+    // the bar of the special: she lets it go around the middle of the yellow, a tenth of a second early or late (the bar is the same for every person)
     const sp = m.special;
-    if (m.phase === 'cinematic' && sp?.ring && sp.ring.slot === h.slot) {
+    if (sp && sp.charge.slot === h.slot) {
       if (s.ringFor !== sp) { s.ringFor = sp; s.ringErr = m.rng.range(-0.1, 0.1); s.ringDone = false; }
-      if (!s.ringDone && sp.t >= sp.ring.center + s.ringErr) { s.ringDone = true; f.shootPressed = true; }
+      if (!s.ringDone && sp.t >= sp.dur * (sp.charge.perfect[0] + sp.charge.perfect[1]) / 2 + s.ringErr) { s.ringDone = true; f.shootPressed = true; }
     }
     const lpass = m.lastPass, b = m.ball;
     if (lpass && lpass.to === p.id && lpass.team === p.team && b.state === 'free' && !f.shootPressed && Math.abs(goalX(p.team) - p.x) < 190 && Math.hypot(b.x - p.x, b.y - p.y) < 110 && m.t - lpass.t < 1.5) { f.shootPressed = true; f.shoot = false; }

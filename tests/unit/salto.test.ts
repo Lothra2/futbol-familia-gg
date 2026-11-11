@@ -1,15 +1,16 @@
 import { describe, expect, it } from 'vitest';
 import { createMatch, step } from '../../src/core/match';
 import { setHumanInput } from '../../src/core/control';
-import { aerialZone, airZone } from '../../src/core/actions';
-import { MID } from '../../src/core/field';
+import { aerialZone, airZone, inPowerRange } from '../../src/core/actions';
+import { flightPos, specialKind } from '../../src/core/specials';
+import { MID, PITCH } from '../../src/core/field';
 import { T } from '../../src/core/tuning';
 import type { Match, Player } from '../../src/core/state';
 import { ball, clear, give, inp, put } from './helpers';
 
 /** A match where a person moves Sophie, alone in the middle of the pitch. */
-function solo(): { m: Match; me: Player } {
-  const m = createMatch({ ai: 'none', skipKickoff: true, seed: 3, humans: [{ team: 0, slot: 4, humanSlot: 0, controls: 'full' }] });
+function solo(seed = 3): { m: Match; me: Player } {
+  const m = createMatch({ ai: 'none', skipKickoff: true, seed, humans: [{ team: 0, slot: 4, humanSlot: 0, controls: 'full' }] });
   for (const p of m.players) p.speedMult = 1;
   clear(m);
   const me = m.players.find((p) => p.id === m.humans[0].id)!;
@@ -46,8 +47,8 @@ describe('el salto de Nekketsu', () => {
     for (let i = 0; i < 12; i++) { tick(m); }
     expect(m.ball.owner).toBe(me.id); expect(m.ball.z).toBeCloseTo(me.z, 5); expect(me.z).toBeGreaterThan(12);
   });
-  it('la patada giratoria: Tiro en el aire con el balón sale más fuerte que un tiro del suelo y cuenta como tiro', () => {
-    const { m, me } = solo(); give(m, me);
+  it('la patada giratoria (lejos del arco): Tiro en el aire con el balón sale más fuerte que un tiro del suelo y cuenta como tiro', () => {
+    const { m, me } = solo(); put(me, 300, MID); give(m, me);
     tick(m, inp({ jumpPressed: true }));
     for (let i = 0; i < 8; i++) tick(m);
     const shots = me.stats2.shots;
@@ -62,8 +63,56 @@ describe('el salto de Nekketsu', () => {
     expect(me.stats2.shots).toBe(shots + 1);
     expect(m.ball.vx).toBeGreaterThan(0);
   });
-  it('un balón demasiado alto para cabecear desde el suelo se alcanza saltando: Tiro lo cabecea al arco', () => {
-    const { m, me } = solo();
+  it('cerca del arco, Tiro en el aire con el balón es su remate de poder: sale volando desde arriba con la forma de su poder', () => {
+    const { m, me } = solo(); put(me, PITCH.w - 300, MID); give(m, me);
+    tick(m, inp({ jumpPressed: true }));
+    for (let i = 0; i < 4; i++) tick(m);
+    const shots = me.stats2.shots, z = me.z;
+    expect(inPowerRange(m, me)).toBe(true); expect(z).toBeGreaterThan(8);
+    tick(m, inp({ shoot: true, shootPressed: true }));
+    expect(m.flight).not.toBeNull(); expect(m.flight!.kind).toBe(specialKind(me)); expect(m.flight!.shooter).toBe(me.id);
+    expect(me.state).toBe('special'); expect(me.supAnim).toBe('spin'); expect(me.stats2.shots).toBe(shots + 1);
+    expect(m.flight!.z0).toBeGreaterThan(z); expect(m.ball.z).toBeGreaterThan(z);       // the ball leaves from up there
+    expect(m.events.some((e) => e.k === 'super' && e.who === me.id)).toBe(true);
+    expect(m.events.some((e) => e.k === 'airtop')).toBe(false);                          // he was still going up
+    expect(flightPos(m.flight!, 0).z).toBeGreaterThan(z); expect(flightPos(m.flight!, 1).z).toBeLessThanOrEqual(16);   // and comes down to the goal
+    while (m.flight) tick(m);
+    expect(me.state).not.toBe('special');
+  });
+  it('en lo más alto del salto el remate de poder vale más (¡ARRIBA!)', () => {
+    const at = (wait: number, seed: number): { top: boolean; goal: boolean } => {
+      const { m, me } = solo(seed); put(me, PITCH.w - 260, MID); give(m, me);
+      tick(m, inp({ jumpPressed: true }));
+      for (let i = 0; i < wait; i++) tick(m);
+      tick(m, inp({ shoot: true, shootPressed: true }));
+      return { top: m.events.some((e) => e.k === 'airtop'), goal: m.flight?.outcome === 'goal' };
+    };
+    // the top of the jump is at about 0.29 s (17 steps)
+    expect(at(2, 1).top).toBe(false); expect(at(16, 1).top).toBe(true); expect(at(28, 1).top).toBe(false);
+    let early = 0, top = 0;
+    for (let s = 1; s <= 300; s++) { if (at(2, s).goal) early++; if (at(16, s).goal) top++; }
+    expect(top).toBeGreaterThan(early + 15);
+  });
+  it('los porteros no tienen remate de poder en el aire, y lejos del arco tampoco lo hay', () => {
+    const { m, me } = solo(); put(me, 200, MID); expect(inPowerRange(m, me)).toBe(false);
+    put(me, PITCH.w - T.airPower.range + 5, MID); expect(inPowerRange(m, me)).toBe(true);
+    const gk = m.players.find((p) => p.team === 0 && p.role === 'gk')!; put(gk, PITCH.w - 100, MID); expect(inPowerRange(m, gk)).toBe(false);
+  });
+  it('un balón demasiado alto para cabecear desde el suelo se alcanza saltando: Tiro lo cabecea al arco, y cerca del arco es su remate de poder', () => {
+    {
+      const { m, me } = solo(); put(me, PITCH.w - 200, MID);
+      ball(m, me.x + 4, me.y, 74, 0, 0, 0);
+      tick(m, inp({ jumpPressed: true }));
+      let headed = false;
+      for (let i = 0; i < 40 && !headed; i++) {
+        if (airZone(m, me) === 'header') { tick(m, inp({ shoot: true, shootPressed: true })); headed = true; }
+        else tick(m);
+      }
+      expect(headed).toBe(true);
+      for (let i = 0; i < 12 && !m.flight; i++) tick(m);
+      expect(m.flight).not.toBeNull(); expect(me.supAnim).toBe('header'); expect(m.flight!.z0).toBeGreaterThan(20);
+    }
+    const { m, me } = solo(); put(me, 300, MID);
     ball(m, me.x + 4, me.y, 74, 0, 0, 0);
     expect(aerialZone(m, me)).toBeNull();
     tick(m, inp({ jumpPressed: true }));
@@ -111,11 +160,12 @@ describe('el salto de Nekketsu', () => {
     tick(m, inp({ jumpPressed: true }));
     expect(me.z).toBe(0);
   });
-  it('la IA también salta: en varios partidos hay saltos y patadas giratorias', () => {
+  it('la IA también salta: en varios partidos hay saltos y remates en el aire (giratorias o de poder)', () => {
     let jumps = 0, spins = 0;
     for (const seed of [2, 5, 9, 11, 14, 17]) {
       const m = createMatch({ seed, ai: 'brain', halfLength: 45 });
-      for (let i = 0; i < 60 * 100 && m.phase !== 'over'; i++) { step(m); for (const e of m.events) { if (e.k === 'jump') jumps++; if (e.k === 'spinkick') spins++; } m.events = []; }
+      for (let i = 0; i < 60 * 100 && m.phase !== 'over'; i++) { step(m); for (const e of m.events) { if (e.k === 'jump') jumps++; if (e.k === 'spinkick') spins++; } m.events = [];
+        if (m.flight && m.flight.t === 0 && m.players.find((p) => p.id === m.flight!.shooter)!.supAnim !== 'kick') spins++; }
     }
     expect(jumps).toBeGreaterThan(2); expect(spins).toBeGreaterThan(0);
   });

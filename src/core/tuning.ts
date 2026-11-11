@@ -41,8 +41,7 @@ export const T = Object.freeze({
   /** La burla: Tiro next to a rival who is flat on the ground (within `reach` px, `dy` to the sides). The player laughs at him for `dur` s; the
    *  first laugh at each fall charges the star bar `bar`. */
   taunt: { reach: 26, dy: 16, dur: 0.75, bar: 4, cd: 0.6 },
-  /** El remate combinado: a mate's pass struck in the air at goal (a header, a volley, an overhead kick) is the power shot of whoever strikes it,
-   *  with `bonus` more chance than one off the dribble. */
+  /** El remate combinado: a mate's pass struck in the air at goal (a header, a volley, an overhead kick) is a power shot with `bonus` more chance. */
   combo: { bonus: 0.15 },
   /** Sangre caliente (that is what Nekketsu means): a team that concedes and is `gap` goals behind burns for `dur` s. Its players run and
    *  shoot harder, hit more often, get up sooner and need less dribble for the súper patada. */
@@ -92,7 +91,7 @@ export const T = Object.freeze({
   // ---- pitch rules (5)
   half: [60, 90, 120] as readonly number[],
   restart: { position: 0.8, aiMin: 0.8, aiMax: 1.2, humanAuto: 3.0, easyAuto: 1.2, kickoffAuto: 2.0, easyKickoffAuto: 1.2, wipe: 0.3, teleport: 40 },
-  goalT: 2.8, goalSkip: 1.0, goldenT: 60, halftimeT: 3.5, endGrace: 1.0, cinemaT: { full: 3.5, short: 2.0, off: 0.6 },
+  goalT: 2.8, goalSkip: 1.0, goldenT: 60, halftimeT: 3.5, endGrace: 1.0,
   throwMax: 160, throwInset: 60, cornerBox: 48,
   // free kick (tiro libre): a slide that hits the leg of the rival who carries the ball in the last `zone` px before the goal of the one who slides. The spot is never nearer than `minDist` to the goal line,
   // the wall of `wall` players stands `wallDist` px in front of the ball. The aim moves `aimV` px/s with the stick, the effect `curveV` per second, the meter swings `meterHz` times a second (sweet over `sweet`)
@@ -101,9 +100,17 @@ export const T = Object.freeze({
   easy: { stolen: 0.6, helpAt: 0.7, passAhead: 50, passFree: 30, autoStick: 0.85, autoAfter: 0.3, autoDrain: 0.5, magnetR: 34, magnetA: 60, magnetSpeed: 200 },
   // ---- Barra Estrella and specials (7)
   bar: { max: 100, pass: 5, steal: 4, shot: 5, shotOff: 0, half: 0.5, conceded: 8, easyMult: 1.4, wall: 12, containSteal: 2, save: 8 },
-  // the AHORA ring inside the cinematic of a special (mejora 4): the result is rolled when the ring closes, with the base chance times `mult`, plus the bonus of the press
-  ring: { mult: 0.69, perfect: 0.22, good: 0.10, defPerfect: 0.15, defGood: 0.07, wPerfect: 0.12, wGood: 0.30, easyMult: 3, centerFull: 0.42, centerShort: 0.38, early: 0.5 },
-  special: { zone: 0.7, own: 0.85, ayuda: 0.10, cap: 0.92, skipAfter: 0.3, keeperMult: { tranquilos: 1.15, normales: 1.0, campeones: 0.9 } as Record<string, number>, aiRange: 400, aiDelayMin: 1, aiDelayMax: 3 },
+  /** La carga del especial (Nekketsu: no film, the match never stops). Especial with the bar full: the shooter winds up `dur` s (`aiDur` when
+   *  nobody presses for him) with a little bar over his head. A person lets it go with Tiro or Especial (not before `lock` s): in the yellow
+   *  (`perfect`, fractions of the bar) the chance of a goal is the base times `mult` plus `pPerfect`, in the green (`good`) plus `pGood`, too
+   *  soon or never just the base times `mult`. A child on easy controls has zones `easyWide` times wider around the same middle, and if she
+   *  never presses it counts as green. With no person behind it the chance is the base. */
+  charge: { dur: 0.9, aiDur: 0.45, defDur: 0.75, lock: 0.12, good: [0.5, 0.96] as readonly number[], perfect: [0.66, 0.84] as readonly number[], mult: 0.69, pPerfect: 0.22, pGood: 0.10, dPerfect: 0.15, dGood: 0.07, easyWide: 2 },
+  /** Los remates de poder en el aire (Nekketsu): Tiro in the air with the ball, or a header or an overhead kick at goal, inside `range` px of
+   *  the goal, is the power shot of the player. Kicking it with the ball right at the top of the jump (falling or rising slower than `apexV`)
+   *  adds `apex` to its chance. */
+  airPower: { range: 420, apexV: 85, apex: 0.12 },
+  special: { zone: 0.7, own: 0.85, ayuda: 0.10, cap: 0.92, keeperMult: { tranquilos: 1.15, normales: 1.0, campeones: 0.9 } as Record<string, number>, aiRange: 400, aiDelayMin: 1, aiDelayMax: 3 },
   // ---- keepers (6.7)
   gk: { humanHold: 4, humanLock: 0.3, punt: 260, out: 0.12, outMin: 6, outMax: 28, area: 96, moveV: 150, diveV: 330, diveT: 0.6, land: 0.5, holdMin: 1.0, holdMax: 1.5, catchV: 380, looseV: 120,
         contact: 20, zReach: 30, punch: { vx: 160, vy: 230, vz: 120 }, tipOver: 0.25, speedPen: 300, speedPenSpan: 500, highPen: 0.8, farPen: 0.8, farFree: 6, rebound: 42,

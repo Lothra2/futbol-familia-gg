@@ -65,6 +65,8 @@ export interface Player {
   hits?: { n: number; t: number };
   /** The last blow thrown (punch and kick take turns). */
   blow?: 'punch' | 'kick';
+  /** How he strikes the power shot that is flying now, for the view: his flying kick, the spinning kick of a jump, a header, an overhead kick or a volley. */
+  supAnim?: 'kick' | 'spin' | 'header' | 'chilena' | 'volley';
   /** The traps of the pitch (hazards.ts): how much the mud slows him this step (1 = not at all) and until when no trap gets him again. */
   mud?: number; hazT?: number;
   /** His part in the celebration of a goal (celebrate.ts). */
@@ -84,15 +86,22 @@ export interface AIMind {
 }
 export interface HumanCtl { slot: number; team: Team; id: number; since: number; controls: ControlMode; /** How long Pass has been held and whether it was down in the last step (control.ts: a short tap switches player). */ passT?: number; passWas?: boolean }
 export type SpecialKind = 'arcoiris' | 'burbuja' | 'canonazo' | 'estrellas' | 'carrera' | 'relampago' | 'llamarada' | 'ola' | 'picada' | 'hojas';
-export interface SpecialState { kind: SpecialKind; team: Team; shooter: number; keeper: number | null; outcome: 'goal' | 'save'; t: number; dur: number; x: number; y: number; full: boolean;
-  /** The AHORA ring (mejora 4): a person presses Tiro or Especial when it closes. `atk` is the shooter, `def` the one who defends against a special of the AI. The result is rolled when it ends. */
-  ring?: SpecialRing }
-export interface SpecialRing { who: 'atk' | 'def'; slot: number; center: number; good: number; perfect: number; end: number; press: number | null; hit: 'perfect' | 'good' | 'miss' | null; p: number; easy: boolean }
+/** A special that is being loaded (specials.ts): the shooter winds up for `dur` s with a little bar over his head while the match goes on,
+ *  and then the ball flies. `outcome` is rolled when the bar is let go. */
+export interface SpecialState { kind: SpecialKind; team: Team; shooter: number; keeper: number | null; outcome: 'goal' | 'save'; t: number; dur: number; x: number; y: number;
+  charge: SpecialCharge }
+/** The bar of the charge. `slot`: the person who lets it go by pressing Tiro or Especial again (null: nobody, it goes off by itself at the end).
+ *  `hit`: where it was let go (in the yellow, in the green, too soon, or never). `p`: the chance of a goal before the bonus of the press. */
+/** `slot`: the person who lets the bar go (null: nobody, it goes off by itself). `def`: the bar is of a rival and the person is the one who
+ *  defends: pressing in time helps the keeper instead. */
+export interface SpecialCharge { slot: number | null; def: boolean; hit: 'perfect' | 'good' | 'early' | 'none' | null; p: number; easy: boolean; good: [number, number]; perfect: [number, number] }
 
-/** The scripted flight of a special after its cinematic: the ball follows a path chosen by the kind and the result is already decided. */
+/** The scripted flight of a special once it is let go: the ball follows a path chosen by the kind and the result is already decided. */
 export interface Flight {
   kind: SpecialKind; team: Team; shooter: number; keeper: number | null; outcome: 'goal' | 'save'; t: number; dur: number;
   x0: number; y0: number; x1: number; y1: number; dived: boolean; targets: number[]; hit: number[];
+  /** Px above the ground the ball was struck at (a header, a kick in the air): it comes down from there in the first third of the flight. */
+  z0?: number;
 }
 /** The state of a penalty shootout (GAME_DESIGN section 11): who kicks, the step of the kick and the result already rolled. */
 export interface Pen {
@@ -115,7 +124,7 @@ export interface Ball {
   kick?: { kind: string; t: number };
 }
 
-export type Phase = 'kickoff' | 'play' | 'restart' | 'goal' | 'halftime' | 'cinematic' | 'penalties' | 'over';
+export type Phase = 'kickoff' | 'play' | 'restart' | 'goal' | 'halftime' | 'penalties' | 'over';
 export type RestartKind = 'kickoff' | 'throwin' | 'goalkick' | 'corner';
 /** The aim of a free kick: where in the goal (y), how much effect (0 flat to 1 full, the bend goes around the wall), the players of the wall and the one who was fouled. */
 export interface Restart { kind: RestartKind; team: Team; x: number; y: number; taker: number; t: number; kicked: boolean; aiAt: number }
