@@ -37,6 +37,7 @@ export function specialChance(m: Match, shooter: Player, from: { x: number }): n
   let p = shooter.team === 1 && !humanTeam(m, 1) ? DIFFICULTY[m.difficulty].special * (shooter.species ? STYLE[shooter.species].special : 1) : kind in SPECIAL_BASE ? SPECIAL_BASE[kind as keyof typeof SPECIAL_BASE] : 0.7;
   if (Math.abs(goalX(shooter.team) - from.x) > PITCH.w / 2 && kind !== 'arcoiris') p *= T.special.own;
   if (shooter.team === 0 || humanTeam(m, 1)) p *= T.special.keeperMult[m.difficulty];
+  else p *= T.gk.thorPower;   // the special of a rival of the AI is against Thor
   if (shooter.control === 'human' && shooter.controls === 'easy') p += T.special.ayuda;
   return Math.min(T.special.cap, p);
 }
@@ -112,7 +113,7 @@ export function superShot(m: Match, s: Player, bonus = 0, anim: NonNullable<Play
   const keeper = m.players.find((q) => q.team !== team && q.role === 'gk') ?? null;
   const d = Math.abs(gx - s.x), kind = specialKind(s);
   let p = T.super.base + bonus - T.super.fall * Math.min(1, d / T.super.range);
-  if (team === 1 && !humanTeam(m, 1)) p *= 0.75 + 0.25 * (DIFFICULTY[m.difficulty].special / 0.5);
+  if (team === 1 && !humanTeam(m, 1)) p *= (0.75 + 0.25 * (DIFFICULTY[m.difficulty].special / 0.5)) * T.gk.thorPower;   // (Thor is a great keeper: the power shots of the rivals beat him less)
   if (s.control === 'human' && s.controls === 'easy') p += T.super.easyBonus;
   const outcome = m.rng.chance(Math.min(T.super.cap, p)) ? 'goal' : 'save';
   const x0 = s.x + dir * 8, y0 = s.y, goal = outcome === 'goal';
