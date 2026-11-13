@@ -147,6 +147,16 @@ export function stepCharge(m: Match, dt: number): void {
     return;
   }
   sp.t += dt;
+  // he does not stop to load it (Nekketsu: the play never stops): he keeps going at a jog, where the stick says if a person drives him, at
+  // the goal if not, with the ball at his feet. A keeper with the ball in his hands stays where he is.
+  if (s.role !== 'gk' && s.z <= 0) {
+    const inp = s.control === 'human' ? s.input : null, mag = inp ? Math.hypot(inp.mx, inp.my) : 0, dir = attackDir(sp.team);
+    const ux = inp ? (mag > 0.3 ? inp.mx / mag : 0) : dir, uy = inp ? (mag > 0.3 ? inp.my / mag : 0) : 0, v = s.stats.run * s.speedMult * C.jog;
+    // (a little more than wanted: a player who is busy brakes a bit every step, player.ts)
+    s.vx = ux * (v + (ux ? 14 : 0)); s.vy = uy * (v + (uy ? 14 : 0)) * T.yFactor;
+    if (ux || uy) { s.dirX = ux; s.dirY = uy; if (Math.abs(ux) > 0.2) s.facing = ux > 0 ? 1 : -1; }
+    if (m.ball.state === 'scripted') { m.ball.x = s.x + s.facing * 8; m.ball.y = s.y; m.ball.z = 0; }
+  }
   const f = ch.slot === null ? null : m.hin[ch.slot];
   if (f && !ch.hit && sp.t >= C.lock && (f.shootPressed || f.specialPressed)) ch.hit = chargeZone(ch, sp.t / sp.dur);
   // the shooter lets it go and the ball leaves at once; the one who defends only braces her keeper, the rival shoots when his bar is full

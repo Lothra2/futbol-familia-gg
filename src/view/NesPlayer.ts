@@ -78,7 +78,7 @@ export function nesAnim(p: Player, m: Match | null, isThor: boolean, hint: AnimH
     }
     case 'special': {
       // loading the power: crouched, gathering it (the view makes him tremble); then the blow it was struck with
-      if (m?.special?.shooter === p.id) return { name: 'land', loop: false, t: 0 };
+      if (m?.special?.shooter === p.id) return moving ? { name: 'run', loop: true, t } : { name: 'land', loop: false, t: 0 };   // (on the move he keeps running)
       const a = p.supAnim;
       if (a === 'dive') return { name: 'dive_header', loop: false, t: 9 };   // flat on the grass where he landed
       return { name: a === 'spin' ? 'spin_kick' : a === 'header' ? 'header' : a === 'chilena' ? 'chilena' : a === 'volley' ? 'air_kick' : 'super', loop: false, t };
@@ -232,7 +232,7 @@ export class NesPlayer {
     if (this.isThor && st.name === 'run') oy = -Math.round(Math.abs(Math.sin((m?.t ?? 0) * 16)) * 2);
     // loading his power: he trembles, squashed, faster as the bar fills
     const loading = !!m && m.special?.shooter === p.id;
-    if (loading) { const u = m!.special!.t / m!.special!.dur; ox = Math.floor(m!.special!.t * (24 + 30 * u)) % 2 ? 1 : -1; sxk = 1.06; syk = 0.94 - 0.04 * u; }
+    if (loading) { const u = m!.special!.t / m!.special!.dur; ox = Math.floor(m!.special!.t * (24 + 30 * u)) % 2 ? 1 : -1; if (speed < 20) { sxk = 1.06; syk = 0.94 - 0.04 * u; } }
     this.sprite.setFrame(frame).setPosition(x + ox, y + oy).setFlipX(!!mirrored).setDepth(depthAt(p.y)).setScale(sxk, syk);
     this.sprite.setAlpha(this.hitT > 0 && Math.floor(this.hitT * 30) % 2 ? 0.35 : 1);   // the blink of a sprite that has just been hit
     // the moment of the súper patada: the carrier flashes white and gold (Nekketsu), shoot now

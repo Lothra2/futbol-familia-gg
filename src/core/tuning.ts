@@ -112,7 +112,8 @@ export const T = Object.freeze({
    *  (`perfect`, fractions of the bar) the chance of a goal is the base times `mult` plus `pPerfect`, in the green (`good`) plus `pGood`, too
    *  soon or never just the base times `mult`. A child on easy controls has zones `easyWide` times wider around the same middle, and if she
    *  never presses it counts as green. With no person behind it the chance is the base. */
-  charge: { dur: 0.9, aiDur: 0.45, defDur: 0.75, lock: 0.12, good: [0.5, 0.96] as readonly number[], perfect: [0.66, 0.84] as readonly number[], mult: 0.69, pPerfect: 0.22, pGood: 0.10, dPerfect: 0.15, dGood: 0.07, easyWide: 2 },
+  // (`jog`: how fast he keeps moving while it loads, of his running speed)
+  charge: { jog: 0.55, dur: 0.9, aiDur: 0.45, defDur: 0.75, lock: 0.12, good: [0.5, 0.96] as readonly number[], perfect: [0.66, 0.84] as readonly number[], mult: 0.69, pPerfect: 0.22, pGood: 0.10, dPerfect: 0.15, dGood: 0.07, easyWide: 2 },
   /** Los remates de poder en el aire (Nekketsu): Tiro in the air with the ball, or a header or an overhead kick at goal, inside `range` px of
    *  the goal, is the power shot of the player. Kicking it with the ball right at the top of the jump (falling or rising slower than `apexV`)
    *  adds `apex` to its chance. */

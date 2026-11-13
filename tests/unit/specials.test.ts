@@ -103,12 +103,29 @@ describe('lanzar el especial (B18)', () => {
 });
 
 describe('el especial se carga con el partido en marcha (sin película)', () => {
-  it('no hay fase aparte: el reloj corre, los rivales se mueven y el lanzador carga quieto con el balón a los pies', () => {
+  it('no hay fase aparte: el reloj corre, los rivales se mueven y, sin tocar el stick, el lanzador carga en su sitio con el balón a los pies', () => {
     const m = ready('sophie', 300); const a = fam(m, 'sophie'), r = rival(m, 3); put(r, 600, MID); r.input = inp({ mx: -1 }); press(m);
     expect(m.phase).toBe('play'); expect(m.special).not.toBeNull(); expect(m.special!.charge.slot).toBe(0);
     const x = r.x, clock = m.clock, ax = a.x; secs(m, 0.5);
     expect(m.phase).toBe('play'); expect(r.x).toBeLessThan(x - 20); expect(m.clock).toBeGreaterThan(clock + 0.4);
-    expect(a.state).toBe('special'); expect(a.x).toBe(ax); expect(m.ball.state).toBe('scripted'); expect(m.flight).toBeNull();
+    expect(a.state).toBe('special'); expect(Math.abs(a.x - ax)).toBeLessThan(3); expect(m.ball.state).toBe('scripted'); expect(m.flight).toBeNull();
+  });
+  it('no se para a cargar: con el stick sigue trotando hacia donde ella diga, con el balón pegado, y el tiro sale de donde llegó', () => {
+    const m = ready('sophie', 300); const a = fam(m, 'sophie'); press(m);
+    const x0 = a.x, y0 = a.y;
+    for (let i = 0; i < 30; i++) { setHumanInput(m, 0, inp({ mx: 1 })); step(m); }
+    expect(a.state).toBe('special'); expect(a.x - x0).toBeGreaterThan(a.stats.run * T.charge.jog * 0.5 * 0.7); expect(a.x - x0).toBeLessThan(a.stats.run * 0.5);   // a jog, not a run
+    expect(Math.abs(m.ball.x - a.x)).toBeLessThan(12); expect(Math.abs(m.ball.y - a.y)).toBeLessThan(2);
+    for (let i = 0; i < 12; i++) { setHumanInput(m, 0, inp({ my: 1 })); step(m); }
+    expect(a.y).toBeGreaterThan(y0 + 4);
+    while (m.special) { setHumanInput(m, 0, inp()); step(m); }
+    expect(m.flight).not.toBeNull(); expect(Math.abs(m.flight!.x0 - (a.x + 8))).toBeLessThan(6);
+  });
+  it('la IA que carga sigue trotando hacia el arco', () => {
+    const m = createMatch({ ai: 'none', skipKickoff: true, seed: 1 }); for (const p of m.players) p.speedMult = 1; clear(m);
+    const s = fam(m, 'sophie'); put(s, 500, MID); give(m, s); m.bar[0] = 100; step(m); launchSpecial(m, s);
+    const x0 = s.x; for (let i = 0; i < 20 && m.special; i++) step(m);
+    expect(s.x).toBeGreaterThan(x0 + 10);
   });
   it('si nadie suelta la barra sale sola al llenarse (0,9 s); la de la IA tarda la mitad', () => {
     const m = ready('sophie', 300); press(m); const t0 = m.t; while (m.special) step(m);
