@@ -62,6 +62,9 @@ store.load();
 const pad = new GamepadInput(router, () => shell?.pauseNow());
 let shell: Shell;
 
+// the whole game is kept in the device (tools/precache.mjs writes the worker): after the first visit it plays with no connection
+if ('serviceWorker' in navigator && location.protocol === 'https:') window.addEventListener('load', () => { navigator.serviceWorker.register('./sw.js').catch(() => {}); });
+
 game.events.once('assets-ready', () => {
   document.getElementById('loading')?.remove();
   kb.active = true;

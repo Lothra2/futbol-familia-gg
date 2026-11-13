@@ -6,7 +6,7 @@
   "type": "module",
   "scripts": {
     "dev": "vite --host",
-    "build": "tsc --noEmit && vite build",
+    "build": "tsc --noEmit && vite build && node tools/precache.mjs",
     "preview": "vite preview --host --port 4173 --strictPort",
     "test": "vitest run",
     "sim:long": "SIM_LONG=1 vitest run",

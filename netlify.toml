@@ -23,3 +23,9 @@
   for = "/index.html"
   [headers.values]
     Cache-Control = "no-cache"
+
+# El service worker (modo sin conexión) cambia en cada deploy: que el navegador pregunte siempre.
+[[headers]]
+  for = "/sw.js"
+  [headers.values]
+    Cache-Control = "no-cache"
