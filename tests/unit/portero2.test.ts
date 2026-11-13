@@ -71,3 +71,22 @@ describe('Thor de portero: ya no se queda mirando', () => {
     expect(goals).toBeGreaterThan(10); expect(dived).toBe(goals);
   });
 });
+
+describe('con el balón en las manos del portero nadie se le queda encima (Nintendo World Cup)', () => {
+  it('los rivales se alejan de Thor mientras lo tiene y vuelven a su sitio; el saque no se lo roban en sus narices', async () => {
+    const { createMatch, step } = await import('../../src/core/match');
+    const { T } = await import('../../src/core/tuning');
+    const m = createMatch({ ai: 'brain', skipKickoff: true, seed: 5 });
+    for (const p of m.players) p.speedMult = 1;
+    const thor = m.players.find((p) => p.team === 0 && p.role === 'gk')!, rivals = m.players.filter((p) => p.team === 1 && p.role !== 'gk');
+    thor.x = 14; thor.y = 200; rivals.forEach((r, i) => { r.x = 40 + i * 14; r.y = 170 + i * 15; });
+    m.ball.state = 'held'; m.ball.owner = thor.id; thor.state = 'hold'; thor.holdT = 0; thor.ai.armedAt = m.t + 2.2;
+    for (let i = 0; i < 60 * 2 && m.ball.state === 'held'; i++) step(m);
+    for (const r of rivals) expect(r.x).toBeGreaterThan(T.gk.clear - 60);     // they left his end of the pitch
+    expect(rivals.filter((r) => Math.hypot(r.x - thor.x, r.y - thor.y) < 110).length).toBe(0);
+    // he lets it go: the first to have the ball is one of the family
+    let first: number | null = null;
+    for (let i = 0; i < 60 * 5 && first === null; i++) { step(m); const o = m.players.find((p) => p.id === m.ball.owner); if (o && o.id !== thor.id && (m.ball.state as string) === 'owned') first = o.team; }
+    expect(first).toBe(0);
+  });
+});

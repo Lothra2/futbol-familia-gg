@@ -78,6 +78,8 @@ export interface Player {
 }
 
 export interface AIMind {
+  /** Until when he keeps going back to his place after the rival keeper had the ball in his hands. */
+  backUntil?: number;
   nextThink: number; held: InputFrame; armedAt: number; holdLeft: number; holdBtn: 'shoot' | 'pass' | null;
   lastX: number; lastY: number; lastT: number; sidestepUntil: number; sidestepDx: number; sidestepDy: number;
   threat: boolean; rolled: boolean; armedAtThreat: number; diveT: number; specialAt: number; goalDist: number; wasWanting: boolean; thinkT: number; pathLen: number;

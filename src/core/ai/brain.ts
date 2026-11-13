@@ -234,6 +234,19 @@ function brainThink(m: Match, p: Player, humanize: boolean): InputFrame {
     return f;
   }
 
+  // ------------------------------------------------------------------ the rival keeper has it in his hands
+  // nobody can take it from him there, so nobody waits on top of him (Nintendo World Cup): everybody goes back to his place, out of the
+  // keeper's end of the pitch, and the keeper can play it out. For a moment after he lets it go they are still on their way back.
+  const kept = theirs && carrier && carrier.role === 'gk' && b.state === 'held';
+  if (kept) A.backUntil = m.t + T.gk.clearFor;
+  if (kept || (m.t < (A.backUntil ?? 0) && !mine && b.lastTouch.team !== p.team)) {
+    const t = formationTarget(m, p, 'defend'), far = ownGoalX(p.team === 0 ? 1 : 0), away = p.team === 0 ? -1 : 1;
+    // `away` points from the rival goal line to the middle of the pitch
+    const x = Math.abs(t.x - far) < T.gk.clear ? far + away * T.gk.clear : t.x;
+    go(x, t.y, Math.abs(p.x - far) < T.gk.clear);
+    return f;
+  }
+
   // ------------------------------------------------------------------ a rival carries the ball
   if (theirs && carrier) {
     const order = m.players.filter((q) => q.team === p.team && q.role !== 'gk' && q.control === 'ai').sort((a, c) => Math.hypot(a.x - carrier.x, a.y - carrier.y) - Math.hypot(c.x - carrier.x, c.y - carrier.y));

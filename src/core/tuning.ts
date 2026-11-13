@@ -122,7 +122,8 @@ export const T = Object.freeze({
   dive: { minV: 95, v: 360, vz: 12, err: 9, prep: 0.14, hop: 105, lunge: 150, slide: 210, floor: 0.45, bonus: 0.06 },
   special: { zone: 0.7, own: 0.85, ayuda: 0.10, cap: 0.92, keeperMult: { tranquilos: 1.15, normales: 1.0, campeones: 0.9 } as Record<string, number>, aiRange: 400, aiDelayMin: 1, aiDelayMax: 3 },
   // ---- keepers (6.7)
-  gk: { humanHold: 4, humanLock: 0.3, punt: 260, out: 0.12, outMin: 6, outMax: 28, area: 96, moveV: 150, diveV: 330, diveT: 0.6, land: 0.5, holdMin: 1.0, holdMax: 1.5, catchV: 380, looseV: 120,
+  // (`clear`: how far from the goal line the rivals stay while the keeper has the ball in his hands; `clearFor`: s they keep going back after he lets it go)
+  gk: { clear: 210, clearFor: 0.7, humanHold: 4, humanLock: 0.3, punt: 260, out: 0.12, outMin: 6, outMax: 28, area: 96, moveV: 150, diveV: 330, diveT: 0.6, land: 0.5, holdMin: 1.0, holdMax: 1.5, catchV: 380, looseV: 120,
         contact: 20, zReach: 30, punch: { vx: 160, vy: 230, vz: 120 }, tipOver: 0.25, speedPen: 300, speedPenSpan: 500, highPen: 0.8, farPen: 0.8, farFree: 6, rebound: 42,
         /** He stretches for any shot more than `diveAt` px from him that arrives within `diveIn` s (he no longer stands and watches it). */
         diveAt: 8, diveIn: 0.9,

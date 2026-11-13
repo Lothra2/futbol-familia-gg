@@ -34,11 +34,13 @@ describe('C1: IA contra IA, Normales', () => {
     expect(saves / (saves + goals)).toBeGreaterThan(0.33); expect(saves / (saves + goals)).toBeLessThan(0.8);   // lower bound 0.4 to 0.33 in the jugabilidad work: a good chance (chance.ts) is saved less, see ESTADO
   });
   it('1 a 6 especiales por partido en promedio', () => { const s = sum(rs, (r) => r.specials[0] + r.specials[1]) / N; expect(s).toBeGreaterThan(1); expect(s).toBeLessThan(6); });
-  it('aparece cada tipo de saque (banda, fondo y córner)', () => {
-    for (const k of ['throwin', 'goalkick', 'corner']) {
-      let n = sum(rs, (r) => r.restarts[k] ?? 0);
+  it('aparecen los saques de banda y los de la línea de fondo (de arco o córner)', () => {
+    // (the goal kick and the corner are both the ball out over the goal line, and both are rare since the rivals stopped crowding the keeper
+    // who has the ball in his hands: one of the two is enough)
+    for (const k of ['throwin', 'goalkick+corner']) {
+      let n = sum(rs, (r) => k.split('+').reduce((a, q) => a + (r.restarts[q] ?? 0), 0));
       // corners are rare (about one in six matches): when the sample has none, look in 40 more matches before calling it a bug
-      for (let seed = 101; n === 0 && seed <= 140; seed++) n += playMatch({ halfLength: 90, difficulty: 'normales', seed }).restarts[k] ?? 0;
+      for (let seed = 101; n === 0 && seed <= 140; seed++) { const r = playMatch({ halfLength: 90, difficulty: 'normales', seed }).restarts; n += k.split('+').reduce((a, q) => a + (r[q] ?? 0), 0); }
       expect(n, k).toBeGreaterThan(0);
     }
   });
