@@ -41,6 +41,8 @@ export interface MatchConfig {
   narrator?: boolean; narratorVolume?: number; replay?: boolean;
   /** The traps of the pitch of each kingdom (core/hazards.ts). On unless the person turns them off in the settings. */
   traps?: boolean;
+  /** The captain of Nekketsu: every person keeps the player she started with (`chars`) and orders her mates about. */
+  captain?: boolean;
   /** Tests: fast forward runs without freezes. */
   fastForward?: boolean;
   /** From the save: the outfit and the level of each family character (the outfit is a different atlas, the level opens the golden celebration and trail). */
@@ -74,12 +76,12 @@ export class MatchController {
     const humans: HumanSeat[] = [];
     const squad = cleanSquad(cfg.squad), seats = squadSeats(squad);
     for (let i = 0; i < cfg.players; i++) {
-      if (cfg.versus && i === 1) { humans.push({ team: 1, slot: 3, humanSlot: 1, controls: cfg.controls[1] ?? 'full' }); continue; }
+      if (cfg.versus && i === 1) { humans.push({ team: 1, slot: 3, humanSlot: 1, controls: cfg.controls[1] ?? 'full', fixed: !!cfg.captain }); continue; }
       // the wanted character if it plays, else the first of the squad not taken yet (Sophie and Alana first)
       const wanted = cfg.chars[i] ?? (i === 0 ? 'sophie' : 'alana');
       const free = (['sophie', 'alana', 'juandi', 'mama', 'papa'] as FieldChar[]).filter((c) => squad.includes(c) && !humans.some((h) => h.slot === seats[c]));
       const c = (squad as string[]).includes(wanted) && !humans.some((h) => h.slot === seats[wanted as FieldChar]) ? (wanted as FieldChar) : free[0];
-      humans.push({ team: 0, slot: seats[c]!, humanSlot: i, controls: cfg.controls[i] ?? 'full' });
+      humans.push({ team: 0, slot: seats[c]!, humanSlot: i, controls: cfg.controls[i] ?? 'full', fixed: !!cfg.captain });
     }
     this.m = createMatch({ seed: cfg.seed, halfLength: cfg.half, humans, squad, formation: [cfg.formation ?? '2-1-2', RIVAL_FORM[cfg.rival as string] ?? '2-1-2'], strategy: cfg.strategy, weather: cfg.weather, ai: 'brain', difficulty: cfg.difficulty, away: cfg.rival, cine: cfg.cine, knockout: cfg.knockout, training: cfg.training, arc: cfg.arc, world: cfg.traps === false ? undefined : cfg.stadium ?? 'volcan' });
     if (cfg.autoplay) this.bots = humans.map(() => newBot(cfg.autoplay!));

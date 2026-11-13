@@ -26,18 +26,23 @@ export class Aim {
   private star: Phaser.GameObjects.Text;
   private lobCue = false;
 
-  constructor(scene: Phaser.Scene) {
+  private who: Phaser.GameObjects.Text;
+  constructor(private scene: Phaser.Scene) {
+    this.who = scene.add.text(0, 0, '', font(9, '#2a1b3d')).setOrigin(0.5, 1).setDepth(902).setResolution(1).setVisible(false).setStroke('#ffffff', 0);
     this.gg = scene.add.graphics().setDepth(199.6);
     this.g = scene.add.graphics().setDepth(900);
     this.label = scene.add.text(0, 0, '', font(10, '#ffffff')).setOrigin(0.5, 1).setDepth(901).setResolution(1).setVisible(false);
     this.star = scene.add.text(0, 0, '', font(10, '#ffe45c')).setOrigin(0.5, 1).setDepth(901).setResolution(1).setVisible(false);
   }
 
-  destroy(): void { this.gg.destroy(); this.g.destroy(); this.label.destroy(); this.star.destroy(); }
+  destroy(): void { this.gg.destroy(); this.g.destroy(); this.label.destroy(); this.star.destroy(); this.who.destroy(); }
 
   update(m: Match, time: number): void {
     const g = this.g; g.clear(); this.gg.clear();
-    this.label.setVisible(false); this.star.setVisible(false);
+    this.label.setVisible(false); this.star.setVisible(false); this.who.setVisible(false);
+    // her player is out of the picture (the camera follows the ball; with the captain of Nekketsu it happens all the time): an arrow at the
+    // edge of the screen, in her colour and with her number, points where he is
+    if (m.phase === 'play' || m.phase === 'restart' || m.phase === 'kickoff') for (const p of m.players) if (p.control === 'human') this.edge(p, time);
     if (m.phase !== 'play') return;
     for (const p of m.players) {
       if (p.control !== 'human') continue;
@@ -51,6 +56,21 @@ export class Aim {
         if (o) { this.gg.lineStyle(2, col, 0.7); this.gg.lineBetween(Math.round(wx(p.x, p.y)), Math.round(sy(p.y)), Math.round(wx(o.x, o.y)), Math.round(sy(o.y))); }
       }
     }
+  }
+
+  private edge(p: Player, time: number): void {
+    const v = this.scene.cameras.main.worldView, x = wx(p.x, p.y), y = sy(p.y, p.z) - 14, pad = 10;
+    // the scoreboard hides the top and the bar of the NES (or the buttons) the bottom: the arrow stays inside what is left
+    const x0 = v.x + pad, x1 = v.right - pad, y0 = v.y + v.height * 0.2, y1 = v.bottom - v.height * 0.16;
+    if (x >= v.x - 4 && x <= v.right + 4 && y >= v.y + 6 && y <= v.bottom + 10) return;
+    const cx = Math.max(x0, Math.min(x1, x)), cy = Math.max(y0, Math.min(y1, y)), a = Math.atan2(y - cy, x - cx);
+    const col = J_COLORS[p.humanSlot ?? 0] ?? 0xffd447, k = 1 + 0.15 * Math.sin(time * 10), g = this.g;
+    const tip = (r: number, da: number): [number, number] => [Math.round(cx + Math.cos(a + da) * r * k), Math.round(cy + Math.sin(a + da) * r * k)];
+    const [ax, ay] = tip(9, 0), [bx, by] = tip(7, 2.5), [dx, dy] = tip(7, -2.5);
+    g.fillStyle(INK, 1).fillTriangle(ax + Math.round(Math.cos(a) * 2), ay + Math.round(Math.sin(a) * 2), bx - Math.round(Math.cos(a) * 2), by + Math.sign(by - cy), dx - Math.round(Math.cos(a) * 2), dy + Math.sign(dy - cy));
+    g.fillStyle(col, 1).fillTriangle(ax, ay, bx, by, dx, dy);
+    g.fillStyle(INK, 1).fillCircle(Math.round(cx - Math.cos(a) * 6), Math.round(cy - Math.sin(a) * 6), 6).fillStyle(col, 1).fillCircle(Math.round(cx - Math.cos(a) * 6), Math.round(cy - Math.sin(a) * 6), 5);
+    this.who.setText(String((p.humanSlot ?? 0) + 1)).setPosition(Math.round(cx - Math.cos(a) * 6), Math.round(cy - Math.sin(a) * 6) + 5).setVisible(true);
   }
 
   private one(m: Match, p: Player, time: number): void {

@@ -154,6 +154,33 @@ describe('el salto de Nekketsu', () => {
     for (let i = 0; i < 45; i++) tick(m);
     expect(me.act).toBeNull(); expect(me.state).toBe('idle');
   });
+  it('la palomita: corriendo hacia un balón a media altura, Tiro lo cabecea en plancha; cerca del arco es remate de poder y después se levanta del piso', () => {
+    const { m, me } = solo(); put(me, PITCH.w - 300, MID);
+    for (let i = 0; i < 40; i++) tick(m, inp({ mx: 1, sprint: true }));
+    expect(me.vx).toBeGreaterThan(T.dive.minV);
+    ball(m, me.x + 10, me.y, 16, 0, 0, 0);
+    const x0 = me.x;
+    tick(m, inp({ mx: 1, shoot: true, shootPressed: true }));
+    expect(me.act?.plan?.dive).toBe(true); expect(me.act?.sub).toBe('header'); expect(me.z).toBeGreaterThan(0);
+    for (let i = 0; i < 30 && !m.flight; i++) tick(m, inp({ mx: 1 }));
+    expect(m.flight).not.toBeNull(); expect(me.supAnim).toBe('dive'); expect(me.x).toBeGreaterThan(x0 + 8);
+    expect(m.flight!.kind).toBe(specialKind(me));
+    while (m.flight) tick(m);
+    if (m.phase === 'play') expect(me.state).toBe('getup');   // (after a goal everybody celebrates)
+  });
+  it('lejos del arco la palomita es un cabezazo raso y fuerte, y se queda un momento en el piso; parado es la volea de siempre', () => {
+    const { m, me } = solo(); put(me, 200, MID);
+    for (let i = 0; i < 40; i++) tick(m, inp({ mx: 1, sprint: true }));
+    ball(m, me.x + 10, me.y, 16, 0, 0, 0);
+    tick(m, inp({ mx: 1, shoot: true, shootPressed: true }));
+    expect(me.act?.plan?.dive).toBe(true);
+    let v = 0, flat = false;
+    for (let i = 0; i < 50; i++) { tick(m); v = Math.max(v, m.ball.vx); if (me.state === 'getup') flat = true; }
+    expect(m.flight).toBeNull(); expect(v).toBeGreaterThan(T.header.v + 40); expect(m.ball.z).toBeLessThan(30); expect(flat).toBe(true);
+    const s = solo(); put(s.me, 200, MID); ball(s.m, s.me.x + 10, s.me.y, 16, 0, 0, 0);
+    tick(s.m, inp({ shoot: true, shootPressed: true }));
+    expect(s.me.act?.sub).toBe('volley'); expect(s.me.act?.plan?.dive).toBeFalsy();
+  });
   it('los controles fáciles no cambian: una niña no salta', () => {
     const m = createMatch({ ai: 'none', skipKickoff: true, seed: 3, humans: [{ team: 0, slot: 4, humanSlot: 0, controls: 'easy' }] });
     clear(m); const me = m.players.find((p) => p.id === m.humans[0].id)!; put(me, 600, MID); ball(m, 100, 20);

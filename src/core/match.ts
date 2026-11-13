@@ -18,7 +18,7 @@ import { stepPenalties } from './penalties';
 import { aiMindsHazards, layoutHazards, stepHazards, type World } from './hazards';
 import type { ControlMode, DifficultyId, Match, Player, Strategy, Team, Weather } from './state';
 
-export interface HumanSeat { team: Team; slot: number; humanSlot: number; controls: ControlMode }
+export interface HumanSeat { team: Team; slot: number; humanSlot: number; controls: ControlMode; /** The captain: she never changes player. */ fixed?: boolean }
 export interface MatchOptions {
   seed?: number; halfLength?: number; home?: TeamKind; away?: TeamKind; humans?: HumanSeat[];
   ai?: 'dumb' | 'none' | 'brain'; difficulty?: DifficultyId; firstKick?: Team; cine?: 'full' | 'short' | 'off';
@@ -70,7 +70,7 @@ export function createMatch(o: MatchOptions = {}): Match {
   for (const [team, kind] of [[0, o.home ?? 'family'], [1, o.away ?? 'dragon']] as [Team, TeamKind][]) {
     for (const seat of roster(kind, o.squad, m.form[team])) m.players.push(makePlayer(m, team, seat, o.humans?.find((h) => h.team === team && h.slot === seat.slot)));
   }
-  for (const h of o.humans ?? []) { const pl = m.players.find((q) => q.team === h.team && q.slot === h.slot)!; m.humans.push({ slot: h.humanSlot, team: h.team, id: pl.id, since: 0, controls: h.controls }); }
+  for (const h of o.humans ?? []) { const pl = m.players.find((q) => q.team === h.team && q.slot === h.slot)!; m.humans.push({ slot: h.humanSlot, team: h.team, id: pl.id, since: 0, controls: h.controls, fixed: !!h.fixed }); }
   for (const p of m.players) p.ai.nextThink = m.rng.range(0, 0.1);
   // the weather lives on the ball: rain makes it roll less, wind pushes it while it flies (its side is drawn once per match)
   if (m.weather === 'lluvia') m.ball.wet = WEATHER.rainRoll;

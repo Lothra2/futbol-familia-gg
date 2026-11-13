@@ -63,6 +63,7 @@ const TIPS: [string, string, string][] = [
   ['Súper patada', 'Corre con el balón <b>sin parar</b> hacia el arco. Cuando tu jugador <b>brille</b> y salga <b>¡YA!</b>, toca <b>Tiro</b>: sale su poder y tumba a todos los que estén en el camino. Si esperas mucho, se apaga y hay que volver a correr.', 'shoot'],
   ['Salta', 'Toca <b>Salto</b> para brincar: pasas por encima de las barridas y de los golpes. Con el balón en el aire, <b>Tiro</b> es la <b>patada giratoria</b>, y cerca del arco es tu <b>remate de poder</b>: tócalo en lo más alto del salto y vale más. Tiro y Pase a la vez también saltan.', 'jump'],
   ['En el aire', 'Salta por un balón alto: <b>Tiro</b> lo cabecea o lo patea de bolea al arco y <b>Pase</b> se lo baja a un compañero. Un <b>cabezazo</b> o una <b>chilena</b> al arco desde cerca sale con <b>tu poder</b> y tumba al que se atraviese. Sin balón cerca, <b>Tiro</b> en el aire es la <b>patada voladora</b> y tumba al rival de enfrente.', 'jump'],
+  ['La palomita', 'Corre hacia un balón que viene a <b>media altura</b> y toca <b>Tiro</b>: te lanzas en plancha y lo cabeceas raso y fuerte. Cerca del arco sale con <b>tu poder</b>.', 'shoot'],
   ['Remate combinado', 'Mándale un <b>pase alto</b> a un compañero cerca del arco. Si lo remata en el aire con <b>Tiro</b> (cabezazo, bolea o chilena), sale <b>su poder</b> con más chance de gol que si lo hace solo.', 'pass'],
   ['Las trampas', 'Cada cancha tiene la suya. <b>Arrecife:</b> no cruces los charcos corriendo a fondo. <b>Volcán:</b> si el géiser echa humo, quítate. <b>Bosque:</b> el barro te frena. <b>Nubes:</b> pisa una nube y rebotas altísimo. Se apagan en Ajustes.', 'move'],
   ['Si te tumban', '<b>Aprieta los botones</b> una y otra vez y te levantas antes. Y con un rival tumbado a tus pies, <b>Tiro</b> es una burla que carga tu barra ★.', 'shoot'],
@@ -71,10 +72,12 @@ const TIPS: [string, string, string][] = [
   ['Pase alto', 'Toca <b>Pase</b> para un pase raso. <b>Mantenlo</b> un momento y suéltalo: el balón vuela por arriba y pasa a los rivales.', 'pass'],
   ['Más potencia', 'Mantén <b>Tiro</b> y suéltalo cuando la barra se llene. Si te pasas, dispara solo.', 'shoot'],
   ['Tu poder', 'Pases, robos y paredes llenan la barra <b>★</b>. Con la barra llena y cerca del arco, toca <b>Especial</b>. Sale una barrita sobre tu jugador: toca <b>Tiro</b> cuando la aguja esté en el <b>amarillo</b> y el tiro sale perfecto. El partido no se para. Si el que carga es un <b>rival</b>, su barrita sale azul: toca <b>Tiro</b> en el amarillo y tu portero lo tapa mejor.', 'special'],
-  ['Quién eres', 'Controlas al más cercano al balón. El anillo de color te dice quién eres. Sin balón, un toque rápido de <b>Pase</b> cambia de jugador.', 'move'],
+  ['Quién eres', 'Controlas al que tiene el balón o al que mejor puede llegar. El anillo de color te dice quién eres y, si sales de la pantalla, una <b>flecha</b> con tu número apunta dónde estás. Sin balón, un toque rápido de <b>Pase</b> cambia de jugador.', 'move'],
+  ['Capitán', 'En el partido rápido elige <b>Manejas: Capitán</b> y serás siempre el mismo jugador, como en Nekketsu. Si un compañero tiene el balón, <b>Pase</b> es <b>¡Pásala!</b> y <b>Tiro</b> es <b>¡Tira!</b>. Lejos del rival que lo lleva, <b>Tiro</b> manda al compañero más cercano a quitársela.', 'pass'],
+  ['Celebra el gol', 'Después de un gol tu jugador es tuyo: paséalo con el stick. <b>Tiro</b> salta con el puño, <b>Pase</b> saluda, <b>Salto</b> da la voltereta y <b>Especial</b> posa a la cámara. Mientras sigas, la fiesta sigue. <b>SEGUIR</b> vuelve al partido.', 'special'],
   ['Quitar el balón', 'Cerca del rival, <b>Tiro</b> le roba de frente. Lejos, te tiras en barrida. <b>Mantén Pase</b> para marcarlo: te pones entre él y tu arco.', 'shoot'],
   ['Penales', 'Si empatan, se define en penales. Mueve el stick a los lados para apuntar y <b>arriba o abajo</b> para la altura, y toca <b>Tiro</b>. Muy alto se va por encima del travesaño.', 'move'],
-  ['Saltar escenas', 'Toca la pantalla o cualquier botón para saltar el festejo del gol y la repetición.', ''],
+  ['Saltar escenas', 'Toca la pantalla o cualquier botón para saltar el gol del rival y la repetición. Tu propio festejo se salta con <b>SEGUIR</b>.', ''],
 ];
 
 export function tipsHtml(): string {

@@ -3,6 +3,8 @@ import { etaTo } from './ai/predict';
 import { DIFFICULTY, MATES, T } from './tuning';
 import { DT } from './step';
 import { aerialZone } from './actions';
+import { attackDir } from './field';
+import { emit } from './events';
 import type { HumanCtl, Match, Player } from './state';
 
 export const setHumanInput = (m: Match, slot: number, frame: InputFrame | null): void => { m.hin[slot] = frame; };
@@ -13,6 +15,10 @@ const byId = (m: Match, id: number): Player | undefined => m.players.find((p) =>
 /** The player each human should be moving now (GAME_DESIGN section 4, change to the nearest). Null means keep the current one. */
 function wanted(m: Match, h: HumanCtl, taken: Set<number>, tap = false): Player | null {
   const cur = byId(m, h.id)!, b = m.ball, mates = field(m, h.team).filter((p) => !taken.has(p.id));
+  // a goal: she keeps her player, who is celebrating (or looking at the floor)
+  if (m.phase === 'goal') return null;
+  // the captain (Nekketsu): always the same player
+  if (h.fixed) return null;
   // a restart: the human takes the taker (the keeper is always the AI)
   if ((m.phase === 'restart' || m.phase === 'kickoff') && m.restart && m.restart.team === h.team) {
     const t = byId(m, m.restart.taker);
@@ -40,6 +46,20 @@ function wanted(m: Match, h: HumanCtl, taken: Set<number>, tap = false): Player 
   // margin keep the control from flickering between two players at the same distance.
   if (m.t - h.since < (h.controls === 'easy' ? T.switchCtl.waitEasy : T.switchCtl.wait)) return null;
   const d = (p: Player): number => Math.hypot(p.x - b.x, p.y - b.y);
+  // a rival carries it: the nearest is often the one he has just gone past, who can only chase. Whoever gets to the ball first counts, and a
+  // mate who is already behind the carrier (not between him and our goal) counts as later, so the control goes to one who can still stop him
+  const foe = owner && owner.team !== h.team ? owner : null;
+  if (foe) {
+    const fd = attackDir(foe.team);
+    const score = (p: Player): number => etaTo(m, p) + ((p.x - foe.x) * fd < -4 ? T.switchCtl.beaten : 0);
+    let best: Player | null = null, bs = Infinity;
+    for (const p of mates) { const e = score(p); if (e < bs) { bs = e; best = p; } }
+    if (!best || best.id === cur.id) return null;
+    // she is on him already (or as near as the other): the control stays where it is
+    if (d(cur) <= d(best) + T.switchCtl.margin && (cur.x - foe.x) * fd >= -4) return null;
+    if (score(cur) <= bs + T.switchCtl.gain) return null;
+    return best;
+  }
   let best: Player | null = null, bd = Infinity;
   for (const p of mates) { const e = d(p); if (e < bd) { bd = e; best = p; } }
   if (!best || best.id === cur.id) return null;
@@ -85,5 +105,30 @@ export function updateControl(m: Match): void {
     taken.add(h.id);
   }
   for (const h of m.humans) { const p = byId(m, h.id)!; p.input = m.hin[h.slot] ?? emptyInput(); }
+  giveOrders(m);
+}
+
+/** Nintendo World Cup: with a mate of the AI on the ball, Pase is "pass it to me!" and Tiro is "shoot!"; and the captain, far from a rival
+ *  who carries it, sends the nearest mate at him with Tiro. The press is an order, so her own player does nothing with it. */
+function giveOrders(m: Match): void {
+  if (m.phase !== 'play') return;
+  const b = m.ball, owner = byId(m, b.owner ?? -1);
+  for (const h of m.humans) {
+    const me = byId(m, h.id)!, f = me.input;
+    if (!f.shootPressed && !f.passPressed) continue;
+    if (owner && owner.team === h.team && owner.id !== me.id && owner.control === 'ai' && owner.role !== 'gk' && b.state === 'owned') {
+      const kind = f.passPressed ? 'pass' : 'shoot';
+      owner.order = { kind, to: me.id, until: m.t + T.order.ttl }; owner.ai.nextThink = 0;
+      emit(m, 'order', me.x, me.y, me.z, me.id, kind === 'pass' ? 0 : 1); emit(m, 'obey', owner.x, owner.y, owner.z, owner.id, kind === 'pass' ? 0 : 1);
+      me.input = { ...f, shootPressed: false, passPressed: false, shoot: false, pass: false };
+    } else if (h.fixed && f.shootPressed && !f.passPressed && owner && owner.team !== h.team && owner.role !== 'gk' && Math.hypot(me.x - b.x, me.y - b.y) > T.order.far) {
+      const mate = field(m, h.team).filter((p) => p.control === 'ai' && !p.act && p.z <= 0 && Math.hypot(p.x - b.x, p.y - b.y) < T.order.near)
+        .sort((a, c) => Math.hypot(a.x - b.x, a.y - b.y) - Math.hypot(c.x - b.x, c.y - b.y))[0];
+      if (!mate || Math.hypot(mate.x - b.x, mate.y - b.y) >= Math.hypot(me.x - b.x, me.y - b.y)) continue;
+      mate.order = { kind: 'tackle', to: me.id, until: m.t + T.order.tackleTtl }; mate.ai.nextThink = 0;
+      emit(m, 'order', me.x, me.y, me.z, me.id, 2); emit(m, 'obey', mate.x, mate.y, mate.z, mate.id, 2);
+      me.input = { ...f, shootPressed: false, shoot: false };
+    }
+  }
 }
 void T;

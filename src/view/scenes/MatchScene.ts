@@ -55,8 +55,12 @@ export class MatchScene extends Phaser.Scene {
   /** The replay of the goal: the last seconds of play are recorded and shown again in slow motion before the kick-off. */
   private rec = new Recorder(); private replay: ReplayPlayer | null = null; private replayUi!: ReplayOverlay; private pending: Snap[] | null = null; private prevPhase = ''; private replaySkip = false;
   private replayKey = (e: KeyboardEvent): void => { if (this.replay && ['Space', 'Enter', 'KeyJ', 'KeyK', 'KeyF', 'KeyG', 'Comma', 'Period', 'Escape'].includes(e.code)) this.replaySkip = true; };
-  private tapSkip = (e: Event): void => { if ((e.target as HTMLElement | null)?.id === 'pause') return; if (this.replay) { this.replaySkip = true; return; } const r = services.router; if (!r || this.ctl?.m.phase !== 'goal') return; r.setButton(0, 'cineskip', 'shoot', true); window.setTimeout(() => r.setButton(0, 'cineskip', 'shoot', false), 80); };
+  private tapSkip = (e: Event): void => { if ((e.target as HTMLElement | null)?.id === 'pause') return; if (this.replay) { this.replaySkip = true; return; } const r = services.router; if (!r || this.ctl?.m.phase !== 'goal' || this.party()) return; r.setButton(0, 'cineskip', 'shoot', true); window.setTimeout(() => r.setButton(0, 'cineskip', 'shoot', false), 80); };
   private hud!: Hud;
+  /** A person of the team that scored is celebrating: her buttons are her gestures, and only "seguir" (or Q) goes on with the match. */
+  private party(): boolean { const m = this.ctl?.m; return !!m && m.phase === 'goal' && !!m.lastGoal && m.players.some((p) => p.team === m.lastGoal!.team && p.control === 'human'); }
+  private wasParty = false; private partyHints = 0;
+  private goOnKey = (e: KeyboardEvent): void => { if (e.code === 'KeyQ' && this.party()) this.ctl.m.data.skipGoal = true; };
   private stepsRun = 0;
   private resultShown = false;
   private overT = 0;
@@ -96,7 +100,7 @@ export class MatchScene extends Phaser.Scene {
     this.ceremony = false; this.ceremonyT = 0; this.pows = [];
     this.hitStop = 0; this.narrator.enabled = this.cfg.narrator !== false; this.narrator.volume = this.cfg.narratorVolume ?? 0.8; this.narrator.stop(); this.training = null; this.trainPanel?.destroy(); this.trainPanel = null;
     if (this.cfg.training) { this.training = new Training(m, m.humans.every((h) => h.controls === 'easy'), this.cfg.drill ?? 'todo'); this.trainPanel = new TrainingPanel(); }
-    window.addEventListener('pointerdown', this.tapSkip); window.addEventListener('keydown', this.replayKey);
+    window.addEventListener('pointerdown', this.tapSkip); window.addEventListener('keydown', this.replayKey); window.addEventListener('keydown', this.goOnKey);
     this.rec.reset(); this.replay = null; this.pending = null; this.prevPhase = m.phase; this.replaySkip = false; this.replayUi = new ReplayOverlay(this);
     this.hud = getHud();
     this.hud.names(T_ES.teams.family, T_ES.teams[this.cfg.rival] ?? '');
@@ -105,7 +109,7 @@ export class MatchScene extends Phaser.Scene {
     this.scale.on('resize', this.layout, this);
     services.audio?.music(this.cfg.stadium ?? 'volcan'); services.audio?.crowd(true);
     services.app?.coach(this);
-    this.events.once('shutdown', () => { this.penCine?.destroy(); this.penCine = undefined; services.audio?.crowd(false); this.narrator.stop(); this.trainPanel?.destroy(); this.trainPanel = null; window.removeEventListener('pointerdown', this.tapSkip); window.removeEventListener('keydown', this.replayKey); this.replayUi.destroy(); this.scale.off('resize', this.layout, this); this.hud.show(false); document.getElementById('result')?.remove(); });
+    this.events.once('shutdown', () => { this.penCine?.destroy(); this.penCine = undefined; services.audio?.crowd(false); this.narrator.stop(); this.trainPanel?.destroy(); this.trainPanel = null; window.removeEventListener('pointerdown', this.tapSkip); window.removeEventListener('keydown', this.goOnKey); this.hud.goOn(false); window.removeEventListener('keydown', this.replayKey); this.replayUi.destroy(); this.scale.off('resize', this.layout, this); this.hud.show(false); document.getElementById('result')?.remove(); });
     this.layout();
     this.follow(0, true);
     this.applyCamera();
@@ -138,7 +142,7 @@ export class MatchScene extends Phaser.Scene {
       const B = T_ES.banners;
       if (!this.cfg.reducedMotion && !this.cfg.fastForward) this.hitStopFor(e);
       switch (e.k) {
-        case 'goal': if (this.ctl.m.phase !== 'penalties') this.pending = this.rec.clip(2.8); if (this.ctl.m.phase !== 'penalties') this.hud.banner(B.goal, 2200); this.hud.flash(); shakeCamera(this.cam, 0.35); this.stadium.goal(); break;
+        case 'goal': if (this.ctl.m.phase !== 'penalties') this.pending = this.rec.clip(2.8); if (this.ctl.m.phase !== 'penalties') this.hud.banner(B.goal, this.party() ? 1100 : 2200); this.hud.flash(); shakeCamera(this.cam, 0.35); this.stadium.goal(); break;   // (the banner is short when a person is about to celebrate: it must not cover her)
         case 'throwin': this.hud.banner(B.throwin, 900); break;
         case 'goalkick': this.hud.banner(B.goalkick, 900); break;
         case 'corner': this.hud.banner(B.corner, 900); break;
@@ -147,6 +151,16 @@ export class MatchScene extends Phaser.Scene {
         case 'special': this.stadium.gasp(); this.hud.banner(T_ES.specials[KIND_INDEX[e.v ?? 0]] ?? '', 1100); break;
         case 'chargehit': this.chargeBar.result(e.v ?? 0); if (e.v === 2) this.pow(e.x, e.y, '¡PERFECTO!', '#ffe45c', 34); else if (e.v === 1) this.pow(e.x, e.y, '¡BIEN!', '#5ddb43', 34); this.hud.flash(140); shakeCamera(this.cam, 0.3); break;
         case 'chargedef': this.chargeBar.result(e.v ?? 0); if (e.v === 2) this.pow(e.x, e.y, '¡BIEN TAPADO!', '#7bc8ff', 34); else if (e.v === 1) this.pow(e.x, e.y, '¡ATENTOS!', '#7bc8ff', 34); break;
+        case 'celemove': if ((e.v ?? 0) >= 10) {
+          // a gesture of a person who celebrates: the crowd answers, louder the first time she makes each one
+          const fresh = (e.v ?? 0) >= 20;
+          this.pow(e.x, e.y, fresh ? ['¡OLÉ!', '¡ESO!', '¡VAMOS!', '¡GOLAZO!'][((e.v ?? 0) - 20) % 4] : '♪', fresh ? '#ffe45c' : '#ffffff', (e.z ?? 0) + 18);
+          this.stadium.cheer(fresh);
+          for (let i = 0; i < (fresh ? 7 : 3); i++) this.fx.sparkle(Math.round(wx(e.x, e.y)) + (Math.random() - 0.5) * 30, Math.round(sy(e.y, e.z ?? 0)) - 12 - Math.random() * 26);
+        } break;
+        // an order of a person to a mate (Nintendo World Cup): she shouts it
+        case 'order': this.pow(e.x, e.y, ['¡PÁSALA!', '¡TIRA!', '¡QUÍTASELA!'][e.v ?? 0] ?? '', '#7bf0ff', 6); break;
+        case 'obey': this.pow(e.x, e.y, ['¡TOMA!', '¡VA!', '¡VOY!'][e.v ?? 0] ?? '', '#ffffff', 6); break;
         case 'airtop': this.pow(e.x, e.y, '¡ARRIBA!', '#ffe45c', (e.z ?? 0) + 22); break;
         case 'special_far': this.hud.hint(B.far); break;
         case 'save': {
@@ -210,6 +224,13 @@ export class MatchScene extends Phaser.Scene {
       this.haz.update(this.time.now / 1000);
       this.chargeBar.update(m, dt, this.time.now / 1000);
       if (m.phase === 'play') this.rec.record(m, dt);
+      // a person celebrates her goal: the "seguir" button comes up after a moment, with the hint of what her buttons do the first times
+      const party = this.party();
+      if (party !== this.wasParty) {
+        this.wasParty = party; this.hud.goOn(false);
+        if (party && this.partyHints < 3) { this.partyHints++; this.hud.hint(window.matchMedia?.('(pointer: coarse)').matches ? '¡CELEBRA! TIRO · PASE · SALTO · ESPECIAL' : '¡CELEBRA! J SALTA · K SALUDA · I POSA · U VOLTERETA', 2600, true); }
+      }
+      if (party && m.phaseT >= T.goalSkip) this.hud.goOn(true, () => { this.ctl.m.data.skipGoal = true; });
       if (this.prevPhase === 'goal' && m.phase !== 'goal' && this.pending) {
         if (m.phase !== 'over' && this.cfg.replay !== false && this.cfg.cine !== 'off' && !this.cfg.fastForward && this.pending.length > 20) this.startReplay(this.pending);
         this.pending = null;

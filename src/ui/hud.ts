@@ -22,10 +22,10 @@ export class Hud {
       <div class="sb"><div class="team t0"><b id="n0"></b></div><div class="score"><span id="s0">0</span><em>:</em><span id="s1">0</span></div><div class="team t1"><b id="n1"></b></div></div>
       <div class="clock" id="clock"></div>
       <div class="star left"><i id="bar0"></i><span>★</span></div><div class="star right"><i id="bar1"></i><span>★</span></div>
-      <div class="banner" id="banner"></div><div class="hint" id="hint"></div><div class="flash" id="flash"></div>
+      <div class="banner" id="banner"></div><div class="hint" id="hint"></div><div class="flash" id="flash"></div><button class="goon" id="goon" type="button">SEGUIR ▶</button>
       <div class="nes" id="nes"><div class="nb l"><i id="nlc"></i><b id="nln"></b><em id="nlp"></em></div><div class="nb c"><canvas id="mini" width="120" height="50"></canvas><b id="nclock"></b></div><div class="nb r"><i id="nrc"></i><b id="nrn"></b><em id="nrp"></em></div></div>`;
     ui.appendChild(this.root);
-    for (const id of ['n0', 'n1', 's0', 's1', 'clock', 'bar0', 'bar1', 'banner', 'hint', 'flash', 'nes', 'nln', 'nlp', 'nlc', 'nrn', 'nrp', 'nrc', 'nclock']) this.el[id] = this.root.querySelector('#' + id) as HTMLElement;
+    for (const id of ['n0', 'n1', 's0', 's1', 'clock', 'bar0', 'bar1', 'banner', 'hint', 'flash', 'nes', 'nln', 'nlp', 'nlc', 'nrn', 'nrp', 'nrc', 'nclock', 'goon']) this.el[id] = this.root.querySelector('#' + id) as HTMLElement;
   }
 
   show(on: boolean): void { this.root.classList.toggle('hidden', !on); }
@@ -81,8 +81,14 @@ export class Hud {
     b.classList.add('show'); window.clearTimeout(this.bannerTimer);
     this.bannerTimer = window.setTimeout(() => b.classList.remove('show'), ms);
   }
-  hint(text: string, ms = 1200): void {
-    const h = this.el.hint; h.textContent = text; h.classList.add('show'); window.clearTimeout(this.hintTimer);
+  /** The button that ends the celebration of a goal while a person is celebrating it (her other buttons are her gestures). */
+  goOn(on: boolean, click?: () => void): void {
+    const b = this.el.goon; b.classList.toggle('show', on);
+    if (click) b.onclick = (e) => { e.stopPropagation(); click(); };
+  }
+  /** `low`: at the foot of the screen, for a hint that must not cover the middle of the pitch. */
+  hint(text: string, ms = 1200, low = false): void {
+    const h = this.el.hint; h.textContent = text; h.classList.toggle('low', low); h.classList.add('show'); window.clearTimeout(this.hintTimer);
     this.hintTimer = window.setTimeout(() => h.classList.remove('show'), ms);
   }
   flash(ms = 250): void {

@@ -26,7 +26,7 @@ export function dirOf(dx: number, dy: number, prev: number | null = null): numbe
 /** Seconds of the flight of a knocked down player (the 5 frames of `tumble` at 12 fps) and of getting up (2 frames of `fall_getup` at 8 fps). */
 const TUMBLE_T = 0.42, GETUP_T = 0.25;
 
-const FALLBACK: Record<string, string> = { super: 'shot', spin_kick: 'chilena', chilena: 'shot', air_kick: 'kick_hit', kick_hit: 'shot', jump_rise: 'jump', jump_fall: 'jump', walk: 'run', land: 'idle', trap: 'idle', run_shot: 'shot', pump: 'celebrate', sit: 'idle', laugh: 'celebrate' };
+const FALLBACK: Record<string, string> = { super: 'shot', spin_kick: 'chilena', chilena: 'shot', air_kick: 'kick_hit', kick_hit: 'shot', jump_rise: 'jump', jump_fall: 'jump', walk: 'run', land: 'idle', trap: 'idle', run_shot: 'shot', pump: 'celebrate', sit: 'idle', laugh: 'celebrate', burla: 'laugh', dive_header: 'header' };
 /** What the view knows that the core does not: he has just landed from a jump or taken the ball down (seconds since), and he was running when he shot. */
 export interface AnimHint { land?: number; trap?: number; runShot?: boolean }
 /** What the player is doing, in the names of the forja atlas (the same for the family and the rivals; keepers add the keeper_ rows, Thor has his own). */
@@ -69,6 +69,7 @@ export function nesAnim(p: Player, m: Match | null, isThor: boolean, hint: AnimH
       if (s === 'restart' && m?.restart?.kind === 'throwin') return { name: 'throw_in', loop: false, t };
       if (gk && s === 'restart') return { name: m?.restart?.kind === 'goalkick' ? 'keeper_punt' : 'keeper_throw', loop: false, t };
       // the spinning kick of a player who jumped with the ball, and the kick of the air of one who jumped for it
+      if (p.act?.plan?.dive) return { name: 'dive_header', loop: false, t };
       if (s === 'spin') return { name: 'spin_kick', loop: false, t };
       if (p.act?.plan?.jumped && (s === 'volley' || s === 'pass')) return { name: 'air_kick', loop: false, t };
       if (s === 'shot' && hint.runShot) return { name: 'run_shot', loop: false, t };
@@ -79,6 +80,7 @@ export function nesAnim(p: Player, m: Match | null, isThor: boolean, hint: AnimH
       // loading the power: crouched, gathering it (the view makes him tremble); then the blow it was struck with
       if (m?.special?.shooter === p.id) return { name: 'land', loop: false, t: 0 };
       const a = p.supAnim;
+      if (a === 'dive') return { name: 'dive_header', loop: false, t: 9 };   // flat on the grass where he landed
       return { name: a === 'spin' ? 'spin_kick' : a === 'header' ? 'header' : a === 'chilena' ? 'chilena' : a === 'volley' ? 'air_kick' : 'super', loop: false, t };
     }
     case 'slide': return { name: 'slide', loop: false, t };
@@ -105,6 +107,11 @@ export function nesAnim(p: Player, m: Match | null, isThor: boolean, hint: AnimH
       if (c === 'slide') return { name: 'slide', loop: false, t: ct };
       if (c === 'spin') return { name: 'jump', loop: false, t: 9 };
       if (c === 'pump') return { name: p.z > 0 ? 'pump' : 'celebrate', loop: p.z <= 0, t: ct };
+      // a person celebrating: the proud walk, the wave at the crowd, the pose at the camera (thumb up and a wink), the arms up
+      if (c === 'prance') return { name: 'walk', loop: true, t };
+      if (c === 'wave') return { name: 'dance', loop: true, t: ct };
+      if (c === 'burla') return { name: 'burla', loop: true, t: ct };
+      if (c === 'pose') return { name: 'celebrate', loop: true, t };
       return { name: p.team === 0 && !cele ? 'dance' : 'celebrate', loop: true, t };
     }
     case 'sad': return { name: 'sad', loop: true, t };
@@ -215,6 +222,8 @@ export class NesPlayer {
     if (air && p.state !== 'tumble' && p.state !== 'kick' && p.state !== 'bump') { sxk = 0.92; syk = 1.08; }
     if (this.landT > 0) { sxk = 1.14; syk = 0.86; }
     if (p.state === 'celebrate' && !p.cele) oy = -Math.round(Math.abs(Math.sin((m?.t ?? 0) * 9 + p.id)) * 4);
+    // the proud walk of a person who celebrates: he bounces at every step
+    if (p.state === 'celebrate' && p.cele?.move === 'prance' && !air) oy = -Math.round(Math.abs(Math.sin((m?.t ?? 0) * 11)) * 3);
     if (this.isThor && st.name === 'run') oy = -Math.round(Math.abs(Math.sin((m?.t ?? 0) * 16)) * 2);
     // loading his power: he trembles, squashed, faster as the bar fills
     const loading = !!m && m.special?.shooter === p.id;

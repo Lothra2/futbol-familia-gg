@@ -66,6 +66,8 @@ export class TopPitch {
   /** The crowd cheers for a while (a goal) or gasps for a moment (a save, a post, a special). */
   goal(): void { this.cheerT = 4.5; }
   gasp(): void { this.cheerT = Math.max(this.cheerT, 1.2); }
+  /** A person celebrates with a gesture: the fans keep cheering. */
+  cheer(big = false): void { this.cheerT = Math.max(this.cheerT, big ? 2.2 : 1.4); }
 
   update(dt: number): void {
     this.drawLines();

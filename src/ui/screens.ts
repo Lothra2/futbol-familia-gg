@@ -223,6 +223,9 @@ export class Screens {
   private quick(): string {
     const c = this.d.cfg(), s = this.d.store.data;
     const ctl = [{ v: 'easy', label: 'Fáciles' }, { v: 'full', label: 'Completos' }];
+    const cap = this.d.store.data.settings.captain;
+    const capOpts = lineup(c.squad).map((id) => ({ v: id, label: NAMES[id] }));
+    if (!capOpts.some((o) => o.v === c.chars[0])) c.chars[0] = capOpts[0].v as CharId;
     return `${this.head('Partido rápido', 'Arma tu equipo y elige a quién enfrentar')}
       <div class="qgrid"><div class="qcol"><div class="lbl">Sala de espera <small>toca dos jugadores para cambiarlos de puesto</small></div>${this.squadHtml(c)}
         <div class="lbl">Rival</div>${this.kingdomCards(c.rival, s.trophies)}</div>
@@ -230,6 +233,8 @@ export class Screens {
         <div class="grp"><div class="lbl">Jugadores</div>${this.chips('players', [{ v: 1, label: '1 jugador' }, { v: 2, label: '2 juntos' }, { v: 3, label: '2 uno contra otro' }], c.players === 1 ? 1 : c.versus ? 3 : 2)}</div>
         <div class="grp"><div class="lbl">${c.players === 2 ? 'Controles J1' : 'Controles'}</div>${this.chips('c0', ctl, c.controls[0])}</div>
         ${c.players === 2 ? `<div class="grp"><div class="lbl">Controles J2</div>${this.chips('c1', ctl, c.controls[1])}</div>` : ''}
+        <div class="grp"><div class="lbl">Manejas <small>${cap ? 'un solo jugador, y das órdenes' : 'al que tiene el balón'}</small></div>${this.chips('cap', [{ v: false, label: 'Al del balón' }, { v: true, label: 'Capitán' }], cap)}</div>
+        ${cap ? `<div class="grp"><div class="lbl">${c.players === 2 && !c.versus ? 'Capitán J1' : 'Tu capitán'}</div>${this.chips('capwho', capOpts, c.chars[0] ?? 'sophie')}</div>` : ''}
         <div class="grp"><div class="lbl">Dificultad</div>${this.chips('diff', [{ v: 'tranquilos', label: 'Tranquilos' }, { v: 'normales', label: 'Normales' }, { v: 'campeones', label: 'Campeones' }], c.difficulty)}</div>
         <div class="grp"><div class="lbl">Duración</div>${this.chips('half', [{ v: 60, label: '1:00' }, { v: 90, label: '1:30' }, { v: 120, label: '2:00' }], c.half)}</div>
         <div class="grp"><div class="lbl">Hora</div>${this.chips('time', [{ v: 'auto', label: 'Del reino' }, { v: 'day', label: 'Día' }, { v: 'sunset', label: 'Tarde' }, { v: 'night', label: 'Noche' }], c.time ?? 'auto')}</div>
@@ -323,6 +328,8 @@ export class Screens {
     chips('tdrill', (i) => { c.drill = (['todo', 'penal'] as const)[i]; set(); });
     chips('c0', (i) => { c.controls[0] = i === 0 ? 'easy' : 'full'; set(); this.persist(); });
     chips('c1', (i) => { c.controls[1] = i === 0 ? 'easy' : 'full'; set(); this.persist(); });
+    chips('cap', (i) => { store.data.settings.captain = i === 1; c.captain = i === 1; store.save(); set(); });
+    chips('capwho', (i) => { const ids = lineup(c.squad); c.chars[0] = ids[i] as CharId; if (c.chars[1] === c.chars[0]) c.chars[1] = ids.find((x) => x !== c.chars[0]) as CharId; set(); });
     chips('diff', (i) => { c.difficulty = (['tranquilos', 'normales', 'campeones'] as const)[i]; set(); this.persist(); });
     chips('cdiff', (i) => { store.data.cup.difficulty = (['tranquilos', 'normales', 'campeones'] as const)[i]; store.save(); });
     chips('half', (i) => { c.half = [60, 90, 120][i]; set(); this.persist(); });

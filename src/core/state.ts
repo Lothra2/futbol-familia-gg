@@ -26,6 +26,8 @@ export interface KickPlan {
   first?: boolean; vaselina?: boolean;
   /** Struck by a player who had already jumped (the view shows the kick of the air). */
   jumped?: boolean;
+  /** La palomita: a header thrown flat at a low ball by a player who was running (the diving header of Nintendo World Cup). */
+  dive?: boolean;
 }
 export interface Act {
   kind: 'kick' | 'slide' | 'bump' | 'stagger' | 'tumble' | 'dizzy' | 'getup' | 'steal' | 'dive' | 'hit' | 'taunt';
@@ -66,11 +68,13 @@ export interface Player {
   /** The last blow thrown (punch and kick take turns). */
   blow?: 'punch' | 'kick';
   /** How he strikes the power shot that is flying now, for the view: his flying kick, the spinning kick of a jump, a header, an overhead kick or a volley. */
-  supAnim?: 'kick' | 'spin' | 'header' | 'chilena' | 'volley';
+  supAnim?: 'kick' | 'spin' | 'header' | 'chilena' | 'volley' | 'dive';
   /** The traps of the pitch (hazards.ts): how much the mud slows him this step (1 = not at all) and until when no trap gets him again. */
   mud?: number; hazT?: number;
   /** His part in the celebration of a goal (celebrate.ts). */
   cele?: Cele | null;
+  /** What a person has just told this mate of the AI to do (Nintendo World Cup: "pass!", "shoot!", "get him!"). `to`: who asked. */
+  order?: { kind: 'pass' | 'shoot' | 'tackle'; to: number; until: number } | null;
 }
 
 export interface AIMind {
@@ -84,7 +88,7 @@ export interface AIMind {
   /** A run into space behind the last defender (mejora 2): until when, and where to. */
   runUntil?: number; runX?: number; runY?: number;
 }
-export interface HumanCtl { slot: number; team: Team; id: number; since: number; controls: ControlMode; /** How long Pass has been held and whether it was down in the last step (control.ts: a short tap switches player). */ passT?: number; passWas?: boolean }
+export interface HumanCtl { slot: number; team: Team; id: number; since: number; controls: ControlMode; /** The captain of Nekketsu: she always moves the same player and orders the others about (control.ts). */ fixed?: boolean; /** How long Pass has been held and whether it was down in the last step (control.ts: a short tap switches player). */ passT?: number; passWas?: boolean }
 export type SpecialKind = 'arcoiris' | 'burbuja' | 'canonazo' | 'estrellas' | 'carrera' | 'relampago' | 'llamarada' | 'ola' | 'picada' | 'hojas';
 /** A special that is being loaded (specials.ts): the shooter winds up for `dur` s with a little bar over his head while the match goes on,
  *  and then the ball flies. `outcome` is rolled when the bar is let go. */

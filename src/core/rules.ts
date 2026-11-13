@@ -1,4 +1,4 @@
-import { startCelebration, stepCelebration } from './celebrate';
+import { startCelebration, stepCelebration, CELE } from './celebrate';
 import { T } from './tuning';
 import { CENTER, ESCAPE, GOAL, MID, PITCH, SY, attackDir, goalX, ownGoalX, slotPos } from './field';
 import { emit } from './events';
@@ -133,7 +133,7 @@ function goalScored(m: Match, team: Team): void {
   if (last && last.team === team) last.stats2.goals++;
   const a = playerById(m, assist); if (a) a.stats2.assists++;
   addBar(m, other(team), T.bar.conceded);
-  m.phase = 'goal'; m.phaseT = 0;
+  m.phase = 'goal'; m.phaseT = 0; m.data.skipGoal = false; m.data.celeAt = -99;
   emit(m, 'goal', b.x, b.y, b.z, scorer ?? undefined, team);
   for (const p of m.players) { p.state = p.team === team ? 'celebrate' : 'sad'; p.act = null; p.vx = p.vy = 0; }
   startCelebration(m, team, last && last.team === team ? scorer : null);
@@ -200,8 +200,12 @@ export function preStep(m: Match, dt: number): void {
   if (m.phase === 'kickoff' || m.phase === 'restart') stepRestart(m, dt);
   else if (m.phase === 'goal') {
     stepCelebration(m, dt);
-    const skip = m.phaseT >= T.goalSkip && m.hin.some((f) => !!f && (f.shootPressed || f.passPressed || f.specialPressed));
-    if (m.phaseT >= T.goalT || skip) { if (m.golden) { m.phase = 'over'; m.phaseT = 0; emit(m, 'whistle', m.ball.x, m.ball.y, 0, undefined, 3); emit(m, 'final', m.ball.x, m.ball.y); } else setupKickoff(m, other(m.lastGoal!.team)); }
+    // a person of the team that scored celebrates with her buttons, so they do not cut the party: it lasts while she keeps at it (up to
+    // CELE.max) and only the "seguir" of the screen ends it sooner. With nobody celebrating, any button goes on with the match.
+    const party = m.players.some((p) => p.team === m.lastGoal!.team && p.control === 'human');
+    const skip = m.phaseT >= T.goalSkip && (m.data.skipGoal === true || (!party && m.hin.some((f) => !!f && (f.shootPressed || f.passPressed || f.specialPressed))));
+    const going = party && m.phaseT < CELE.max && m.t - ((m.data.celeAt as number) ?? -99) < CELE.hold;
+    if ((m.phaseT >= T.goalT && !going) || skip) { if (m.golden) { m.phase = 'over'; m.phaseT = 0; emit(m, 'whistle', m.ball.x, m.ball.y, 0, undefined, 3); emit(m, 'final', m.ball.x, m.ball.y); } else setupKickoff(m, other(m.lastGoal!.team)); }
   } else if (m.phase === 'halftime') {
     if (m.phaseT >= T.halftimeT) { m.half = 2; m.clock = 0; m.graceT = 0; setupKickoff(m, other(m.firstKick)); }
   }

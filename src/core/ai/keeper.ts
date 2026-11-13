@@ -123,8 +123,10 @@ export function keeperThink(m: Match, p: Player): InputFrame {
     if (fr && p.holdT >= T.gk.humanLock) {
       const st = Math.hypot(fr.mx, fr.my), ax = st > 0.3 ? fr.mx / st : inward, ay = st > 0.3 ? fr.my / st : 0;
       if (fr.passPressed) {
-        const c = choosePass(m, p, ax, ay, 260);
-        throwFromKeeper(m, p, c ? m.players.find((q) => q.id === c.id) ?? null : null);
+        // the captain with the stick still asks for it herself
+        const cap = h!.fixed && st <= 0.3 ? m.players.find((q) => q.id === h!.id) ?? null : null;
+        const c = cap ? null : choosePass(m, p, ax, ay, 260);
+        throwFromKeeper(m, p, cap ?? (c ? m.players.find((q) => q.id === c.id) ?? null : null));
         return f;
       }
       if (fr.shootPressed) {

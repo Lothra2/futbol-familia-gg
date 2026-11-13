@@ -64,6 +64,7 @@ export class App {
       const ch = (q.get('chars') ?? '').split(',').filter((x) => (FIELD_CHARS as readonly string[]).includes(x)) as CharId[];
       if (ch.length) c.chars = ch;
       const fs = q.get('forceSpecial'); if (fs) c.forceSpecial = fs;
+      if (q.has('captain')) c.captain = q.get('captain') !== '0';
       const st = q.get('stadium'); if (st === 'volcan' || st === 'bosque' || st === 'arrecife' || st === 'nubes') c.stadium = st;
       const tm = q.get('time'); if (tm === 'day' || tm === 'sunset' || tm === 'night') c.time = tm;
       const cr = q.get('crowd'); if (cr === 'auto' || cr === 'high' || cr === 'low') c.crowd = cr;
@@ -85,14 +86,13 @@ export class App {
       const k = KINGDOMS.find((q) => q.species === cfg0.rival), sq = lineup(cleanSquad(cfg0.squad));
       if (k) {
         this.screens.close();
-        showVs({ us: T_ES.teams.family, them: k.team, place: k.name, style: k.style, color: k.color, kingdom: k.id, ours: ['thor', ...sq], theirs: [`riv_${k.species}_gk`, ...[1, 2, 3, 4, 5].map((i) => `riv_${k.species}_${i}`)], avatar: (id, s) => this.screens.avatar(id, s) }, () => this.startMatch(cfg0, false, true));
-        services.audio?.play('whistle');
+        showVs({ us: T_ES.teams.family, them: k.team, place: k.name, style: k.style, color: k.color, kingdom: k.id, ours: ['thor', ...sq], theirs: [`riv_${k.species}_gk`, ...[1, 2, 3, 4, 5].map((i) => `riv_${k.species}_${i}`)], avatar: (id, s) => this.screens.avatar(id, s), sfx: (n) => services.audio?.play(n) }, () => this.startMatch(cfg0, false, true));
         return;
       }
     }
     this.coachNext = coach;
     const cfg = this.test ? { ...cfg0, ...this.test } : { ...cfg0 };
-    const st = this.store.data.settings; cfg.reducedMotion = st.reducedMotion; cfg.narrator = st.narrator && !st.muted; cfg.narratorVolume = st.sfx; cfg.replay = st.replay; cfg.traps = st.traps; cfg.fastForward = cfg.ff > 1;
+    const st = this.store.data.settings; cfg.reducedMotion = st.reducedMotion; cfg.narrator = st.narrator && !st.muted; cfg.narratorVolume = st.sfx; cfg.replay = st.replay; cfg.traps = st.traps; if (cfg.captain === undefined) cfg.captain = st.captain; cfg.fastForward = cfg.ff > 1;
     const ch = this.store.data.characters;
     cfg.outfits = Object.fromEntries(Object.entries(ch).map(([k, v]) => [k, v.outfit])); cfg.levels = Object.fromEntries(Object.entries(ch).map(([k, v]) => [k, v.level]));
     this.cfg = cfg;

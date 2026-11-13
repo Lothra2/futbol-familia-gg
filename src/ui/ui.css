@@ -440,7 +440,7 @@ input[type=range] { width: 100%; height: 28px; accent-color: #5DDB43; }
 .vs.nesvs { display: flex; flex-direction: column; align-items: center; justify-content: center; gap: clamp(4px, 1.6vh, 12px); background: #2c4a94; font-family: 'NES', monospace; padding: max(6px, env(safe-area-inset-top)) max(10px, env(safe-area-inset-right)) max(6px, env(safe-area-inset-bottom)) max(10px, env(safe-area-inset-left)); }
 .vs.nesvs * { font-family: 'NES', monospace; font-weight: 400; }
 /* the crests, the VS, the flags and the jumbo: one NES picture of 288 x 150 scaled up with square pixels */
-.nesvs .vcrest { height: min(56vh, calc(94vw * 150 / 288)); aspect-ratio: 288 / 150; image-rendering: pixelated; display: block; }
+.nesvs .vcrest { height: min(60vh, calc(94vw * 176 / 320)); aspect-ratio: 320 / 176; image-rendering: pixelated; display: block; outline: 3px solid #fff; box-shadow: 6px 6px 0 #000; }
 .nesvs .vteams { display: flex; justify-content: center; gap: clamp(16px, 8vw, 90px); width: 100%; }
 .nesvs .vside { display: flex; flex-direction: column; align-items: center; gap: 4px; animation: none; }
 .nesvs .vside b { font-size: clamp(7px, 2.2vh, 13px); border: 2px solid #fff; border-radius: 0; background: #000; color: #fff; text-shadow: none; padding: 4px 8px; }
@@ -464,3 +464,12 @@ input[type=range] { width: 100%; height: 28px; accent-color: #5DDB43; }
 #hud .hint { font-size: clamp(8px, 2vh, 12px); font-weight: 400; color: #fff; background: #000; border: 3px solid #fff; border-radius: 0; padding: 6px 12px; }
 #hud .star { border-radius: 0; border: 2px solid #fff; background: #000; }
 #hud .nes .nb { font-size: clamp(7px, 1.6vh, 10px); font-weight: 400; }
+
+/* the "seguir" of a celebration that a person is playing: under the pause button, out of the way of the stick and the buttons */
+#hud .goon { position: fixed; top: calc(max(8px, env(safe-area-inset-top)) + 60px); right: max(10px, env(safe-area-inset-right)); pointer-events: auto; display: none; font-family: 'NES', monospace; font-size: clamp(7px, 1.9vh, 11px); color: #fff; background: #000; border: 3px solid #fff; padding: 8px 10px; min-height: 36px; cursor: pointer; touch-action: manipulation; }
+#hud .goon.show { display: block; animation: blink 1.2s steps(1, end) infinite; }
+#hud .hint.low { top: auto; bottom: max(6px, env(safe-area-inset-bottom)); font-size: clamp(6px, 1.7vh, 10px); padding: 5px 8px; white-space: nowrap; }
+/* the squads and the line of the rivals wait for the two crests to meet (vs.ts) */
+.nesvs .vteams, .nesvs .vstyle, .nesvs .vtap { visibility: hidden; }
+.nesvs.met .vteams, .nesvs.met .vstyle, .nesvs.met .vtap { visibility: visible; }
+.nesvs.met .vside.l { animation: inl .3s ease-out; } .nesvs.met .vside.r { animation: inr .3s ease-out; }

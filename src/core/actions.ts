@@ -202,7 +202,7 @@ export function planPass(m: Match, p: Player, lob: boolean): KickPlan {
 function startKick(m: Match, p: Player, plan: KickPlan, prep: number, floor = 0): void {
   const dx = plan.tx - p.x;
   if (Math.abs(dx) > 4) p.facing = dx > 0 ? 1 : -1;
-  if (plan.air && p.z <= 0 && (plan.kind === 'header' || plan.kind === 'chilena')) p.vz = T.jumpV * (plan.kind === 'chilena' ? 0.9 : 1);
+  if (plan.air && p.z <= 0 && (plan.kind === 'header' || plan.kind === 'chilena')) p.vz = plan.dive ? T.dive.hop : T.jumpV * (plan.kind === 'chilena' ? 0.9 : 1);
   begin(p, { kind: 'kick', t: 0, dur: prep + T.kickRecover, contact: prep, plan, sub: plan.kind }, 'kick');
   p.act!.dx = floor;
   p.shoot.down = false; p.pass.down = false;
@@ -250,6 +250,9 @@ export function startJump(m: Match, p: Player): boolean {
 function planAerial(m: Match, p: Player, zone: 'volley' | 'header', viaPass: boolean): { plan: KickPlan; prep: number; floor: number } {
   const gx = goalX(p.team), dir = attackDir(p.team);
   const { ty } = shotTarget(m, p, false);
+  // la palomita (Nintendo World Cup): he was running at a ball at the height of his waist and throws himself flat at it, head first
+  if (zone === 'volley' && !viaPass && p.z <= 0 && p.facing === dir && p.vx * dir >= T.dive.minV * 0.7 && Math.hypot(p.vx, p.vy) >= T.dive.minV)
+    return { plan: { kind: 'header', dive: true, speed: T.dive.v, vz: T.dive.vz, tx: gx, ty, err: T.dive.err, spin: 0, air: true }, prep: T.dive.prep, floor: T.dive.floor };
   if (zone === 'volley') return { plan: { kind: 'volley', speed: T.volley.v, vz: T.volley.vz, tx: gx, ty, err: T.volley.err, spin: 0, air: true }, prep: T.volleyPrep, floor: 0 };
   if (viaPass) {
     const c = choosePass(m, p, p.input.mx, p.input.my, 260);
@@ -538,7 +541,9 @@ export function updateAct(m: Match, p: Player, dt: number): { moveScale: number;
   switch (a.kind) {
     case 'kick': {
       moveScale = a.t < a.contact! ? 0.3 : 0.5;
-      if (!a.done && a.t >= a.contact!) { a.done = true; resolveKick(m, p, a.plan!); }
+      // la palomita: he flies at the ball and slides on after it
+      if (a.plan!.dive) { const d = attackDir(p.team), u = Math.max(0, 1 - (a.t - a.contact!) / Math.max(0.01, a.dur - a.contact!)); override = { vx: d * (a.t < a.contact! ? T.dive.lunge : T.dive.slide * u), vy: p.vy * 0.9 }; }
+      if (!a.done && a.t >= a.contact!) { a.done = true; resolveKick(m, p, a.plan!); if (p.act !== a) break; }
       if (a.t >= a.dur) { const floor = a.dx ?? 0; endAct(p); if (floor > 0) startGetup(p, floor); }
       break;
     }
@@ -607,7 +612,7 @@ function resolveKick(m: Match, p: Player, plan: KickPlan): void {
     const combo = comboReady(m, p);
     if (combo || plan.kind !== 'volley') {
       if (combo) emit(m, 'combo', p.x, p.y, p.z, p.id);
-      superShot(m, p, combo ? T.combo.bonus : 0, plan.kind as 'header' | 'volley' | 'chilena');
+      superShot(m, p, (combo ? T.combo.bonus : 0) + (plan.dive ? T.dive.bonus : 0), plan.dive ? 'dive' : plan.kind as 'header' | 'volley' | 'chilena');
       return;
     }
   }

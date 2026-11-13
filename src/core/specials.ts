@@ -1,7 +1,7 @@
 import { DIFFICULTY, SPECIAL_BASE, STYLE, T } from './tuning';
 import { MID, PITCH, attackDir, goalX, ownGoalX, slotPos } from './field';
 import { emit } from './events';
-import { holdBall, knockDown, playerById, setTouch, startDive, startStagger, startTumble } from './actions';
+import { holdBall, knockDown, playerById, setTouch, startDive, startGetup, startStagger, startTumble } from './actions';
 import type { Flight, Match, Player, SpecialKind, Team } from './state';
 
 const KIND_FAMILY: Record<string, SpecialKind> = { sophie: 'arcoiris', alana: 'burbuja', papa: 'canonazo', mama: 'estrellas', juandi: 'relampago', thor: 'carrera' };
@@ -52,6 +52,8 @@ export function trySpecials(m: Match): void {
     if (p.control === 'ai' && humans) continue;   // the AI mates of a team with a human never spend the bar he is saving
     let shooter: Player | null = null;
     if (b.owner === p.id && b.state === 'owned' && p.role !== 'gk') shooter = p;
+    // the captain orders the special of the mate who carries the ball (the bar is the team's)
+    else if (p.control === 'human' && b.state === 'owned') { const o = m.players.find((q) => q.id === b.owner); if (o && o.team === p.team && o.control === 'ai' && o.role !== 'gk') shooter = o; }
     else if (p.team === 0) {
       const gk = m.players.find((q) => q.team === 0 && q.role === 'gk');
       if (gk && b.state === 'held' && b.owner === gk.id) shooter = gk;
@@ -236,6 +238,7 @@ function endFlight(m: Match, f: Flight, s: Player): void {
   const b = m.ball, dir = attackDir(f.team), keeper = playerById(m, f.keeper);
   m.flight = null;
   s.state = 'idle'; s.immuneT = 0;
+  if (s.supAnim === 'dive') startGetup(s, T.dive.floor * 0.6);   // he threw himself flat at it: he gets up
   if (f.kind === 'carrera') { const home = slotPos(f.team, s.slot, m.form[f.team]); emit(m, 'zas', s.x, s.y, 0, s.id); s.x = home.x; s.y = home.y; }
   b.owner = null; b.state = 'free'; b.vx = b.vy = b.vz = 0; b.spin = 0; b.z = 0;
   setTouch(m, s);

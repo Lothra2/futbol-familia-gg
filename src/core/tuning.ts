@@ -20,7 +20,12 @@ export const T = Object.freeze({
    *  carries the ball is hit with `easyP`. */
   hit: { reach: 18, dy: 12, p: 0.9, easyP: 0.6, keep: 0.55, down: 1.6, ko: 3.4, koAfter: 3, combo: 6, self: 0.28, cd: 0.45, slack: { x: 5, y: 4 } },
   /** Who you move when your team has not got the ball: the nearest to it, after `wait` s on the last one (`waitEasy` for a child), if he is `margin` px nearer. */
-  switchCtl: { wait: 0.22, waitEasy: 0.35, margin: 10 },
+  // who the control jumps to when the team has no ball: whoever gets to it first (seconds), and a mate the carrier has already passed counts
+  // as `beaten` s later; it only jumps when the new one wins by `gain` s
+  switchCtl: { wait: 0.22, waitEasy: 0.35, margin: 10, beaten: 0.45, gain: 0.12 },
+  // orders to the mates (Nintendo World Cup): how long an order waits to be obeyed, how far from the ball the captain must be for Tiro to send
+  // a mate at the carrier instead of sliding herself, and how near the mate has to be for the order to make sense
+  order: { ttl: 1.2, tackleTtl: 2.2, far: 70, near: 260 },
   /** Speed of the match against real time on screen: below 1 the whole game runs slower, the way Nintendo World Cup feels. */
   pace: 0.8,
   /** Súper patada (Nekketsu): after `at` px of dribble without stopping, inside `range` of the goal, the player flashes for `window` s (`easyWindow`
@@ -110,6 +115,9 @@ export const T = Object.freeze({
    *  the goal, is the power shot of the player. Kicking it with the ball right at the top of the jump (falling or rising slower than `apexV`)
    *  adds `apex` to its chance. */
   airPower: { range: 420, apexV: 85, apex: 0.12 },
+  // la palomita: running at least `minV` at a ball at the height of a volley, Tiro throws him flat at it. He flies `lunge` px/s until the
+  // contact and slides on his belly after it, then he is `floor` s on the grass. A hard, low header; near the goal it is his power shot.
+  dive: { minV: 95, v: 360, vz: 12, err: 9, prep: 0.14, hop: 105, lunge: 150, slide: 210, floor: 0.45, bonus: 0.06 },
   special: { zone: 0.7, own: 0.85, ayuda: 0.10, cap: 0.92, keeperMult: { tranquilos: 1.15, normales: 1.0, campeones: 0.9 } as Record<string, number>, aiRange: 400, aiDelayMin: 1, aiDelayMax: 3 },
   // ---- keepers (6.7)
   gk: { humanHold: 4, humanLock: 0.3, punt: 260, out: 0.12, outMin: 6, outMax: 28, area: 96, moveV: 150, diveV: 330, diveT: 0.6, land: 0.5, holdMin: 1.0, holdMax: 1.5, catchV: 380, looseV: 120,

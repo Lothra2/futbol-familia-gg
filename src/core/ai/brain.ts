@@ -120,6 +120,43 @@ function brainThink(m: Match, p: Player, humanize: boolean): InputFrame {
     if (t && t.control === 'human' && m.rng.chance(DIFFICULTY[m.difficulty].punch)) { f.shootPressed = true; f.shoot = false; return f; }
   }
 
+  // an order of a person (Nintendo World Cup): he obeys at once, without thinking it over
+  const od = p.order && m.t <= p.order.until ? p.order : null;
+  if (!od) p.order = null;
+  if (od && od.kind !== 'tackle' && !(carrier && carrier.id === p.id)) p.order = null;   // he lost the ball before he could obey
+  if (od && carrier && carrier.id === p.id && p.z <= 0) {
+    if (od.kind === 'pass') {
+      const to = m.players.find((q) => q.id === od.to);
+      if (to) {
+        const md = Math.hypot(to.x - p.x, to.y - p.y) || 1;
+        f.mx = (to.x - p.x) / md; f.my = (to.y - p.y) / md; f.passPressed = true; f.pass = true;
+        // far away, or with a rival on the line, the ball goes over them (the pass held down)
+        const high = md > 200 || foes.some((o) => o.role !== 'gk' && segDist(o.x, o.y, p.x, p.y, to.x, to.y) < 16);
+        if (high) { A.holdBtn = 'pass'; A.holdLeft = 0.3; A.held = { ...f, passPressed: false }; } else f.pass = false;
+        m.data.orderPass = { from: p.id, to: to.id, t: m.t };
+      }
+    } else if (od.kind === 'shoot') {
+      const gk = foes.find((q) => q.role === 'gk'), dG = Math.abs(gx - p.x);
+      f.mx = dir; f.my = 0.55 * (gk && Math.abs(gk.y - MID) > 8 ? (gk.y < MID ? 1 : -1) : m.rng.chance(0.5) ? 1 : -1);
+      f.shootPressed = true; f.shoot = true;
+      if (dG > 150) { A.holdBtn = 'shoot'; A.holdLeft = 0.3; A.held = { ...f, shootPressed: false }; } else f.shoot = false;
+    }
+    p.order = null; A.armedAt = 0;
+    return f;
+  }
+  if (od && od.kind === 'tackle') {
+    if (!theirs || !carrier) p.order = null;
+    else {
+      // straight at the carrier, flat out, and into the slide as soon as he is in range (or the steal, right on top of him)
+      const d = Math.hypot(carrier.x - p.x, carrier.y - p.y), lead = ballAt(m, Math.min(0.3, d / 400));
+      go(lead.x, lead.y, true);
+      const close = Math.abs(carrier.x - p.x) <= T.steal.reach + 2 && Math.abs(carrier.y - p.y) <= T.steal.dy;
+      if (close) { if (Math.abs(carrier.x - p.x) > 2) f.mx = Math.sign(carrier.x - p.x) * Math.max(0.3, Math.abs(f.mx)); f.shootPressed = true; f.shoot = false; p.order = null; }
+      else if (d < 40 && p.cd.slide <= 0) { f.slide = true; f.shootPressed = true; f.shoot = false; f.mx = (carrier.x - p.x) / d; f.my = (carrier.y - p.y) / d; p.order = null; }
+      return f;
+    }
+  }
+
   // ------------------------------------------------------------------ I carry the ball
   if (carrier && carrier.id === p.id) {
     const dGoal = Math.abs(gx - p.x);
