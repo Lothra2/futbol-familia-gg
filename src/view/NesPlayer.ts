@@ -205,7 +205,8 @@ export class NesPlayer {
     if (!this.meta.anims[key]) key = `idle_${mirrored ?? want}`;
     const a = this.meta.anims[key];
     const speed = Math.hypot(p.vx, p.vy);
-    this.loops.ease(Math.max(0.6, Math.min(1.8, speed / 110)), dt);
+    // (loading his power on the move: short, quick steps, not the lazy ones of a jog)
+    this.loops.ease(m?.special?.shooter === p.id ? 2.1 : Math.max(0.6, Math.min(1.8, speed / 110)), dt);
     const frame = st.loop ? this.loops.frame(this.meta.anims, key, dt) : a.start + Math.min(a.frames - 1, Math.floor(Math.max(0, st.t) * a.fps));
     const x = Math.round(wx(p.x, p.y)), gy = Math.round(sy(p.y)), y = Math.round(sy(p.y, p.z));
     // a puff at the feet when a running stride lands (frames 0 and 4 of the cycle)
@@ -232,7 +233,7 @@ export class NesPlayer {
     if (this.isThor && st.name === 'run') oy = -Math.round(Math.abs(Math.sin((m?.t ?? 0) * 16)) * 2);
     // loading his power: he trembles, squashed, faster as the bar fills
     const loading = !!m && m.special?.shooter === p.id;
-    if (loading) { const u = m!.special!.t / m!.special!.dur; ox = Math.floor(m!.special!.t * (24 + 30 * u)) % 2 ? 1 : -1; if (speed < 20) { sxk = 1.06; syk = 0.94 - 0.04 * u; } }
+    if (loading) { const u = m!.special!.t / m!.special!.dur; ox = Math.floor(m!.special!.t * (24 + 30 * u)) % 2 ? 1 : -1; if (speed < 20) { sxk = 1.06; syk = 0.94 - 0.04 * u; } else { oy = -Math.round(Math.abs(Math.sin(m!.special!.t * 26)) * 2); sxk = 1.04; syk = 0.96; } }
     this.sprite.setFrame(frame).setPosition(x + ox, y + oy).setFlipX(!!mirrored).setDepth(depthAt(p.y)).setScale(sxk, syk);
     this.sprite.setAlpha(this.hitT > 0 && Math.floor(this.hitT * 30) % 2 ? 0.35 : 1);   // the blink of a sprite that has just been hit
     // the moment of the súper patada: the carrier flashes white and gold (Nekketsu), shoot now

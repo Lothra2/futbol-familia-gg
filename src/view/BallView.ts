@@ -133,8 +133,8 @@ export class BallView {
       if (sp > 1) { ux = vx / sp; uy = vy / sp; }
       const km = KICK_MOVE[this.kickKind];
       if (load !== null) {
-        // a power is loading: the ball burns at his feet, beating faster and bigger as the bar fills
-        look = lookOf('redondo', BALL_R + 1 + Math.round(1.5 * load + Math.sin(t * (18 + 26 * load))), 1, 0, t);
+        // a power is loading: the ball burns at his feet, beating faster as the bar fills
+        look = lookOf('redondo', BALL_R + (Math.sin(t * (18 + 26 * load)) > 0.3 ? 1 : 0), 1, 0, t);   // (its own size, so it does not hide the legs of the one who runs with it)
         look.pals = [PAL_HOT.blanco, PAL_HOT.fuego, PAL_BALL]; look.spin = 0.25 + 0.5 * load;
       }
       else if (this.squashT > 0) { look = lookOf('tortilla', BALL_R, 0, 1, t); this.sprite.y = y + 2; }
