@@ -146,7 +146,7 @@ export class MatchScene extends Phaser.Scene {
       const B = T_ES.banners;
       if (!this.cfg.reducedMotion && !this.cfg.fastForward) this.hitStopFor(e);
       switch (e.k) {
-        case 'goal': this.goalStar = this.ctl.m.players.find((q) => q.cele?.role === 'star')?.id ?? -1; if (this.ctl.m.phase !== 'penalties') this.pending = this.rec.clip(2.8); if (this.ctl.m.phase !== 'penalties') this.hud.banner(B.goal, this.party() ? 1100 : 2200); this.hud.flash(); shakeCamera(this.cam, 0.35); this.stadium.goal(); this.pfx.play('confeti', e.x + (e.x > 480 ? -40 : 40), e.y + 30, 0, { front: true }); this.pfx.play('cohete', e.x + (e.x > 480 ? -70 : 70), e.y - 20, 60, { front: true }); break;   // (the banner is short when a person is about to celebrate: it must not cover her)
+        case 'goal': this.goalStar = this.ctl.m.players.find((q) => q.cele?.role === 'star')?.id ?? -1; if (this.ctl.m.phase !== 'penalties') this.pending = this.rec.clip(2.8); if (this.ctl.m.phase !== 'penalties') this.hud.banner(B.goal, this.party() ? 1100 : 2200); this.hud.flash(); shakeCamera(this.cam, 0.35); this.stadium.goal(); this.pfx.play('confeti', e.x + (e.x > 480 ? -40 : 40), e.y + 30, 0, { front: true, at: 0.2 }); this.pfx.play('cohete', e.x + (e.x > 480 ? -70 : 70), e.y - 20, 60, { front: true, at: 0.3 }); break;   // (the banner is short when a person is about to celebrate: it must not cover her)
         case 'throwin': this.hud.banner(B.throwin, 900); break;
         case 'goalkick': this.hud.banner(B.goalkick, 900); break;
         case 'corner': this.hud.banner(B.corner, 900); break;

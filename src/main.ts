@@ -37,8 +37,11 @@ const game = new Phaser.Game({
   scene: [BootScene, MenuScene, MatchScene],
 });
 
+/** The size the layout was last made for. */
+let laidW = 0, laidH = 0;
 function applyLayout() {
-  const l = computeLayout(window.innerWidth, window.innerHeight, window.devicePixelRatio || 1);
+  laidW = window.innerWidth; laidH = window.innerHeight;
+  const l = computeLayout(laidW, laidH, window.devicePixelRatio || 1);
   game.scale.resize(l.w, l.h);
   const c = game.canvas;
   if (c) { c.style.width = `${l.cssW}px`; c.style.height = `${l.cssH}px`; }
@@ -46,6 +49,14 @@ function applyLayout() {
 window.addEventListener('resize', applyLayout);
 window.addEventListener('orientationchange', applyLayout);
 applyLayout();
+// An iPhone that is turned says `resize` while it is still turning, with the new height and the old width (a square), and does not say it
+// again when it is done: the pitch stayed a square in the middle of the screen. So the size is looked at again a little after every turn
+// and twice a second for ever, and if it is not the one the layout was made for everybody is told (the pitch, the HUD, the sticks).
+const sizeCheck = () => { if (window.innerWidth !== laidW || window.innerHeight !== laidH) window.dispatchEvent(new Event('resize')); };
+for (const ev of ['resize', 'orientationchange'] as const) window.addEventListener(ev, () => { for (const ms of [120, 350, 800]) setTimeout(sizeCheck, ms); });
+window.visualViewport?.addEventListener('resize', sizeCheck);
+screen.orientation?.addEventListener?.('change', () => setTimeout(sizeCheck, 200));
+setInterval(sizeCheck, 500);
 game.canvas?.addEventListener('webglcontextlost', (e) => { e.preventDefault(); location.reload(); });
 
 watchFullscreen(); blockZoomGestures();

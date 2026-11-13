@@ -88,6 +88,21 @@ const ready = async (page) => { await page.waitForFunction(() => window.__futbol
   await ctx.close();
 }
 
+// 4. an iPhone that is turned: `resize` comes while it turns, with the new height and the old width, and is not said again. The layout must
+//    still end up filling the screen (it was left as a square in the middle).
+{
+  const { page, errors, ctx } = await openGame(b, srv.url, Q, { viewport: { width: 844, height: 390 }, deviceScaleFactor: 3 });
+  await ready(page);
+  const sq = await page.evaluate(() => { window.__realW = window.innerWidth; window.__stale = true; Object.defineProperty(window, 'innerWidth', { get: () => (window.__stale ? 390 : window.__realW), configurable: true }); window.dispatchEvent(new Event('resize')); return document.querySelector('#game canvas').style.width; });
+  await page.evaluate(() => { window.__stale = false; });
+  await page.waitForTimeout(1300);
+  const after = await page.evaluate(() => ({ css: document.querySelector('#game canvas').style.width, w: window.__futbol.game.scale.width, iw: window.innerWidth }));
+  ok('giro del iPhone: el tamaño a medias deja un cuadrado', parseFloat(sq) < 420, sq);
+  ok('giro del iPhone: la cancha vuelve a llenar la pantalla sola', parseFloat(after.css) > 800 && after.w > 400, JSON.stringify(after));
+  ok('sin errores de consola (giro)', errors.length === 0, errors.join('|'));
+  await ctx.close();
+}
+
 await b.close(); srv.stop();
 console.log(bad ? `${bad} FAIL` : 'smoke: all passed');
 process.exit(bad ? 1 : 0);
