@@ -1,6 +1,8 @@
 import Phaser from 'phaser';
 import type { Match } from '../core/state';
 import { geyserState, type Hazard } from '../core/hazards';
+import { T } from '../core/tuning';
+import type { PfxMeta } from './PixelFx';
 import { PX, depthAt, wx, sy } from '../core/proj';
 
 /** The traps of the pitch (core/hazards.ts), drawn on the grass under the players: the puddles of the Arrecife, the geysers of the Volcán
@@ -9,12 +11,19 @@ import { PX, depthAt, wx, sy } from '../core/proj';
 export class HazardView {
   private ground: Phaser.GameObjects.Graphics;
   private tall: Phaser.GameObjects.Graphics[] = [];
+  /** The fire of each geyser: the flame pillar of pixelfx (assets/fx/pilar.png), one picture per hole. Without the sheet the old column is drawn. */
+  private fire: (Phaser.GameObjects.Image | null)[] = [];
+  private pm: PfxMeta | null = null;
   constructor(scene: Phaser.Scene, private m: Match) {
+    const meta = scene.cache.json.get('pfx_meta') as Record<string, PfxMeta> | undefined;
+    this.pm = meta?.pilar && meta.pilar.frames >= 34 && scene.textures.exists('pfx_pilar') ? meta.pilar : null;
+    const pm = this.pm;
+    for (const h of m.hazards) this.fire.push(pm && h.kind === 'geiser' ? scene.add.image(0, 0, 'pfx_pilar').setOrigin(pm.px / pm.w, pm.py / pm.h).setScale(0.62).setDepth(depthAt(h.y) + 0.35).setVisible(false) : null);
     this.ground = scene.add.graphics().setDepth(4);
     for (const h of m.hazards) this.tall.push(scene.add.graphics().setDepth(depthAt(h.y) + (h.kind === 'geiser' ? 0.3 : -0.7)));
   }
   setMatch(m: Match): void { this.m = m; }
-  destroy(): void { this.ground.destroy(); for (const g of this.tall) g.destroy(); }
+  destroy(): void { this.ground.destroy(); for (const g of this.tall) g.destroy(); for (const f of this.fire) f?.destroy(); }
 
   update(t: number): void {
     const g = this.ground; g.clear();
@@ -23,7 +32,7 @@ export class HazardView {
       const age = this.m.t - h.pop;
       if (h.kind === 'charco') this.puddle(g, X, Y, w, d, t, age, i);
       else if (h.kind === 'barro') this.mud(g, X, Y, w, d, t, i);
-      else if (h.kind === 'geiser') this.geyser(g, top, X, Y, w, d, t, h);
+      else if (h.kind === 'geiser') this.geyser(g, top, X, Y, w, d, t, h, this.fire[i]);
       else this.cloud(g, top, X, Y, w, d, t, age, i);
     });
   }
@@ -44,9 +53,18 @@ export class HazardView {
     if (u < 0.5) g.lineStyle(1, 0xa37a4e, 1).strokeCircle(bx, Y - d * 0.05, 1 + u * 5);
   }
 
-  private geyser(g: Phaser.GameObjects.Graphics, top: Phaser.GameObjects.Graphics, X: number, Y: number, w: number, d: number, t: number, h: Hazard): void {
+  private geyser(g: Phaser.GameObjects.Graphics, top: Phaser.GameObjects.Graphics, X: number, Y: number, w: number, d: number, t: number, h: Hazard, fire: Phaser.GameObjects.Image | null): void {
     const st = geyserState(h, this.m.t), hot = st === 0 ? 0x8a2e10 : Math.floor(t * 12) % 2 ? 0xffb030 : 0xff6a1a;
     g.fillStyle(0x2a2226, 1).fillEllipse(X, Y, w + 6, d + 5).fillStyle(0x55464a, 1).fillEllipse(X, Y - 1, w + 2, d + 1).fillStyle(0x1c1416, 1).fillEllipse(X, Y, w - 3, d - 3).fillStyle(hot, 1).fillEllipse(X, Y, w - 8, d - 6);
+    if (fire) {
+      // the sheet has four parts: sparks on the ground (0 to 3), the pillar going up and burning (4 to 19), its end (20 to 23) and the smoke
+      // that is left (24 to 33). The sparks go with the warning, the pillar with the blow, and the smoke with the first second of sleep.
+      const G = T.haz.geyser, u = (((this.m.t - h.t0 * (G.period / 6)) % G.period) + G.period) % G.period, calm = G.period - G.warn - G.blow;
+      const fr = st === 1 ? Math.floor(t * 10) % 4 : st === 2 ? 4 + Math.min(19, Math.floor(((u - calm - G.warn) / G.blow) * 20)) : u < 1 ? 24 + Math.min(9, Math.floor(u * 10)) : -1;
+      fire.setVisible(fr >= 0); if (fr >= 0) fire.setFrame(fr).setPosition(X, Y + 2);
+      if (st === 1) for (let k = 0; k < 4; k++) { const v = (t * 1.6 + k * 0.25) % 1; top.fillStyle(0xffffff, 0.75 * (1 - v)).fillRect(Math.round(X + Math.sin(k * 2.3 + t * 3) * 4) - 2, Math.round(Y - 4 - v * 22), 4, 4); }
+      return;
+    }
     if (st === 1) {
       // it smokes: get off it
       for (let k = 0; k < 4; k++) { const u = (t * 1.6 + k * 0.25) % 1; top.fillStyle(0xffffff, 0.75 * (1 - u)).fillRect(Math.round(X + Math.sin(k * 2.3 + t * 3) * 4) - 2, Math.round(Y - 4 - u * 22), 4, 4); }

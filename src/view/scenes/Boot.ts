@@ -1,6 +1,7 @@
 import Phaser from 'phaser';
 import { makeTextures } from '../textures';
 import { asset } from '../../asset';
+import { PFX } from '../PixelFx';
 
 /** Portraits of the rivals for the penalty shoot-out (tools/build_cine.py). */
 export const CINE = ['riv_dragon_a', 'riv_dragon_b', 'riv_tiburon_a', 'riv_tiburon_b', 'riv_buho_a', 'riv_buho_b', 'riv_mapache_a', 'riv_mapache_b'];
@@ -36,6 +37,11 @@ export class BootScene extends Phaser.Scene {
       });
       this.load.json(`nes_${k}_meta`, asset(`assets/nes/${k}.json`));
     }
+    // the big effects of the powers (tools/build_pixelfx.py): the size of each cell is in fx.json
+    this.load.once('filecomplete-json-pfx_meta', (_key: string, _type: string, meta: Record<string, { w: number; h: number }>) => {
+      for (const k of PFX) if (meta[k]) this.load.spritesheet(`pfx_${k}`, asset(`assets/fx/${k}.png`), { frameWidth: meta[k].w, frameHeight: meta[k].h });
+    });
+    this.load.json('pfx_meta', asset('assets/fx/fx.json'));
     for (const k of SHEETS) {
       this.load.spritesheet(k, asset(`assets/sprites/${k}.png`), { frameWidth: 48, frameHeight: 48 });
       this.load.json(`${k}_meta`, asset(`assets/sprites/${k}.json`));
