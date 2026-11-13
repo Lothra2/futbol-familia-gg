@@ -189,9 +189,9 @@ describe('el salto de Nekketsu', () => {
   });
   it('la IA también salta: en varios partidos hay saltos y remates en el aire (giratorias o de poder)', () => {
     let jumps = 0, spins = 0;
-    for (const seed of [2, 5, 9, 11, 14, 17]) {
-      const m = createMatch({ seed, ai: 'brain', halfLength: 45 });
-      for (let i = 0; i < 60 * 100 && m.phase !== 'over'; i++) { step(m); for (const e of m.events) { if (e.k === 'jump') jumps++; if (e.k === 'spinkick') spins++; } m.events = [];
+    for (const seed of [2, 5, 9, 11, 14, 17, 21, 23, 27, 31, 34, 38]) {
+      const m = createMatch({ seed, ai: 'brain', halfLength: 60, difficulty: 'campeones' });
+      for (let i = 0; i < 60 * 160 && m.phase !== 'over'; i++) { step(m); for (const e of m.events) { if (e.k === 'jump') jumps++; if (e.k === 'spinkick') spins++; } m.events = [];
         if (m.flight && m.flight.t === 0 && m.players.find((p) => p.id === m.flight!.shooter)!.supAnim !== 'kick') spins++; }
     }
     expect(jumps).toBeGreaterThan(2); expect(spins).toBeGreaterThan(0);

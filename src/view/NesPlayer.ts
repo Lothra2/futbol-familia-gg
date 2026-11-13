@@ -102,6 +102,8 @@ export function nesAnim(p: Player, m: Match | null, isThor: boolean, hint: AnimH
     case 'celebrate': {
       // the celebration of a goal (core/celebrate.ts): the run, the somersault, the slide on the knees, the spinning jump, the fist in the air
       const c = cele?.move, ct = cele?.t ?? 0;
+      // Nintendo World Cup: where he stands, facing the camera, both arms up and shouting
+      if (c === 'banzai') return { name: 'celebrate', loop: true, t };
       if (c === 'run') return { name: 'run', loop: true, t };
       if (c === 'flip') return { name: 'spin_kick', loop: false, t: ct * 0.62 };
       if (c === 'slide') return { name: 'slide', loop: false, t: ct };
@@ -114,7 +116,8 @@ export function nesAnim(p: Player, m: Match | null, isThor: boolean, hint: AnimH
       if (c === 'pose') return { name: 'celebrate', loop: true, t };
       return { name: p.team === 0 && !cele ? 'dance' : 'celebrate', loop: true, t };
     }
-    case 'sad': return { name: 'sad', loop: true, t };
+    // the keeper who let it in stays flat on the grass, face down (Nintendo World Cup)
+    case 'sad': return gk ? { name: 'lie', loop: true, t } : { name: 'sad', loop: true, t };
     case 'dive': return { name: gk ? 'keeper_dive' : 'jump', loop: false, t };
     case 'hold': return { name: gk ? 'keeper_catch' : 'idle', loop: false, t: 9 };
     default:
@@ -150,7 +153,7 @@ export class NesPlayer {
   /** A direction the scene imposes (the penalty shootout: the shooter from behind, the keeper facing us). */
   forceDir: number | null = null;
 
-  constructor(private scene: Phaser.Scene, public p: Player, private key: string, private meta: NesMeta, private fx?: Fx) {
+  constructor(private scene: Phaser.Scene, public p: Player, private key: string, readonly meta: NesMeta, private fx?: Fx) {
     this.isThor = p.art === 'thor';
     this.tall = meta.cell[1] >= 48 ? 42 : 30;
     this.shadow = scene.add.image(0, 0, 'shadow').setOrigin(0.5, 0.5);
@@ -162,6 +165,8 @@ export class NesPlayer {
   }
   /** A little shake: the person is hammering the buttons to get him up. */
   jolt(): void { this.hitT = Math.max(this.hitT, 0.08); }
+  /** The picture of his sheet (the scoreboard of a goal draws him from it). */
+  sheet(): CanvasImageSource { return this.sprite.texture.getSourceImage() as CanvasImageSource; }
   destroy(): void { this.sprite.destroy(); this.shadow.destroy(); this.mark.destroy(); this.bar.destroy(); this.ring.destroy(); }
 
   /** Which way the drawing looks: where he runs, else where he aims, else at the ball (keepers and anybody standing). */
@@ -263,6 +268,13 @@ export class NesPlayer {
         const a = a0 + (i * Math.PI * 2) / 3, sx = Math.round(hx + Math.cos(a) * 7), sy2 = Math.round(hy + Math.sin(a) * 2.5);
         this.bar.fillStyle(i === 1 ? 0xffffff : 0xffe45c).fillRect(sx - 1, sy2, 3, 1).fillRect(sx, sy2 - 1, 1, 3);
       }
+      this.bar.setDepth(depthAt(p.y) + 0.6);
+    }
+    // the shout of a goal: little lines round the head of whoever celebrates with his arms up, blinking
+    if (p.state === 'celebrate' && p.cele && (p.cele.move === 'banzai' || p.cele.move === 'pose') && Math.floor((m?.t ?? 0) * 8 + p.id) % 2 === 0) {
+      const hy = y - this.tall + 6;
+      this.bar.fillStyle(0xffffff, 1);
+      for (const [dx, dy, w, h] of [[-13, -2, 4, 1], [-11, -7, 3, 1], [10, -2, 4, 1], [9, -7, 3, 1], [-1, -11, 1, 4]] as number[][]) this.bar.fillRect(x + dx, hy + dy, w, h);
       this.bar.setDepth(depthAt(p.y) + 0.6);
     }
     if (mine) {

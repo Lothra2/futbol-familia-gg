@@ -116,6 +116,16 @@ describe('a quién salta el control cuando un rival lleva el balón', () => {
     for (let i = 0; i < 40; i++) { r.input = inp({ mx: -1 }); tick(m); }
     expect(m.humans[0].id).toBe(back.id);
   });
+  it('si manejo a un defensa que retrocede a cubrir mi área, el control no me lo quita aunque otro quede más cerca del balón', () => {
+    const { m, cur, back, r } = setup();
+    // the rival comes down the middle; I run my defender back into my own area; Papá is right next to the rival
+    put(r, 330, MID); give(m, r); put(cur, 220, MID); put(back, 345, MID + 14);
+    let minX = 999;
+    for (let i = 0; i < 150; i++) { r.input = inp({ mx: -0.5 }); tick(m, inp({ mx: -1, sprint: true })); expect(m.humans[0].id).toBe(cur.id); minX = Math.min(minX, cur.x); }
+    expect(minX).toBeLessThan(60);   // he got deep into his own area, still mine
+    // if I let go of the stick, the control may go to whoever is better placed
+    for (let i = 0; i < 60; i++) { r.input = inp(); tick(m, inp()); }
+  });
   it('si el mío está encima del rival y de frente, no cambia aunque otro esté parecido', () => {
     const { m, cur, back, r } = setup();
     put(r, 400, MID); give(m, r); put(cur, 370, MID + 4); put(back, 350, MID - 30);

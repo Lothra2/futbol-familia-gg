@@ -105,7 +105,7 @@ describe('reloj', () => {
     secs(m, 2); expect(m.clock).toBeCloseTo(2, 1);
     ball(m, 40, MID, 5, -300, 0, 0); until(m, () => m.phase === 'goal');
     const c = m.clock; secs(m, 1.5); expect(m.clock).toBe(c);
-    secs(m, 2); expect(m.phase).toBe('kickoff'); const c2 = m.clock; secs(m, 0.3); expect(m.clock).toBe(c2);
+    secs(m, 1.0); expect(m.phase).toBe('kickoff'); const c2 = m.clock; secs(m, 0.3); expect(m.clock).toBe(c2);
   });
   it('B8: a los 10 s se acaba el primer tiempo, el medio tiempo dura 3,5 s y saca el otro equipo', () => {
     const m = mk({ halfLength: 10 }); clear(m); ball(m, 480, MID, 0, 0, 0, 0);

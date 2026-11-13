@@ -22,7 +22,9 @@ export const T = Object.freeze({
   /** Who you move when your team has not got the ball: the nearest to it, after `wait` s on the last one (`waitEasy` for a child), if he is `margin` px nearer. */
   // who the control jumps to when the team has no ball: whoever gets to it first (seconds), and a mate the carrier has already passed counts
   // as `beaten` s later; it only jumps when the new one wins by `gain` s
-  switchCtl: { wait: 0.22, waitEasy: 0.35, margin: 10, beaten: 0.45, gain: 0.12 },
+  // (`keep`, `box`: while she steers a defender who is goal side and within `keep` px of the ball, or within `box` px of her own goal
+  // line, the control never leaves him)
+  switchCtl: { wait: 0.22, waitEasy: 0.35, margin: 10, beaten: 0.45, gain: 0.12, keep: 170, box: 130 },
   // orders to the mates (Nintendo World Cup): how long an order waits to be obeyed, how far from the ball the captain must be for Tiro to send
   // a mate at the carrier instead of sliding herself, and how near the mate has to be for the order to make sense
   order: { ttl: 1.2, tackleTtl: 2.2, far: 70, near: 260 },
@@ -96,7 +98,7 @@ export const T = Object.freeze({
   // ---- pitch rules (5)
   half: [60, 90, 120] as readonly number[],
   restart: { position: 0.8, aiMin: 0.8, aiMax: 1.2, humanAuto: 3.0, easyAuto: 1.2, kickoffAuto: 2.0, easyKickoffAuto: 1.2, wipe: 0.3, teleport: 40 },
-  goalT: 2.8, goalSkip: 1.0, goldenT: 60, halftimeT: 3.5, endGrace: 1.0,
+  goalT: 2.3, goalSkip: 1.0, goldenT: 60, halftimeT: 3.5, endGrace: 1.0,
   throwMax: 160, throwInset: 60, cornerBox: 48,
   // free kick (tiro libre): a slide that hits the leg of the rival who carries the ball in the last `zone` px before the goal of the one who slides. The spot is never nearer than `minDist` to the goal line,
   // the wall of `wall` players stands `wallDist` px in front of the ball. The aim moves `aimV` px/s with the stick, the effect `curveV` per second, the meter swings `meterHz` times a second (sweet over `sweet`)

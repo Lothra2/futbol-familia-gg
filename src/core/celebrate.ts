@@ -4,7 +4,7 @@ import { emit } from './events';
 import type { Match, Player, Team } from './state';
 
 /** What a player does while his team celebrates a goal (the view picks the animation from it). */
-export type CeleMove = 'run' | 'flip' | 'slide' | 'spin' | 'pump' | 'hop' | 'zoom' | 'prance' | 'pose' | 'wave' | 'burla';
+export type CeleMove = 'banzai' | 'run' | 'flip' | 'slide' | 'spin' | 'pump' | 'hop' | 'zoom' | 'prance' | 'pose' | 'wave' | 'burla';
 /** The gestures a person can make while her player celebrates (Nekketsu Soccer League: the celebration is played, not watched). */
 export const GESTURES = ['pump', 'wave', 'flip', 'burla'] as const;
 /** The part of each player in the celebration: the scorer runs to his spot and does his thing, his mates run to him and jump round him,
@@ -34,9 +34,9 @@ export function startCelebration(m: Match, team: Team, scorer: number | null): v
   let n = 0;
   for (const p of m.players) {
     if (p.team !== team) { p.cele = null; continue; }
-    if (p === star) p.cele = { role: 'star', x: sx, y: sy, n: 0, move: 'run', t: 0, style: p.id % 3 };
-    else if (p.role === 'gk') p.cele = { role: 'keeper', x: p.x, y: p.y, n: 0, move: p.charId === 'thor' ? 'zoom' : 'hop', t: 0, style: 0 };
-    else { p.cele = { role: 'join', x: sx, y: sy, n, move: 'run', t: 0, style: 0 }; n++; }
+    if (p === star) p.cele = { role: 'star', x: sx, y: sy, n: 0, move: 'banzai', t: 0, style: p.id % 3 };
+    else if (p.role === 'gk') p.cele = { role: 'keeper', x: p.x, y: p.y, n: 0, move: p.charId === 'thor' ? 'zoom' : 'banzai', t: 0, style: 0 };
+    else { p.cele = { role: 'join', x: sx, y: sy, n, move: 'banzai', t: 0, style: 0 }; n++; }
   }
 }
 
@@ -65,34 +65,11 @@ export function stepCelebration(m: Match, dt: number): void {
       if ((t >= 0.2 && pressed) || (t >= 0.6 && Math.hypot(f.mx, f.my) > 0.3)) { if (!c.free) { c.free = true; c.did = c.did ?? 0; if (p.z <= 0 && p.vz === 0) { c.move = 'prance'; c.t = 0; } } c.idle = 0; }   // (caught in the air, he finishes his jump first)
       if (c.free) { stepFree(m, p, c, dt); continue; }
     }
-    if (c.role === 'star') {
-      if (c.move === 'run') {
-        if (runTo(p, c.x, c.y, CELE.run) || t >= CELE.runT) {
-          // his move: a somersault, a slide on the knees or a spinning jump
-          c.move = c.style === 0 ? 'flip' : c.style === 1 ? 'slide' : 'spin'; c.t = 0;
-          if (c.move !== 'slide') { p.vx *= 0.3; p.vy *= 0.3; hop(p, CELE.flipV); }
-          emit(m, 'celemove', p.x, p.y, 0, p.id, c.style);
-        }
-      } else if (c.move === 'slide') {
-        const k = Math.max(0, 1 - c.t / CELE.moveT), d = Math.hypot(p.dirX, p.dirY) || 1;
-        p.vx = (p.dirX / d) * CELE.slideV * k; p.vy = (p.dirY / d) * CELE.slideV * k * T.yFactor;
-        if (c.t >= CELE.moveT) { c.move = 'pump'; c.t = 0; }
-      } else if (c.move === 'flip' || c.move === 'spin') {
-        p.vx *= 0.9; p.vy *= 0.9;
-        if (c.t >= 0.2 && p.z <= 0) { c.move = 'pump'; c.t = 0; p.vx = p.vy = 0; }
-      } else {
-        // fist in the air, again and again, looking at the camera
-        p.vx = p.vy = 0; p.dirX = 0; p.dirY = 1;
-        if (p.z <= 0 && p.vz === 0 && c.t >= 0.12) { hop(p, CELE.pumpV); c.t = 0; }
-      }
-    } else if (c.role === 'join') {
-      // a place in the ring round the scorer (where he is now), then jumping with him
-      const a = Math.PI * (0.15 + 0.7 * (c.n / 3)) + (c.n % 2 ? Math.PI : 0), cx = star ? star.x : c.x, cy = star ? star.y : c.y;
-      const there = runTo(p, cx + Math.cos(a) * CELE.ring * 1.6, cy + Math.sin(a) * CELE.ring * 0.95, CELE.join);
-      if (there) {
-        c.move = 'hop'; p.dirX = Math.sign(cx - p.x) || 1; p.dirY = cy > p.y ? 0.6 : -0.6; p.facing = p.dirX > 0 ? 1 : -1;
-        if (p.z <= 0 && p.vz === 0 && c.t >= 0.1 + (c.n % 3) * 0.07) { hop(p, CELE.hopV); c.t = 0; }
-      } else c.move = 'run';
+    // Nintendo World Cup: everybody of the team that scored stays where he is, turns to the camera and shouts with both arms up, jumping
+    // (each one to his own beat, the scorer highest)
+    if (c.move === 'banzai') {
+      p.vx = p.vy = 0; p.dirX = 0; p.dirY = 1;
+      if (p.z <= 0 && p.vz === 0 && c.t >= 0.1 + (c.n % 3) * 0.06) { hop(p, c.role === 'star' ? CELE.pumpV : CELE.hopV); c.t = 0; }
     } else if (c.move === 'zoom') {
       // Thor: mad circles in front of his goal
       const a = t * CELE.zoomW, x = c.x + Math.cos(a) * CELE.zoomR * 1.4, y = c.y + Math.sin(a) * CELE.zoomR;

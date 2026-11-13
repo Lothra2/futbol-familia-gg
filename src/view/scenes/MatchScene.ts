@@ -25,6 +25,8 @@ import { Hud } from '../../ui/hud';
 import { T_ES } from '../../data/text.es';
 import type { Match, Player } from '../../core/state';
 import { T } from '../../core/tuning';
+import { showBoard } from '../../ui/marcador';
+import { KINGDOMS } from '../../data/kingdoms';
 import type { MatchEvent } from '../../core/types';
 
 let hud: Hud | null = null;
@@ -142,7 +144,7 @@ export class MatchScene extends Phaser.Scene {
       const B = T_ES.banners;
       if (!this.cfg.reducedMotion && !this.cfg.fastForward) this.hitStopFor(e);
       switch (e.k) {
-        case 'goal': if (this.ctl.m.phase !== 'penalties') this.pending = this.rec.clip(2.8); if (this.ctl.m.phase !== 'penalties') this.hud.banner(B.goal, this.party() ? 1100 : 2200); this.hud.flash(); shakeCamera(this.cam, 0.35); this.stadium.goal(); break;   // (the banner is short when a person is about to celebrate: it must not cover her)
+        case 'goal': this.goalStar = this.ctl.m.players.find((q) => q.cele?.role === 'star')?.id ?? -1; if (this.ctl.m.phase !== 'penalties') this.pending = this.rec.clip(2.8); if (this.ctl.m.phase !== 'penalties') this.hud.banner(B.goal, this.party() ? 1100 : 2200); this.hud.flash(); shakeCamera(this.cam, 0.35); this.stadium.goal(); break;   // (the banner is short when a person is about to celebrate: it must not cover her)
         case 'throwin': this.hud.banner(B.throwin, 900); break;
         case 'goalkick': this.hud.banner(B.goalkick, 900); break;
         case 'corner': this.hud.banner(B.corner, 900); break;
@@ -197,6 +199,7 @@ export class MatchScene extends Phaser.Scene {
     try {
       const dt = Math.min(0.1, delta / 1000);
       const m: Match = this.ctl.m;
+      if (this.boardOn) { this.ctl.resetClock(); return; }
       if (this.replay) { this.stepReplay(dt); return; }
       if (this.hitStop > 0) {
         // frozen frame: the stadium and the HUD breathe, the match does not move
@@ -231,9 +234,13 @@ export class MatchScene extends Phaser.Scene {
         if (party && this.partyHints < 3) { this.partyHints++; this.hud.hint(window.matchMedia?.('(pointer: coarse)').matches ? '¡CELEBRA! TIRO · PASE · SALTO · ESPECIAL' : '¡CELEBRA! J SALTA · K SALUDA · I POSA · U VOLTERETA', 2600, true); }
       }
       if (party && m.phaseT >= T.goalSkip) this.hud.goOn(true, () => { this.ctl.m.data.skipGoal = true; });
-      if (this.prevPhase === 'goal' && m.phase !== 'goal' && this.pending) {
-        if (m.phase !== 'over' && this.cfg.replay !== false && this.cfg.cine !== 'off' && !this.cfg.fastForward && this.pending.length > 20) this.startReplay(this.pending);
-        this.pending = null;
+      if (this.prevPhase === 'goal' && m.phase !== 'goal') {
+        const clip = this.pending; this.pending = null;
+        const show = m.phase !== 'over' && this.cfg.cine !== 'off' && !this.cfg.fastForward && !this.training;
+        const again = show && this.cfg.replay !== false && !!clip && clip.length > 20;
+        // Nintendo World Cup: the picture cuts to the scoreboard in the stand, with the scorer jumping in front of it; the match waits
+        if (show && m.lastGoal) this.board(() => { if (again) this.startReplay(clip!); });
+        else if (again) this.startReplay(clip!);
       }
       this.prevPhase = m.phase;
       this.aim.update(m, this.time.now / 1000);
@@ -254,6 +261,18 @@ export class MatchScene extends Phaser.Scene {
       }
       this.lastTick = m.tick;
     } catch (e) { console.error('update failed', e); }
+  }
+
+  private boardOn = false; private goalStar = -1;
+  /** The scoreboard after a goal (ui/marcador.ts). */
+  private board(then: () => void): void {
+    const m = this.ctl.m, g = m.lastGoal!, k = KINGDOMS.find((q) => q.species === this.cfg.rival);
+    const v = this.views.find((o) => o.p.id === this.goalStar) ?? this.views.find((o) => o.p.team === g.team && o.p.role !== 'gk');
+    const a = v?.meta.anims.celebrate_down ?? v?.meta.anims.idle_down;
+    this.boardOn = true; services.audio?.play('starfull');
+    showBoard({ home: T_ES.teams.family, away: T_ES.teams[this.cfg.rival] ?? '', score: [m.score[0], m.score[1]], team: g.team, color: g.team === 0 ? '#2a5bd7' : k?.color ?? '#da251d', ad: g.team === 0 ? T_ES.teams.family : T_ES.teams[this.cfg.rival] ?? '',
+      hero: v && a ? { img: v.sheet(), cell: v.meta.cell[0], cols: v.meta.cols, start: a.start, frames: a.frames, fps: a.fps } : undefined },
+    ['#2a5bd7', k?.color ?? '#da251d'], () => { this.boardOn = false; this.ctl.resetClock(); then(); });
   }
 
   private startReplay(clip: Snap[]): void {

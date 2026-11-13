@@ -37,12 +37,36 @@ const score = (page) => page.evaluate(() => {
   const x0 = (await me(page)).x;
   await page.keyboard.down('KeyA'); await page.waitForTimeout(600); await page.keyboard.up('KeyA');
   const w2 = await me(page); ok('celebración: el stick lo pasea', w2.x < x0 - 15 && w2.phase === 'goal', `${x0.toFixed(0)} -> ${w2.x.toFixed(0)} ${w2.phase}`);
-  ok('celebración: sigue pasados los 2,8 s de siempre mientras ella celebra', w2.phaseT > 2.8, `phaseT ${w2.phaseT.toFixed(2)}`);
+  ok('celebración: sigue pasados los 2,3 s de siempre mientras ella celebra', w2.phaseT > 2.5, `phaseT ${w2.phaseT.toFixed(2)}`);
   const goon = await page.evaluate(() => { const el = document.getElementById('goon'), r = el.getBoundingClientRect(); return { show: el.classList.contains('show'), x: r.x, y: r.y, w: r.width, h: r.height }; });
   ok('celebración: el botón SEGUIR está en pantalla', goon.show && goon.w > 30 && goon.x + goon.w <= 844 && goon.y > 40, JSON.stringify(goon));
   await page.click('#goon'); await page.waitForTimeout(250);
   const end = await me(page); ok('celebración: SEGUIR vuelve al partido', end.phase !== 'goal', end.phase);
   ok('celebración sin errores', errors.length === 0, errors.join('|'));
+  await ctx.close();
+}
+
+// 1b. the goal of Nintendo World Cup: everybody shouts with his arms up where he stands, the beaten keeper lies flat, the camera goes to the
+// scorer, and then the picture cuts to the scoreboard in the stand with the scorer jumping in front of it
+{
+  const { page, errors, ctx } = await openGame(b, srv.url, 'mode=quick&half=60&seed=5&controls=full&cine=full', PHONE);
+  await page.waitForFunction(() => window.__futbol?.match?.phase === 'play', null, { timeout: 20000 });
+  await score(page);
+  await page.waitForFunction(() => window.__futbol.match.phase === 'goal' && window.__futbol.match.phaseT > 1.2, null, { polling: 'raf' });
+  const g = await page.evaluate(() => { const m = window.__futbol.match, sc = window.__futbol.scene, star = m.players.find((q) => q.cele?.role === 'star'); return { moves: m.players.filter((q) => q.team === 0 && q.role !== 'gk').map((q) => q.cele?.move), front: m.players.filter((q) => q.team === 0 && q.role !== 'gk').every((q) => q.dirY === 1), sad: m.players.filter((q) => q.team === 1).every((q) => q.state === 'sad'), camToStar: Math.abs(sc.cameras.main.midPoint.x - star.x) < Math.abs(sc.cameras.main.midPoint.x - m.ball.x) }; });
+  ok('gol: todos los de la familia gritan con los brazos arriba, de frente y en su sitio', g.moves.every((v) => v === 'banzai') && g.front && g.sad, JSON.stringify(g));
+  await page.screenshot({ path: 'docs/qa/shots/nk3_gol_brazos.png' });
+  await page.waitForSelector('#marcador', { timeout: 6000 });
+  await page.waitForTimeout(700);
+  const bd = await page.evaluate(() => { const c = document.querySelector('#marcador canvas'), d = c.getContext('2d').getImageData(0, 0, c.width, c.height).data; let amber = 0, blue = 0; for (let i = 0; i < d.length; i += 4) { if (d[i] > 240 && d[i + 1] > 150 && d[i + 1] < 200 && d[i + 2] < 60) amber++; if (d[i] === 42 && d[i + 1] === 91 && d[i + 2] === 215) blue++; } const r = c.getBoundingClientRect(); const m = window.__futbol.match; return { amber, blue, fits: r.x >= 0 && r.right <= innerWidth + 1 && r.bottom <= innerHeight + 1, score: m.score.join('-'), t0: m.t }; });
+  ok('marcador: tablero con el 1 - 0 en lámparas, la tribuna y la valla del equipo que anotó', bd.amber > 40 && bd.blue > 3000 && bd.fits && bd.score === '1-0', JSON.stringify(bd));
+  await page.screenshot({ path: 'docs/qa/shots/nk3_marcador.png' });
+  await page.waitForTimeout(400);
+  const t1 = await page.evaluate(() => window.__futbol.match.t);
+  ok('marcador: el partido espera mientras se ve', Math.abs(t1 - bd.t0) < 0.05, `${bd.t0.toFixed(2)} -> ${t1.toFixed(2)}`);
+  await page.mouse.click(400, 200); await page.waitForTimeout(300);
+  ok('marcador: un toque sigue', await page.evaluate(() => !document.getElementById('marcador')));
+  ok('gol y marcador sin errores', errors.length === 0, errors.join('|'));
   await ctx.close();
 }
 

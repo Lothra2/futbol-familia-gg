@@ -12,10 +12,12 @@ const clampAxis = (v: number, lo: number, hi: number, view: number): number => (
  *  carries it. `bottomInset` is the band the HUD covers at the bottom of the screen, so the ball is centred in what is really visible. */
 export function cameraTarget(m: Match, viewW: number, viewH = 270, bottomInset = 0): { x: number; y: number } {
   const b = m.ball;
-  let tx = sx(b.x + Math.max(-60, Math.min(60, b.vx * 0.25)));
-  const ty = sy(b.y + Math.max(-30, Math.min(30, b.vy * 0.15)), Math.min(b.z, 40) * 0.5);
+  // a goal (Nintendo World Cup): the camera leaves the ball in the net and goes to the one who scored, shouting with his arms up
+  const star = m.phase === 'goal' && m.phaseT > 0.5 ? m.players.find((p) => p.cele?.role === 'star') : undefined;
+  let tx = star ? sx(star.x) : sx(b.x + Math.max(-60, Math.min(60, b.vx * 0.25)));
+  const ty = star ? sy(star.y, 10) : sy(b.y + Math.max(-30, Math.min(30, b.vy * 0.15)), Math.min(b.z, 40) * 0.5);
   const o = m.players.find((p) => p.id === b.owner);
-  if (o && o.control === 'human') tx += sx(40) * attackDir(o.team);
+  if (o && o.control === 'human' && !star) tx += sx(40) * attackDir(o.team);
   const h = viewH - bottomInset;
   return { x: clampAxis(tx - viewW / 2, BOUNDS.x0, BOUNDS.x1, viewW), y: clampAxis(ty - h / 2, BOUNDS.y0, BOUNDS.y1 + bottomInset, viewH) };
 }

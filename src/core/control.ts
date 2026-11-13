@@ -3,7 +3,7 @@ import { etaTo } from './ai/predict';
 import { DIFFICULTY, MATES, T } from './tuning';
 import { DT } from './step';
 import { aerialZone } from './actions';
-import { attackDir } from './field';
+import { attackDir, ownGoalX } from './field';
 import { emit } from './events';
 import type { HumanCtl, Match, Player } from './state';
 
@@ -51,6 +51,10 @@ function wanted(m: Match, h: HumanCtl, taken: Set<number>, tap = false): Player 
   const foe = owner && owner.team !== h.team ? owner : null;
   if (foe) {
     const fd = attackDir(foe.team);
+    // she is driving a defender who is still between the rival and our goal, near him or back in our own area: that is her choice (to wait
+    // for him, to cover the goal) and the control does not take the player away from her. A tap of Pase still changes it.
+    const f = m.hin[h.slot], steering = !!f && Math.hypot(f.mx, f.my) > 0.3;
+    if (steering && (cur.x - foe.x) * fd >= -4 && (d(cur) < T.switchCtl.keep || Math.abs(cur.x - ownGoalX(h.team)) < T.switchCtl.box)) return null;
     const score = (p: Player): number => etaTo(m, p) + ((p.x - foe.x) * fd < -4 ? T.switchCtl.beaten : 0);
     let best: Player | null = null, bs = Infinity;
     for (const p of mates) { const e = score(p); if (e < bs) { bs = e; best = p; } }
