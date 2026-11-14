@@ -11,9 +11,10 @@ import type { ControlMode, DifficultyId, Match, Strategy, Weather } from '../cor
 import type { FormationId } from '../core/field';
 import { DEFAULT_SQUAD, FIELD_CHARS, lineup, squadSeats, type FieldChar, type TeamKind } from '../core/teams';
 
-/** The speeds of the match against real time. Calm is the 80 % the game had; Nekketsu is brisker, the players get across the pitch the way
- *  they do in Nintendo World Cup; turbo is a little over real time. */
-export const SPEEDS = { calma: 0.8, nekketsu: 0.92, turbo: 1.05 } as const;
+/** The speeds of the match against real time. Nekketsu is the 80 % measured on Nintendo World Cup: there the pitch scrolls 1.5 to 2 px a
+ *  frame behind a runner (90 to 120 px/s with players 32 px tall), and here a player runs 100 px/s and sprints 135, so 0.8 gives 80 to 108.
+ *  Calm is slower still, for the little ones; fast is for whoever wants more. */
+export const SPEEDS = { calma: 0.7, nekketsu: 0.8, turbo: 0.95 } as const;
 
 export interface MatchConfig {
   players: 1 | 2;

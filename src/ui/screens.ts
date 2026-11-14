@@ -284,7 +284,7 @@ export class Screens {
       <div class="grp"><div class="lbl">Sonido</div>${this.chips('muted', [{ v: false, label: 'Con sonido' }, { v: true, label: 'Silencio' }], st.muted)}</div></div>
       <div class="qcol"><div class="grp"><div class="lbl">Narrador</div>${this.chips('narr', [{ v: true, label: 'Con voz' }, { v: false, label: 'Sin voz' }], st.narrator)}</div>
       <div class="grp"><div class="lbl">Repetición del gol</div>${this.chips('replay', [{ v: true, label: 'Sí' }, { v: false, label: 'No' }], st.replay)}</div>
-      <div class="grp"><div class="lbl">Velocidad del partido</div>${this.chips('speed', [{ v: 'calma', label: 'Tranquila' }, { v: 'nekketsu', label: 'Nekketsu' }, { v: 'turbo', label: 'Turbo' }], st.speed)}</div>
+      <div class="grp"><div class="lbl">Velocidad del partido</div>${this.chips('speed', [{ v: 'calma', label: 'Tranquila' }, { v: 'nekketsu', label: 'Nekketsu' }, { v: 'turbo', label: 'Rápida' }], st.speed)}</div>
       <div class="grp"><div class="lbl">Trampas en la cancha</div>${this.chips('traps', [{ v: true, label: 'Sí' }, { v: false, label: 'No' }], st.traps)}</div>
       <div class="grp"><div class="lbl">Botones en pantalla</div>${this.chips('touchmode', [{ v: 'auto', label: 'Automático' }, { v: 'on', label: 'Siempre' }, { v: 'off', label: 'Nunca' }], st.touchControls)}</div>
       <div class="grp"><div class="lbl">Qué tanto tapan los botones</div>${this.chips('look', [{ v: 'suave', label: 'Transparentes' }, { v: 'minimo', label: 'Casi invisibles' }, { v: 'normal', label: 'Sólidos' }], st.touchLook)}</div>
