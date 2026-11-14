@@ -113,28 +113,8 @@ export class TopPitch {
       for (let i = 1; i < 4; i++) c.fillRect(X(a) + Math.round(((X(b) - X(a)) * i) / 4), Y(-6), 1, Y(PITCH.d + 6) - Y(-6));
     }
     this.decorate(c, r);
-    this.props(c, r);
     this.stands(c);
     t.refresh();
-  }
-
-  /** The edge of the pitch of each kingdom: bushes in flower, dry grass, rocks, reeds (assets/deco, from LPC Revised), along the strip
-   *  between the near touchline and the end of the ground. They are painted on the ground, never inside the lines, so nobody is hidden. */
-  private props(c: Ctx, r: () => number): void {
-    const meta = this.scene.cache.json.get('deco_meta') as Record<string, number[][]> | undefined, set = meta?.[this.id];
-    if (!set?.length || !this.scene.textures.exists('deco')) return;
-    const src = this.scene.textures.get('deco').getSourceImage() as CanvasImageSource, y0 = Y(PITCH.d) + 4, y1 = Y(PITCH.d + MARGIN.bottom) - 1;
-    let x = X(-MARGIN.x) + 6 + r() * 20;
-    while (x < X(PITCH.w + MARGIN.x) - 20) {
-      const [bx, by, bw, bh] = set[Math.floor(r() * set.length)];
-      // two times out of three a piece, alone or with a smaller friend; its foot anywhere the strip lets it be whole
-      if (r() < 0.68 && y0 + bh <= y1) {
-        const fy = Math.round(y0 + bh + r() * (y1 - y0 - bh));
-        px(c, 'rgba(0,0,0,0.18)', Math.round(x) + 1, fy - 1, bw - 2, 2);
-        c.drawImage(src, bx, by, bw, bh, Math.round(x), fy - bh, bw, bh);
-      }
-      x += bw + 14 + r() * 46;
-    }
   }
 
   /** Little things on the ground in small clusters, never on the lines: the dotted flower rings of the NES grass pitch, little white tufts,

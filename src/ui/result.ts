@@ -86,7 +86,6 @@ export const CREDITS = [
   ['Arte LPC de', 'bluecarrot16, Benjamin K. Smith (BenCreating), Stephen Challener (Redshrike), JaidynReiman, ElizaWy, Nila122, Skorpio, Thane Brimhall (pennomi), laetissima, Matthew Krohn (makrohn), thecilekli, Radomir Dopieralski, Joe White, Manuel Riecke (MrBeast) y más'],
   ['Licencias LPC', 'CC-BY-SA 3.0, GPL 3.0, OGA-BY 3.0, CC-BY 3.0 y CC0. Detalle pieza por pieza en assets/nes/CREDITOS.txt'],
   ['Efectos de los poderes', 'pixelfx, de Patch y Hugo Duprez (github.com/patch-gg/pixelfx), licencia MIT. Aviso en assets/fx/CREDITOS.txt'],
-  ['Plantas y rocas del borde', 'LPC Revised, de Eliza Wyatt con Lanea Zimmerman (Sharm) y Hyptosis (github.com/ElizaWy/LPC), licencia OGA-BY 3.0. Detalle en assets/deco/CREDITOS.txt'],
   ['Iconos de los menús', 'Pixelarticons, de Gerrit Halfmann (github.com/halfmage/pixelarticons), licencia MIT'],
   ['Ilustraciones', 'Generadas con Higgsfield (xai/grok-imagine) y procesadas a 16 bits en código'],
   ['Motor', 'Phaser 4'],

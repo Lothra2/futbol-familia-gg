@@ -42,8 +42,6 @@ export class BootScene extends Phaser.Scene {
       for (const k of PFX) if (meta[k]) this.load.spritesheet(`pfx_${k}`, asset(`assets/fx/${k}.png`), { frameWidth: meta[k].w, frameHeight: meta[k].h });
     });
     this.load.json('pfx_meta', asset('assets/fx/fx.json'));
-    // the plants, flowers and rocks at the edge of each pitch (tools/build_deco.py, from LPC Revised)
-    this.load.image('deco', asset('assets/deco/deco.png')); this.load.json('deco_meta', asset('assets/deco/deco.json'));
     for (const k of SHEETS) {
       this.load.spritesheet(k, asset(`assets/sprites/${k}.png`), { frameWidth: 48, frameHeight: 48 });
       this.load.json(`${k}_meta`, asset(`assets/sprites/${k}.json`));
