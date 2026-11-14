@@ -17,7 +17,7 @@ await page.evaluate(() => {
       const f = Number(v.sprite.frame.name), a = last.get(i), key = v.sprite.texture.key;
       if (a === undefined) { last.set(i, f); since.set(i, now); return; }
       if (f !== a) {
-        const metaAnims = s.cache.json.get(key + '_meta').anims;
+        const metaAnims = v.meta.anims;   // (the texture can be a repainted copy: an outfit, the kit of a kingdom)
         const find = (n) => Object.values(metaAnims).find((x) => n >= x.start && n < x.start + x.frames);
         const A = find(a), B = find(f);
         if (A && B && A === B && A.loop && A.frames > 2) {

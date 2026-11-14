@@ -26,7 +26,7 @@ import { T_ES } from '../../data/text.es';
 import type { Match, Player } from '../../core/state';
 import { T } from '../../core/tuning';
 import { PixelFx } from '../PixelFx';
-import { showBoard } from '../../ui/marcador';
+import { showBoard, type Runner } from '../../ui/marcador';
 import { KINGDOMS } from '../../data/kingdoms';
 import type { MatchEvent } from '../../core/types';
 
@@ -165,7 +165,7 @@ export class MatchScene extends Phaser.Scene {
         } break;
         // an order of a person to a mate (Nintendo World Cup): she shouts it
         case 'switch': if (e.who !== undefined) this.aim.switched(e.who, e.v === 1); break;
-        case 'order': this.pow(e.x, e.y, ['¡PÁSALA!', '¡TIRA!', '¡QUÍTASELA!'][e.v ?? 0] ?? '', '#7bf0ff', 6); break;
+        case 'order': this.views.find((v) => v.p.id === e.who)?.point(e.v === 0); this.pow(e.x, e.y, ['¡PÁSALA!', '¡TIRA!', '¡QUÍTASELA!'][e.v ?? 0] ?? '', '#7bf0ff', 6); break;
         case 'obey': this.pow(e.x, e.y, ['¡TOMA!', '¡VA!', '¡VOY!'][e.v ?? 0] ?? '', '#ffffff', 6); break;
         case 'airtop': this.pow(e.x, e.y, '¡ARRIBA!', '#ffe45c', (e.z ?? 0) + 22); break;
         case 'special_far': this.hud.hint(B.far); break;
@@ -192,6 +192,7 @@ export class MatchScene extends Phaser.Scene {
         case 'starfull': if (e.v === 0) this.hud.hint(T_ES.hints.star, 1500); break;
         case 'super': this.hud.banner(T_ES.specials[KIND_INDEX[e.v ?? 0]] ?? '¡SÚPER PATADA!', 1000); this.hud.flash(120); shakeCamera(this.cam, 0.3); this.stadium.gasp(); break;
         case 'superready': { const p = this.ctl.m.players.find((q) => q.id === e.who); if (p?.control === 'human') this.pow(e.x, e.y, '¡YA!', '#ffe45c'); break; }
+        case 'hit': this.pfx.play('golpe', e.x, e.y, 14, { front: true, scale: 0.8 }); if (e.v === 2) { this.pow(e.x, e.y, '¡CODAZO!', '#ffd447', 30); shakeCamera(this.cam, 0.05); } break;
         case 'superhit': this.pfx.play('golpe', e.x, e.y, 0, { front: true });
         // falls through
         case 'slidehit': this.pow(e.x, e.y, ['¡PUM!', '¡POW!', '¡ZAS!'][Math.floor(Math.random() * 3)], '#ffffff'); break;
@@ -276,10 +277,15 @@ export class MatchScene extends Phaser.Scene {
   private board(then: () => void): void {
     const m = this.ctl.m, g = m.lastGoal!, k = KINGDOMS.find((q) => q.species === this.cfg.rival);
     const v = this.views.find((o) => o.p.id === this.goalStar) ?? this.views.find((o) => o.p.team === g.team && o.p.role !== 'gk');
-    const a = v?.meta.anims.celebrate_down ?? v?.meta.anims.idle_down;
+    // who runs across the scoreboard screen: the scorer with both arms up and two mates after him
+    const runner = (w: NesPlayer | undefined): Runner | undefined => {
+      const A = w?.meta.anims, run = A?.goal_run_right ?? A?.goal_plane_right ?? A?.run_right, jump = A?.goal_jump_down ?? A?.celebrate_down ?? A?.idle_down;
+      return w && run && jump ? { img: w.sheet(), cell: w.meta.cell[0], cols: w.meta.cols, run, jump } : undefined;
+    };
+    const mates = this.views.filter((o) => o !== v && o.p.team === g.team && o.p.role !== 'gk').slice(0, 2).map(runner).filter((r): r is Runner => !!r);
     this.boardOn = true; services.audio?.play('starfull');
     showBoard({ home: T_ES.teams.family, away: T_ES.teams[this.cfg.rival] ?? '', score: [m.score[0], m.score[1]], team: g.team, color: g.team === 0 ? '#2a5bd7' : k?.color ?? '#da251d', ad: g.team === 0 ? T_ES.teams.family : T_ES.teams[this.cfg.rival] ?? '',
-      hero: v && a ? { img: v.sheet(), cell: v.meta.cell[0], cols: v.meta.cols, start: a.start, frames: a.frames, fps: a.fps } : undefined },
+      hero: runner(v), mates },
     ['#2a5bd7', k?.color ?? '#da251d'], () => { this.boardOn = false; this.ctl.resetClock(); then(); });
   }
 

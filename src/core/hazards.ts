@@ -59,7 +59,7 @@ export function stepHazards(m: Match, dt: number): void {
         // only a sprint slips: who walks or runs through it only gets wet
         if (p.state !== 'sprint') continue;
         p.hazT = m.t + H.cd; h.pop = m.t;
-        if (!easy) startTumble(m, p, H.slip.dur, p.vx * H.slip.keep, p.vy * H.slip.keep, H.slip.vz);
+        if (!easy) { startTumble(m, p, H.slip.dur, p.vx * H.slip.keep, p.vy * H.slip.keep, H.slip.vz); if (p.act) p.act.slip = true; }
         emit(m, 'slip', p.x, p.y, 0, p.id, easy ? 0 : 1);
       } else if (h.kind === 'geiser') {
         if (!blowing) continue;

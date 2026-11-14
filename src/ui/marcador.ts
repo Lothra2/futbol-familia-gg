@@ -1,12 +1,17 @@
 /** After a goal, like Nintendo World Cup: the picture cuts to the stand full of people, the big electric scoreboard with the two names and
- *  the score, the board of adverts in the colour of the team that scored and, in front of it on the grass, the scorer jumping with his
- *  arms up. A tap or any key goes on. */
+ *  the score, the board of adverts in the colour of the team that scored and, in front of it on the grass, the scorer running across
+ *  with both arms up and two mates after him; they all end up jumping in the middle, under confetti and the flashes of the stand.
+ *  A tap or any key goes on. */
+export interface Runner { img: CanvasImageSource; cell: number; cols: number; run: Clip; jump: Clip }
+interface Clip { start: number; frames: number; fps: number }
 export interface BoardInfo {
   home: string; away: string; score: [number, number];
   /** Who scored (0 the family), the colour of his team and what its advert says. */
   team: 0 | 1; color: string; ad: string;
   /** The scorer: his sheet, the size of a cell, how many cells a row has, and the cells of his celebration seen from the front. */
-  hero?: { img: CanvasImageSource; cell: number; cols: number; start: number; frames: number; fps: number };
+  hero?: Runner;
+  /** Up to two mates who run after him. */
+  mates?: Runner[];
 }
 
 const W = 320, H = 180;
@@ -61,21 +66,36 @@ function draw(c: C, v: BoardInfo, t: number, colors: [string, string]): void {
   const ad = up(v.ad), off = -((t / 40) % 200);
   for (let x = off; x < W + 200; x += 200) { c.fillStyle = 'rgba(0,0,0,.35)'; c.fillText(ad, x + 82, 127); c.fillStyle = '#fff'; c.fillText(ad, x + 80, 125); }
   box(c, '#2f9a3a', 0, 146, W, H - 146); box(c, '#5ddb43', 0, 146, W, 4); box(c, '#3fae4a', 0, 164, W, 6);
-  // the scorer, jumping
-  const h = v.hero;
-  if (h) {
-    const f = h.start + Math.floor((t / 1000) * h.fps) % h.frames, jump = Math.round(Math.abs(Math.sin(t / 150)) * 12), X = W / 2 - h.cell / 2, Y = H - h.cell - 2;
-    c.globalAlpha = 0.3; box(c, '#000', W / 2 - 9 + jump / 4, H - 6, 18 - jump / 2, 3); c.globalAlpha = 1;
-    c.drawImage(h.img, (f % h.cols) * h.cell, Math.floor(f / h.cols) * h.cell, h.cell, h.cell, X, Y - jump, h.cell, h.cell);
+  // the flashes of the cameras in the stand
+  for (let i = 0; i < 7; i++) { const k = Math.floor(t / 90) * 7 + i, fx = (k * 73) % W, fy = 4 + ((k * 41) % 104); if ((k * 13) % 5 === 0 && !(fx > 52 && fx < 272 && fy > 8)) { box(c, '#fff', fx, fy, 2, 2); box(c, 'rgba(255,255,255,.5)', fx - 1, fy, 4, 2); } }
+  // the mates first (behind), then the scorer: they run in from the left with both arms up, turn at the right and meet in the middle
+  const runners = [...(v.mates ?? []).slice(0, 2).map((r, i) => ({ r, lag: 240 * (i + 1), end: W / 2 + (i ? 66 : -66), s: 2 })), ...(v.hero ? [{ r: v.hero, lag: 0, end: W / 2, s: 2 }] : [])];
+  for (const { r, lag, end, s } of runners) {
+    const tt = t - lag, far = Math.min(W - 44, end + 70), sz = r.cell * s, Y = H - sz + 2 * s;
+    // 0 to T1 he runs right to `far`, T1 to T2 back to his place, then he jumps there facing us
+    const T1 = 1250, T2 = T1 + ((far - end) / 0.19);
+    let x: number, clip: Clip, flip = false, jump = 0;
+    if (tt < T1) { x = -sz + ((far + sz) * Math.max(0, tt)) / T1; clip = r.run; }
+    else if (tt < T2) { x = far - (far - end) * ((tt - T1) / (T2 - T1)); clip = r.run; flip = true; }
+    else { x = end; clip = r.jump; }
+    const f = clip.start + Math.floor((Math.max(0, tt) / 1000) * clip.fps) % clip.frames, cx = Math.round(x);
+    if (clip === r.run) jump = Math.round(Math.abs(Math.sin(tt / 95)) * 3);
+    c.globalAlpha = 0.3; box(c, '#000', cx - 16, H - 7, 32, 4); c.globalAlpha = 1;
+    c.save(); c.translate(cx, Y - jump); if (flip) c.scale(-1, 1);
+    c.drawImage(r.img, (f % r.cols) * r.cell, Math.floor(f / r.cols) * r.cell, r.cell, r.cell, -sz / 2, 0, sz, sz);
+    c.restore();
     // the lines of his shout
-    if (Math.floor(t / 120) % 2 === 0) for (const [dx, dy, w, hh] of [[-15, 8, 5, 1], [-13, 2, 4, 1], [11, 8, 5, 1], [10, 2, 4, 1], [0, -3, 1, 5]]) box(c, '#fff', W / 2 + dx, Y - jump + dy, w, hh);
+    if (r === v.hero && Math.floor(t / 120) % 2 === 0) for (const [dx, dy, w, hh] of [[-30, 26, 8, 2], [-27, 14, 6, 2], [22, 26, 8, 2], [21, 14, 6, 2]]) box(c, '#fff', cx + dx, Y - jump + dy, w, hh);
   }
+  // confetti in the colours of the team that scored
+  const cols = [v.color, '#ffffff', '#ffe45c'];
+  for (let i = 0; i < 46; i++) { const px = (i * 53 + Math.sin(t / 300 + i) * 8 + W * 4) % W, py = ((t / (9 + (i % 5) * 2)) + i * 31) % (H + 10) - 6; box(c, cols[i % 3], px, py, 2, (Math.floor(t / 100 + i) % 2) + 1); }
   const fade = 1 - Math.min(1, t / 160);
   if (fade > 0) { c.globalAlpha = fade; box(c, '#000', 0, 0, W, H); c.globalAlpha = 1; }
 }
 
 /** Shows the scoreboard for `ms` and calls `done`. `colors`: the shirts of the family and of the rivals, for the people of the stand. */
-export function showBoard(v: BoardInfo, colors: [string, string], done: () => void, ms = 2600): void {
+export function showBoard(v: BoardInfo, colors: [string, string], done: () => void, ms = 3800): void {
   const ui = document.getElementById('ui')!;
   const el = document.createElement('div'); el.className = 'marcador'; el.id = 'marcador';
   el.innerHTML = `<canvas width="${W}" height="${H}"></canvas>`;

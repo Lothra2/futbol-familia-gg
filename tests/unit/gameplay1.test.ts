@@ -27,10 +27,30 @@ describe('mejora 1: defender', () => {
     setHumanInput(m, 0, inp({ shoot: true, shootPressed: true })); step(m);
     expect(me.state).not.toBe('slide'); expect(me.cd.steal).toBeGreaterThan(0);
   });
-  it('Tiro lejos (30 px) hace barrida como siempre', () => {
-    const { m, me } = defend(30);
+  it('Tiro lejos (44 px) hace barrida como siempre', () => {
+    const { m, me } = defend(44);
     setHumanInput(m, 0, inp({ shoot: true, shootPressed: true })); step(m);
     expect(me.state).toBe('slide'); expect(me.cd.steal).toBe(0);
+  });
+  it('el codazo (Nekketsu): Tiro a media distancia (30 px) se lanza con el brazo, y al que encuentra lo tumba', () => {
+    let downs = 0, whiffs = 0;
+    for (let seed = 1; seed <= 20; seed++) {
+      const { m, me, r } = defend(30, 0, 'full', seed);
+      setHumanInput(m, 0, inp({ shoot: true, shootPressed: true })); step(m);
+      expect(me.state).toBe('bump'); expect(me.act?.kind).toBe('hit'); expect(me.act?.blow).toBe('elbow'); expect(me.act?.lunge).toBe(true);
+      const x0 = me.x;
+      for (let i = 0; i < 40 && r.state !== 'tumble' && me.state !== 'stagger'; i++) { setHumanInput(m, 0, inp()); step(m); }
+      expect(me.x).toBeGreaterThan(x0 + 4);   // he went at him
+      if (r.state === 'tumble') downs++; else whiffs++;
+    }
+    expect(downs).toBeGreaterThanOrEqual(13); expect(downs + whiffs).toBe(20);
+  });
+  it('el codazo al aire: sin nadie delante al final del impulso, trastabilla', () => {
+    const { m, me, r } = defend(30);
+    setHumanInput(m, 0, inp({ shoot: true, shootPressed: true })); step(m);
+    put(r, 700, MID + 150);   // the rival is gone
+    for (let i = 0; i < 30 && me.state === 'bump'; i++) { setHumanInput(m, 0, inp()); step(m); }
+    expect(me.state).toBe('stagger');
   });
   it('la marca del robo (stealTarget) aparece solo cuando el robo de frente es posible', () => {
     const near = defend(15), far = defend(40);

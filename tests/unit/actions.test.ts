@@ -169,7 +169,7 @@ describe('barrida (B11)', () => {
     secs(m, 0.5); expect(r.state).not.toBe('stagger');
   });
   it('toca las piernas sin balón: el rival sale volando y queda fuera de juego T.hit.down, quien barrió queda mareado 1,0 s', () => {
-    const { m, s } = slideSetup(); const r = rival(m, 3); put(r, 430, MID);
+    const { m, s } = slideSetup(); const r = rival(m, 3); put(r, 442, MID);   // past the reach of the arm strike (36 px): a slide
     ball(m, 100, 20, 0, 0, 0, 0);
     s.input = inp({ shootPressed: true, mx: 1 }); step(m); s.input = inp({ mx: 1 });
     expect(s.state).toBe('slide');

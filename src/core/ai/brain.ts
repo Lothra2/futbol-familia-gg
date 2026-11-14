@@ -217,7 +217,7 @@ function brainThink(m: Match, p: Player, humanize: boolean): InputFrame {
         // the stick points at the mate himself (not at the lead point of a through pass, which can fall outside the 30 degree cone for a close mate)
         const mate = m.players.find((q) => q.id === c.id) ?? c, md = Math.hypot(mate.x - p.x, mate.y - p.y) || 1, d = Math.hypot(c.x - p.x, c.y - p.y);
         f.mx = (mate.x - p.x) / md; f.my = (mate.y - p.y) / md; f.passPressed = true; f.pass = true;
-        if (d > 200) { A.holdBtn = 'pass'; A.holdLeft = 0.3; A.held = { ...f, passPressed: false }; } else f.pass = false;
+        if (d > T.aiLob) { A.holdBtn = 'pass'; A.holdLeft = 0.3; A.held = { ...f, passPressed: false }; } else f.pass = false;
         A.armedAt = 0;
         return f;
       }
@@ -301,12 +301,23 @@ function brainThink(m: Match, p: Player, humanize: boolean): InputFrame {
   }
 
   // ------------------------------------------------------------------ loose ball
+  /** A ball in the air within reach: Tiro (a header, a volley, the overhead kick), and a jump at one that comes down too high for the ground. */
+  const aerial = (): void => {
+    const ax = T.aerial.dx + 2, ay = T.aerial.dy;
+    // a ball in the air is seen coming from far away: nobody needs his reaction time for it, except the easy rivals, who are slow at everything
+    const sees = !(p.team === 1 && m.difficulty === 'tranquilos');
+    if (p.z > 0) { if (airZone(m, p)) f.shootPressed = true; }
+    else if (b.state === 'free' && b.z >= T.aerial.zMin && b.z <= T.aerial.headerZ && Math.abs(b.x - p.x) < ax && Math.abs(b.y - p.y) < ay && (sees || ready(true))) { f.shootPressed = true; f.shoot = false; A.armedAt = 0; }
+    else if (b.state === 'free' && b.vz < 0 && b.z > T.aerial.headerZ && b.z <= T.aerial.headerZ + 34 && Math.abs(b.x - p.x) < ax - 2 && Math.abs(b.y - p.y) < ay - 2 && p.cd.jump <= 0) f.jumpPressed = true;
+  };
   // the mates the AI plays with do not wait for the human: they race for the ball among themselves
   // the receiver of a pass of his team goes to meet it, whoever else is closer (the others keep their place)
   const lp = m.lastPass;
   if (lp && lp.to === p.id && lp.team === p.team && !lp.done && m.t - lp.t < 2.5 && b.state === 'free') {
     const tgt = ballAt(m, Math.min(0.5, etaTo(m, p)));
     go(tgt.x, tgt.y, true);
+    // the pass comes through the air (a cross, a long ball): he meets it with the head or the foot, and jumps if it is over him
+    aerial();
     return f;
   }
   const cands = m.players.filter((q) => q.team === p.team && q.role !== 'gk' && q.control === 'ai');
@@ -315,10 +326,7 @@ function brainThink(m: Match, p: Player, humanize: boolean): InputFrame {
   if (eta <= best + 0.0001 || eta < 0.6 || untouched) {
     const tgt = ballAt(m, Math.min(0.5, eta));
     go(tgt.x, tgt.y, eta > 0.8);
-    if (p.z > 0) { if (airZone(m, p)) f.shootPressed = true; }
-    else if (b.state === 'free' && b.z >= T.aerial.zMin && b.z <= T.aerial.headerZ && Math.abs(b.x - p.x) < 20 && Math.abs(b.y - p.y) < 16 && ready(true)) { f.shootPressed = true; f.shoot = false; A.armedAt = 0; }
-    // a ball too high for a header from the ground, coming down on him: he jumps for it
-    else if (b.state === 'free' && b.vz < 0 && b.z > T.aerial.headerZ && b.z <= T.aerial.headerZ + 30 && Math.abs(b.x - p.x) < 16 && Math.abs(b.y - p.y) < 13 && p.cd.jump <= 0) f.jumpPressed = true;
+    aerial();
     return f;
   }
   const t = formationTarget(m, p, 'neutral'); go(t.x, t.y);

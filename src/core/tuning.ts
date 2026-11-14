@@ -14,6 +14,9 @@ export const T = Object.freeze({
   spin: { v: 430, vz: 24, err: 9, prep: 0.15, hang: 90 },
   /** La patada voladora: Tiro in the air without the ball. It knocks down the first rival it meets within `reach` px in front (`dy` to the
    *  sides, at most `z` px of difference in height) before the player lands, for at most `dur` s. */
+  /** El codazo (Nekketsu: they do not only slide, they charge with the arm): Tiro without the ball with a rival ahead between the reach of a
+   *  punch and `reach` px. He lunges at `v` for `dur` s and the first rival he meets goes down (`p`); if he meets nobody he stumbles `whiff` s. */
+  elbow: { reach: 36, dy: 15, v: 255, dur: 0.24, hitX: 17, hitY: 12, p: 0.85, easyP: 0.55, whiff: 0.28, cd: 0.7, ai: 0.75 },
   flyKick: { reach: 24, dy: 14, z: 26, dur: 0.45 },
   /** Golpes y patadas (Nekketsu): Tiro without the ball next to a rival hits him. `reach`/`dy` in front, `p` lands, the victim stays down `down` s
    *  (`ko` s once he has taken `koAfter` hits within `combo` s), the attacker is busy `self` s and waits `cd` s. A child on easy controls who
@@ -70,13 +73,13 @@ export const T = Object.freeze({
   ballHit: { v: 430, vz: 110 },
   // ---- kicks (6.4)
   kickCap: 560, passMin: 160, passMax: 360, passEnd: 70, lobSpeed: 170, lobMaxD: 320, passCone: 30 * Math.PI / 180, passConeWide: 50 * Math.PI / 180,
-  passPrep: 0.08, shotPrep: 0.12, volleyPrep: 0.10, headerPrep: 0.25, chilenaPrep: 0.30, chilenaFloor: 0.5, kickRecover: 0.18,
+  passPrep: 0.08, shotPrep: 0.12, volleyPrep: 0.10, headerPrep: 0.18, chilenaPrep: 0.30, chilenaFloor: 0.5, kickRecover: 0.18,
   shotNormal: { v: 355, vz: 95, err: 5 }, shotHard: { v: 340, vzV: 80, err: 6 }, hardV: 180, hardVz: 90, hardErr: 8, hardTime: 0.5, tapTime: 0.15,
   volley: { v: 380, vz: 40, err: 12 }, header: { v: 280, vzDown: -20, vzUp: 60, err: 10 }, chilena: { v: 400, vz: 30, err: 12 },
   /** The banana of Nintendo World Cup: for `window` s after a person shoots, holding up or down bends the ball that way. */
   banana: { window: 0.6, rate: 4.5, max: 1.4 },
   lobHold: 0.25, autoFire: 0.9, effect: 0.6, effectHard: 0.8, passErr: 6, lobErr: 8,
-  aerial: { dx: 18, dy: 16, zMin: 6, volleyZ: 24, headerZ: 48 }, firstTimeReach: 12,
+  aerial: { dx: 22, dy: 18, zMin: 6, volleyZ: 24, headerZ: 52 }, firstTimeReach: 12,
   wallWindow: 1.2, wallLead: 40, wallBoost: 1.15,
   // ---- slide, steal, bump (6.5, 6.6)
   slide: { dur: 0.5, v0: 170, v1: 40, reach: 16, half: 8, ballZ: 10, kickV: 140, kickVy: 130, miss: 0.45, cd: 1.2, dizzy: 1.0, tumble: 0.7, ballStagger: 0.35 },
@@ -90,7 +93,9 @@ export const T = Object.freeze({
   buffer: 0.3, bufferArrive: 0.25,
   vasel: { out: 18, near: 70, range: 180, up: 21 },
   // crosses (mejora 2): a high pass from the wing in the last `zone` px goes to the far post, `snap` px around the spot is where a forward is picked up
-  cross: { zone: 220, wing: 120, post: 38, far: 24, snap: 80, aiChance: 0.15 },
+  cross: { zone: 250, wing: 140, post: 38, far: 24, snap: 110, aiChance: 0.4 },
+  /** A pass of the AI longer than this goes through the air (Nekketsu plays high: that is where the headers come from). */
+  aiLob: 150,
   aerialTargetMult: 1.3,
   // contain (hold Pass without the ball): the player stays between the carrier and his goal; a tap shorter than tapMax switches player instead
   contain: { dist: 14, speed: 0.9, after: 0.5, stealBonus: 1.1, slow: 0.93, tapMax: 0.2 },

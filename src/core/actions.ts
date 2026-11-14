@@ -353,12 +353,37 @@ export function tryHit(m: Match, p: Player, slack = false): boolean {
   }
   return true;
 }
+/** The rival an arm strike on the run would go for: ahead of the player, past the reach of a punch and not too far, standing. */
+export function elbowTarget(m: Match, p: Player): Player | null {
+  if (p.cd.steal > 0 || m.phase !== 'play' || LOCK.has(p.state) || p.act || p.z > 0) return null;
+  let best: Player | null = null, bs = Infinity;
+  for (const o of foes(m, p)) {
+    if (LOCK.has(o.state) || o.immuneT > 0 || o.z > 12 || (o.role === 'gk' && m.ball.owner === o.id && m.ball.state === 'held')) continue;
+    const fx = (o.x - p.x) * p.facing;
+    if (fx < 0 || fx > T.elbow.reach || Math.abs(o.y - p.y) > T.elbow.dy) continue;
+    const sc = Math.hypot(o.x - p.x, o.y - p.y) - (m.ball.owner === o.id ? 100 : 0);
+    if (sc < bs) { bs = sc; best = o; }
+  }
+  return best;
+}
+
+/** El codazo: he throws himself at the rival with the arm in front. Returns whether he went. */
+export function startElbow(m: Match, p: Player): boolean {
+  const o = elbowTarget(m, p);
+  if (!o) return false;
+  const d = Math.hypot(o.x - p.x, o.y - p.y) || 1;
+  p.cd.steal = T.elbow.cd; p.blow = 'elbow';
+  begin(p, { kind: 'hit', t: 0, dur: T.elbow.dur, blow: 'elbow', lunge: true, dx: (o.x - p.x) / d, dy: (o.y - p.y) / d }, 'bump');
+  emit(m, 'elbow', p.x, p.y, 0, p.id);
+  return true;
+}
+
 /** A blow that lands: the rival goes down and stays out a while; if he had the ball it is yours or it pops loose. */
 function landBlow(m: Match, p: Player, o: Player, contained = false): void {
   const b = m.ball, had = b.owner === o.id;
   const d = Math.sign(o.x - p.x) || p.facing;
   knockDown(m, o, p, d * T.fly.steal, (o.y - p.y) * 3, T.fly.stealVz);
-  emit(m, 'hit', o.x, o.y, 0, p.id, p.blow === 'kick' ? 1 : 0);
+  emit(m, 'hit', o.x, o.y, 0, p.id, p.blow === 'kick' ? 1 : p.blow === 'elbow' ? 2 : 0);
   if (had && m.rng.chance(T.hit.keep)) { b.owner = p.id; b.state = 'owned'; p.immuneT = T.immune; p.stats2.steals++; setTouch(m, p); addBar(m, p.team, T.bar.steal + (contained ? T.bar.containSteal : 0)); emit(m, 'steal', b.x, b.y, 0, p.id); }
   else if (had) {
     // the ball pops loose from the one who went down: a scramble, and now and then it goes out (Nekketsu)
@@ -519,12 +544,14 @@ export function handleInput(m: Match, p: Player, dt: number): void {
   }
   if (loose && sh.release) { startKick(m, p, planShot(m, p, 0), PREP.shot); return; }
   if (sh.press) {
-    if (p.control === 'ai') { if (inp.slide) startSlide(m, p); else tryHit(m, p); }
+    // the AI: a punch if he is on him; when it would slide, about half the times the arm strike instead, if the rival is within its reach
+    if (p.control === 'ai') { if (inp.slide) { if (!(m.rng.chance(T.elbow.ai) && startElbow(m, p))) startSlide(m, p); } else if (!tryHit(m, p)) startElbow(m, p); }
     else {
       // "close hits, far slides" (Nekketsu): a rival right in front gets a punch or a kick, anywhere else it is a slide
       // and with a rival flat at his feet he laughs at him instead
       if (hitTarget(m, p, true)) tryHit(m, p, true);
-      else if (!startTaunt(m, p)) startSlide(m, p);
+      // a little further, the arm strike on the run; from far, the slide
+      else if (!startElbow(m, p) && !startTaunt(m, p)) startSlide(m, p);
     }
   }
 }
@@ -567,6 +594,21 @@ export function updateAct(m: Match, p: Player, dt: number): { moveScale: number;
         override = { vx: p.vx, vy: p.vy };
         if (!a.done) { const o = flyKickTarget(m, p); if (o) { a.done = true; landBlow(m, p, o); } }
         if (p.act === a && (a.t >= a.dur || (p.z <= 0 && a.t > 0.05))) endAct(p);
+        break;
+      }
+      if (a.lunge) {
+        // the arm strike: he goes at the rival, and the first one he meets goes down (or holds, and he bounces off)
+        override = { vx: (a.dx ?? p.facing) * T.elbow.v, vy: (a.dy ?? 0) * T.elbow.v };
+        if (!a.done) {
+          const o = foes(m, p).find((q) => !LOCK.has(q.state) && q.immuneT <= 0 && q.z <= 12 && Math.abs(q.x - p.x) < T.elbow.hitX && Math.abs(q.y - p.y) < T.elbow.hitY && !(q.role === 'gk' && m.ball.owner === q.id && m.ball.state === 'held'));
+          if (o) {
+            a.done = true;
+            const easy = m.ball.owner === o.id && o.control === 'human' && o.controls === 'easy';
+            if (m.rng.chance(Math.min(0.97, (easy ? T.elbow.easyP : T.elbow.p) * (furyOn(m, p.team) ? T.fury.hit : 1)))) landBlow(m, p, o);
+            else { p.act = null; startStagger(m, p, T.steal.fail); emit(m, 'whiff', p.x, p.y, 0, p.id); break; }
+          }
+        }
+        if (p.act === a && a.t >= a.dur) { endAct(p); if (!a.done) { startStagger(m, p, T.elbow.whiff); emit(m, 'whiff', p.x, p.y, 0, p.id); } }
         break;
       }
       if (a.t >= a.dur) endAct(p);

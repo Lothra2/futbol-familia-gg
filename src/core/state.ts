@@ -34,7 +34,11 @@ export interface Act {
   /** A fall: somebody has already laughed at him (the bar is charged once per fall). */
   taunted?: boolean;
   /** A hit: a punch or a kick (they take turns). `air`: the flying kick of a player who jumped, it lands on whoever it meets before he comes down. */
-  blow?: 'punch' | 'kick'; air?: boolean;
+  blow?: 'punch' | 'kick' | 'elbow'; air?: boolean;
+  /** A fall that began as a slip in a puddle (the view shows the slip). */
+  slip?: boolean;
+  /** El codazo: the arm strike on the run. He lunges along (dx, dy) and whoever he meets before it ends goes down. */
+  lunge?: boolean;
   t: number; dur: number; contact?: number; plan?: KickPlan; done?: boolean; dx?: number; dy?: number; sub?: KickKind;
 }
 
@@ -66,7 +70,7 @@ export interface Player {
   /** Hits taken lately (Nekketsu): how many and when the last one was. Three close together knock him out for longer. */
   hits?: { n: number; t: number };
   /** The last blow thrown (punch and kick take turns). */
-  blow?: 'punch' | 'kick';
+  blow?: 'punch' | 'kick' | 'elbow';
   /** How he strikes the power shot that is flying now, for the view: his flying kick, the spinning kick of a jump, a header, an overhead kick or a volley. */
   supAnim?: 'kick' | 'spin' | 'header' | 'chilena' | 'volley' | 'dive';
   /** The traps of the pitch (hazards.ts): how much the mud slows him this step (1 = not at all) and until when no trap gets him again. */
