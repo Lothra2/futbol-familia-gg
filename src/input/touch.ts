@@ -38,6 +38,9 @@ export class TouchUI {
 
   get coarse(): boolean { return this.seenTouch || (typeof matchMedia === 'function' && matchMedia('(pointer: coarse)').matches); }
   setMode(m: 'auto' | 'on' | 'off'): void { this.mode = m; this.refresh(); }
+  /** Somebody plays with a pad: in automatic the buttons on the screen step aside, and come back with the first finger on the glass. */
+  private pad = false;
+  setPad(on: boolean): void { if (this.pad === on) return; this.pad = on; this.refresh(); }
   /** How much of the game the buttons cover: normal (the old look), suave (glass buttons that fade after a moment without touching) or minimo (almost invisible). */
   setLook(l: 'normal' | 'suave' | 'minimo'): void { this.look = l; this.root.dataset.look = l; this.wake(); }
   /** A touch on a button wakes the buttons up; after a few seconds without one they fade to a ghost (not in the normal look). */
@@ -50,7 +53,7 @@ export class TouchUI {
   configure(players: 1 | 2, mirrorP2: boolean, modes: ControlMode[] = ['full', 'full']): void { this.players = players; this.mirror = mirrorP2; this.modes = modes; this.build(); this.refresh(); }
   show(on: boolean): void { this.enabled = on; this.refresh(); }
   private refresh(): void {
-    const visible = this.enabled && (this.mode === 'on' || (this.mode === 'auto' && this.coarse));
+    const visible = this.enabled && (this.mode === 'on' || (this.mode === 'auto' && this.coarse && !this.pad));
     this.root.classList.toggle('on', visible);
     if (visible) this.wake();
     if (!visible) this.releaseAll();

@@ -57,7 +57,7 @@ export class MatchScene extends Phaser.Scene {
   private narrator = new Narrator();
   /** The replay of the goal: the last seconds of play are recorded and shown again in slow motion before the kick-off. */
   private rec = new Recorder(); private replay: ReplayPlayer | null = null; private replayUi!: ReplayOverlay; private pending: Snap[] | null = null; private prevPhase = ''; private replaySkip = false;
-  private replayKey = (e: KeyboardEvent): void => { if (this.replay && ['Space', 'Enter', 'KeyJ', 'KeyK', 'KeyF', 'KeyG', 'Comma', 'Period', 'Escape'].includes(e.code)) this.replaySkip = true; };
+  private replayKey = (e: KeyboardEvent): void => { if (this.replay && ['Space', 'Enter', 'KeyJ', 'KeyK', 'KeyF', 'KeyG', 'Comma', 'Period', 'Escape', 'PadA', 'PadB'].includes(e.code)) this.replaySkip = true; };
   private tapSkip = (e: Event): void => { if ((e.target as HTMLElement | null)?.id === 'pause') return; if (this.replay) { this.replaySkip = true; return; } const r = services.router; if (!r || this.ctl?.m.phase !== 'goal' || this.party()) return; r.setButton(0, 'cineskip', 'shoot', true); window.setTimeout(() => r.setButton(0, 'cineskip', 'shoot', false), 80); };
   private hud!: Hud;
   private pfx!: PixelFx;

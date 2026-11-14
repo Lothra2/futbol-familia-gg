@@ -70,7 +70,16 @@ const kb = new KeyboardInput(router);
 const touch = new TouchUI(router);
 const store = new SaveStore();
 store.load();
-const pad = new GamepadInput(router, () => shell?.pauseNow());
+/** A word at the top of the screen for a moment (a pad that connects or goes). */
+const toast = (text: string): void => {
+  document.getElementById('toast')?.remove();
+  const t = document.createElement('div'); t.id = 'toast'; t.textContent = text; document.body.appendChild(t);
+  window.setTimeout(() => t.classList.add('out'), 2200); window.setTimeout(() => t.remove(), 2700);
+};
+const pad = new GamepadInput(router, () => { shell?.pauseNow(); touch.setPad(false); toast('CONTROL DESCONECTADO'); }, () => toast('CONTROL CONECTADO'));
+pad.onUse = () => touch.setPad(true);
+// a finger on the glass brings the buttons of the screen back
+window.addEventListener('touchstart', () => touch.setPad(false), { passive: true, capture: true });
 let shell: Shell;
 
 // the whole game is kept in the device (tools/precache.mjs writes the worker): after the first visit it plays with no connection

@@ -150,6 +150,50 @@ const stage = async (page, slot = 0, bx = 400) => { await page.evaluate(({ slot,
   await ctx.close();
 }
 
+// 5. the pad outside the play (an Xbox pad on the iPad): it walks the menus, A presses, B goes back; in the match the triggers work, the
+//    buttons of the screen step aside while it is used and come back with a finger, and in the pause B resumes
+{
+  const { page, errors, ctx } = await openGame(b, srv.url, '', { viewport: { width: 1024, height: 768 }, hasTouch: true, isMobile: true }, () => {
+    const mk = (axes, down = [], val = {}) => ({ axes, buttons: Array.from({ length: 17 }, (_, i) => ({ pressed: down.includes(i), value: val[i] ?? (down.includes(i) ? 1 : 0) })) });
+    window.__setPad = (axes, down, val) => { window.__mockPads = [mk(axes, down, val)]; };
+  });
+  const press = async (axes, down, ms = 120) => { await page.evaluate(([a, d]) => window.__setPad(a, d), [axes, down]); await page.waitForTimeout(ms); await page.evaluate(() => window.__setPad([0, 0], [])); await page.waitForTimeout(120); };
+  await page.waitForSelector('#s-title', { timeout: 15000 });
+  await page.evaluate(() => { window.__futbol.store.data.stats.guideSeen = true; window.__setPad([0, 0], []); });
+  await page.waitForTimeout(200);
+  await press([0, 0], [0]);
+  await page.waitForSelector('.mbtn[data-act="quick"]', { timeout: 5000 });
+  ok('mando en menús: A pasa de la portada al menú', true);
+  const act = () => page.evaluate(() => document.activeElement?.dataset?.act ?? '');
+  const a0 = await act(); await press([0, 0], [13]); const a1 = await act(); await press([0, 1], []); const a2 = await act(); await press([0, -1], []); const a3 = await act();
+  ok('mando en menús: la cruceta y el stick mueven el foco', a0 === 'quick' && a1 === 'cup' && a2 === 'training' && a3 === 'cup', `${a0} ${a1} ${a2} ${a3}`);
+  await press([0, 0], [0]); await page.waitForTimeout(300);
+  ok('mando en menús: A entra a la opción', await page.evaluate(() => !document.querySelector('.mbtn[data-act="quick"]')));
+  await press([0, 0], [1]); await page.waitForTimeout(300);
+  ok('mando en menús: B vuelve', await page.evaluate(() => !!document.querySelector('.mbtn[data-act="quick"]')));
+  // into a quick match with the pad alone
+  await press([0, 0], [0]); await page.waitForTimeout(300);
+  await page.evaluate(() => { const go = document.querySelector('[data-act="play"], .go'); go?.focus(); });
+  await press([0, 0], [0]);
+  await page.waitForFunction(() => window.__futbol?.match?.phase === 'play' || !!document.getElementById('vs'), null, { timeout: 20000 });
+  for (let i = 0; i < 20 && !(await page.evaluate(() => window.__futbol?.match?.phase === 'play' && !document.getElementById('vs'))); i++) await press([0, 0], [0], 150);
+  ok('mando en menús: se arranca un partido solo con el mando', await page.evaluate(() => window.__futbol.match.phase === 'play'));
+  await page.evaluate(() => { const m = window.__futbol.match; m.ai = 'none'; });
+  await page.touchscreen.tap(300, 400); await page.waitForTimeout(200);
+  const t0 = await page.evaluate(() => document.querySelector('#touch, .touch')?.classList.contains('on'));
+  await page.evaluate(() => window.__setPad([1, 0], [], { 7: 0.8 })); await page.waitForTimeout(450);
+  const sp = await page.evaluate(() => { const p = window.__futbol.match.players.find((q) => q.humanSlot === 0); return { sprint: p.input.sprint, mx: p.input.mx, touch: document.querySelector('#touch, .touch')?.classList.contains('on') }; });
+  ok('mando: el gatillo derecho (analógico) esprinta', sp.sprint && sp.mx > 0.9, JSON.stringify(sp));
+  ok('mando: los botones de la pantalla se quitan mientras se usa y vuelven con un dedo', t0 === true && sp.touch === false, `${t0} ${sp.touch}`);
+  await page.evaluate(() => window.__setPad([0, 0], [])); await page.waitForTimeout(100);
+  await press([0, 0], [9]); await page.waitForTimeout(200);
+  const paused = await page.evaluate(() => !!document.getElementById('pause-menu'));
+  await press([0, 0], [1]); await page.waitForTimeout(250);
+  ok('mando: Menu pausa y B sigue', paused && await page.evaluate(() => !document.getElementById('pause-menu')), `${paused}`);
+  ok('sin errores de consola (mando en menús)', errors.length === 0, errors.join('|'));
+  await ctx.close();
+}
+
 await b.close(); srv.stop();
 console.log(bad ? `${bad} FAIL` : 'input: all passed');
 process.exit(bad ? 1 : 0);
