@@ -109,7 +109,8 @@ export class AudioEngine implements AudioApi {
 
   onFx(e: MatchEvent): void {
     if (e.k === 'count') { this.play('count', e.v === 1 ? 1.12 : 1); return; }
-    if (e.k === 'bounce' && (e.v ?? 0) < 90) return;   // a ball that rolls on does not tick
+    if (e.k === 'bounce' && (e.v ?? 0) < 90) return;
+    if (e.k === 'switch' && e.v !== 1) return;   // only the change without the ball clicks: the ball coming to her has its own sound   // a ball that rolls on does not tick
     const s = e.k === 'whistle' ? (e.v === 3 ? 'whistle3' : e.v === 2 ? 'whistle2' : 'whistle') : e.k === 'goal' ? null : FX_TO_SFX[e.k];
     if (e.k === 'goal') { this.play('net'); this.play('goal'); this.swell(1, 4.2); return; }
     if (e.k === 'special') this.swell(0.55, 1.6);

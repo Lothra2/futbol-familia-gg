@@ -45,9 +45,10 @@ describe('cambio de jugador al más cercano (GAME_DESIGN 4)', () => {
     const f = mkH([seat(4, 0, 'easy')]); clear(f);
     const c2 = fam(f, 'sophie'), n2 = fam(f, 'mama'); put(c2, 200, MID); put(n2, 460, MID); ball(f, 500, MID, 0, 0, 0, 0);
     secs(f, 0.2); expect(ctl(f)).toBe(c2);                   // the short wait of a child
-    secs(f, 0.3); expect(ctl(f)).toBe(n2);
+    secs(f, 0.45); expect(ctl(f)).toBe(n2);
     const g = mkH([seat(4, 0, 'full')]); clear(g);
     const c3 = fam(g, 'sophie'), n3 = fam(g, 'mama'), r = rival(g, 3); put(c3, 200, MID); put(n3, 460, MID); put(r, 500, MID); give(g, r);
+    secs(g, 0.25); expect(ctl(g)).toBe(c3);                  // not at once: the control holds for 0.4 s so it does not jump about
     secs(g, 0.3); expect(ctl(g)).toBe(n3);                   // a rival has it: the nearest to him
   });
   it('Thor, el portero, nunca lo maneja un humano', () => {

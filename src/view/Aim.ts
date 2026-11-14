@@ -3,6 +3,7 @@ import type { Match, Player } from '../core/state';
 import { T } from '../core/tuning';
 import { PITCH, goalX } from '../core/field';
 import { choosePass, stealTarget } from '../core/actions';
+import { tapPick } from '../core/control';
 import { specialKind } from '../core/specials';
 import { J_COLORS } from './colors';
 import { wx, sy } from '../core/proj';
@@ -27,6 +28,11 @@ export class Aim {
   private lobCue = false;
 
   private who: Phaser.GameObjects.Text;
+  /** The last change of player of each person: who, when (s of the scene) and whether it was a change without the ball. */
+  private sw: { id: number; at: number; big: boolean }[] = [];
+  private now = 0;
+  /** The control has just moved to `id`: for a moment a ring opens at his feet and an arrow drops on him. */
+  switched(id: number, big: boolean): void { this.sw = this.sw.filter((s) => s.id !== id); this.sw.push({ id, at: this.now, big }); }
   constructor(private scene: Phaser.Scene) {
     this.who = scene.add.text(0, 0, '', font(9, '#2a1b3d')).setOrigin(0.5, 1).setDepth(902).setResolution(1).setVisible(false).setStroke('#ffffff', 0);
     this.gg = scene.add.graphics().setDepth(199.6);
@@ -38,12 +44,31 @@ export class Aim {
   destroy(): void { this.gg.destroy(); this.g.destroy(); this.label.destroy(); this.star.destroy(); this.who.destroy(); }
 
   update(m: Match, time: number): void {
-    const g = this.g; g.clear(); this.gg.clear();
+    const g = this.g; g.clear(); this.gg.clear(); this.now = time;
     this.label.setVisible(false); this.star.setVisible(false); this.who.setVisible(false);
     // her player is out of the picture (the camera follows the ball; with the captain of Nekketsu it happens all the time): an arrow at the
     // edge of the screen, in her colour and with her number, points where he is
     if (m.phase === 'play' || m.phase === 'restart' || m.phase === 'kickoff') for (const p of m.players) if (p.control === 'human') this.edge(p, time);
+    this.sw = this.sw.filter((s) => time - s.at < 0.5);
+    for (const s of this.sw) {
+      const p = m.players.find((q) => q.id === s.id); if (!p || p.control !== 'human') continue;
+      const u = (time - s.at) / 0.5, col = J_COLORS[p.humanSlot ?? 0] ?? 0xffd447, x = Math.round(wx(p.x, p.y)), gy = Math.round(sy(p.y));
+      // the ring opens at his feet
+      this.gg.lineStyle(s.big ? 3 : 2, col, 1 - u).strokeEllipse(x, gy, 22 + u * (s.big ? 46 : 24), 8 + u * (s.big ? 17 : 9));
+      if (s.big) {
+        // and a big arrow drops on his head and bounces once
+        const drop = u < 0.35 ? (1 - u / 0.35) * 26 : Math.abs(Math.sin(((u - 0.35) / 0.65) * Math.PI)) * 5, ay = Math.round(sy(p.y, p.z)) - 46 - Math.round(drop);
+        g.fillStyle(INK, 1).fillTriangle(x - 9, ay - 2, x + 9, ay - 2, x, ay + 11).fillRect(x - 4, ay - 11, 8, 10);
+        g.fillStyle(col, 1).fillTriangle(x - 6, ay, x + 6, ay, x, ay + 8).fillRect(x - 2, ay - 9, 4, 9);
+      }
+    }
     if (m.phase !== 'play') return;
+    // her team is without the ball: a small hollow arrow over the mate a tap of Pase would give her
+    for (const h of m.humans) {
+      const n = tapPick(m, h); if (!n) continue;
+      const col = J_COLORS[h.slot] ?? 0xffd447, x = Math.round(wx(n.x, n.y)), y = Math.round(sy(n.y, n.z)) - 40 + Math.round(Math.sin(time * 6) * 1.5);
+      g.lineStyle(1, INK, 0.9).strokeTriangle(x - 5, y - 1, x + 5, y - 1, x, y + 6); g.lineStyle(1, col, 0.95).strokeTriangle(x - 4, y, x + 4, y, x, y + 5);
+    }
     for (const p of m.players) {
       if (p.control !== 'human') continue;
       if (m.ball.owner === p.id && m.ball.state === 'owned') { this.one(m, p, time); continue; }

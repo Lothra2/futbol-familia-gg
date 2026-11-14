@@ -284,6 +284,7 @@ export class Screens {
       <div class="grp"><div class="lbl">Sonido</div>${this.chips('muted', [{ v: false, label: 'Con sonido' }, { v: true, label: 'Silencio' }], st.muted)}</div></div>
       <div class="qcol"><div class="grp"><div class="lbl">Narrador</div>${this.chips('narr', [{ v: true, label: 'Con voz' }, { v: false, label: 'Sin voz' }], st.narrator)}</div>
       <div class="grp"><div class="lbl">Repetición del gol</div>${this.chips('replay', [{ v: true, label: 'Sí' }, { v: false, label: 'No' }], st.replay)}</div>
+      <div class="grp"><div class="lbl">Velocidad del partido</div>${this.chips('speed', [{ v: 'calma', label: 'Tranquila' }, { v: 'nekketsu', label: 'Nekketsu' }, { v: 'turbo', label: 'Turbo' }], st.speed)}</div>
       <div class="grp"><div class="lbl">Trampas en la cancha</div>${this.chips('traps', [{ v: true, label: 'Sí' }, { v: false, label: 'No' }], st.traps)}</div>
       <div class="grp"><div class="lbl">Botones en pantalla</div>${this.chips('touchmode', [{ v: 'auto', label: 'Automático' }, { v: 'on', label: 'Siempre' }, { v: 'off', label: 'Nunca' }], st.touchControls)}</div>
       <div class="grp"><div class="lbl">Qué tanto tapan los botones</div>${this.chips('look', [{ v: 'suave', label: 'Transparentes' }, { v: 'minimo', label: 'Casi invisibles' }, { v: 'normal', label: 'Sólidos' }], st.touchLook)}</div>
@@ -354,6 +355,7 @@ export class Screens {
     chips('muted', (i) => { s.muted = i === 1; apply(); });
     chips('narr', (i) => { s.narrator = i === 0; c.narrator = s.narrator; set(); store.save(); });
     chips('replay', (i) => { s.replay = i === 0; c.replay = s.replay; set(); store.save(); });
+    chips('speed', (i) => { s.speed = (['calma', 'nekketsu', 'turbo'] as const)[i]; c.speed = s.speed; store.save(); });
     chips('traps', (i) => { s.traps = i === 0; c.traps = s.traps; set(); store.save(); });
     chips('look', (i) => { s.touchLook = (['suave', 'minimo', 'normal'] as const)[i]; this.d.touch.setLook(s.touchLook); store.save(); });
     chips('touchmode', (i) => { s.touchControls = (['auto', 'on', 'off'] as const)[i]; this.d.touch.setMode(s.touchControls); store.save(); });

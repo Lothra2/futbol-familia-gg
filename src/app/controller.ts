@@ -11,6 +11,10 @@ import type { ControlMode, DifficultyId, Match, Strategy, Weather } from '../cor
 import type { FormationId } from '../core/field';
 import { DEFAULT_SQUAD, FIELD_CHARS, lineup, squadSeats, type FieldChar, type TeamKind } from '../core/teams';
 
+/** The speeds of the match against real time. Calm is the 80 % the game had; Nekketsu is brisker, the players get across the pitch the way
+ *  they do in Nintendo World Cup; turbo is a little over real time. */
+export const SPEEDS = { calma: 0.8, nekketsu: 0.92, turbo: 1.05 } as const;
+
 export interface MatchConfig {
   players: 1 | 2;
   controls: ControlMode[];
@@ -43,6 +47,8 @@ export interface MatchConfig {
   traps?: boolean;
   /** The captain of Nekketsu: every person keeps the player she started with (`chars`) and orders her mates about. */
   captain?: boolean;
+  /** How fast the match runs against real time (`SPEEDS`). Without it, `T.pace`. */
+  speed?: keyof typeof SPEEDS;
   /** Tests: fast forward runs without freezes. */
   fastForward?: boolean;
   /** From the save: the outfit and the level of each family character (the outfit is a different atlas, the level opens the golden celebration and trail). */
@@ -103,7 +109,7 @@ export class MatchController {
 
   /** Runs the steps that `seconds` of real time are worth. Returns the events of those steps, in order. */
   /** The match runs a little slower than real time, like Nintendo World Cup (tests that fast forward keep real time). */
-  get pace(): number { return this.cfg.ff > 1 || this.cfg.fastForward ? 1 : T.pace; }
+  get pace(): number { return this.cfg.ff > 1 || this.cfg.fastForward ? 1 : this.cfg.speed ? SPEEDS[this.cfg.speed] : T.pace; }
 
   advance(seconds: number, ff = 1): MatchEvent[] {
     const out: MatchEvent[] = [];

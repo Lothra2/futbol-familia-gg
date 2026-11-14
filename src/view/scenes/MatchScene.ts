@@ -163,6 +163,7 @@ export class MatchScene extends Phaser.Scene {
           for (let i = 0; i < (fresh ? 7 : 3); i++) this.fx.sparkle(Math.round(wx(e.x, e.y)) + (Math.random() - 0.5) * 30, Math.round(sy(e.y, e.z ?? 0)) - 12 - Math.random() * 26);
         } break;
         // an order of a person to a mate (Nintendo World Cup): she shouts it
+        case 'switch': if (e.who !== undefined) this.aim.switched(e.who, e.v === 1); break;
         case 'order': this.pow(e.x, e.y, ['¡PÁSALA!', '¡TIRA!', '¡QUÍTASELA!'][e.v ?? 0] ?? '', '#7bf0ff', 6); break;
         case 'obey': this.pow(e.x, e.y, ['¡TOMA!', '¡VA!', '¡VOY!'][e.v ?? 0] ?? '', '#ffffff', 6); break;
         case 'airtop': this.pow(e.x, e.y, '¡ARRIBA!', '#ffe45c', (e.z ?? 0) + 22); break;
@@ -178,7 +179,7 @@ export class MatchScene extends Phaser.Scene {
         case 'deflect': this.ballView.wobble(); break;
         case 'thud': shakeCamera(this.cam, 0.06); this.pfx.play('polvo', e.x, e.y); break;
         case 'combo': this.pow(e.x, e.y, '¡COMBO!', '#7be3ff'); break;
-        case 'slip': this.pow(e.x, e.y, '¡SPLASH!', '#7be3ff'); break;
+        case 'slip': this.pfx.play('chapuzon', e.x, e.y, 0, { scale: 0.7, at: 0.1 }); this.pow(e.x, e.y, '¡SPLASH!', '#7be3ff'); break;
         case 'geyser': if (e.v !== 2) this.pow(e.x, e.y, '¡AY!', '#ffb030'); shakeCamera(this.cam, 0.08); break;
         case 'boing': { const v = this.ctl.m.players.find((q) => q.id === e.who); if (v?.control === 'human') this.pow(e.x, e.y, '¡BOING!', '#ffffff'); break; }
         case 'taunt': this.pow(e.x, e.y, '¡JA JA!', '#ffffff'); break;

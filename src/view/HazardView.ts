@@ -14,23 +14,28 @@ export class HazardView {
   /** The fire of each geyser: the flame pillar of pixelfx (assets/fx/pilar.png), one picture per hole. Without the sheet the old column is drawn. */
   private fire: (Phaser.GameObjects.Image | null)[] = [];
   private pm: PfxMeta | null = null;
+  /** The water of each puddle moves: the ripples of pixelfx (assets/fx/ondas.png), a loop, each puddle at its own point of it. */
+  private rip: (Phaser.GameObjects.Image | null)[] = []; private rm: PfxMeta | null = null;
   constructor(scene: Phaser.Scene, private m: Match) {
     const meta = scene.cache.json.get('pfx_meta') as Record<string, PfxMeta> | undefined;
     this.pm = meta?.pilar && meta.pilar.frames >= 34 && scene.textures.exists('pfx_pilar') ? meta.pilar : null;
     const pm = this.pm;
+    this.rm = meta?.ondas && scene.textures.exists('pfx_ondas') ? meta.ondas : null;
+    const rm = this.rm;
+    for (const h of m.hazards) this.rip.push(rm && h.kind === 'charco' ? scene.add.image(0, 0, 'pfx_ondas').setOrigin(rm.px / rm.w, rm.py / rm.h).setDepth(4.1).setAlpha(0.9) : null);
     for (const h of m.hazards) this.fire.push(pm && h.kind === 'geiser' ? scene.add.image(0, 0, 'pfx_pilar').setOrigin(pm.px / pm.w, pm.py / pm.h).setScale(0.62).setDepth(depthAt(h.y) + 0.35).setVisible(false) : null);
     this.ground = scene.add.graphics().setDepth(4);
     for (const h of m.hazards) this.tall.push(scene.add.graphics().setDepth(depthAt(h.y) + (h.kind === 'geiser' ? 0.3 : -0.7)));
   }
   setMatch(m: Match): void { this.m = m; }
-  destroy(): void { this.ground.destroy(); for (const g of this.tall) g.destroy(); for (const f of this.fire) f?.destroy(); }
+  destroy(): void { this.ground.destroy(); for (const g of this.tall) g.destroy(); for (const f of this.fire) f?.destroy(); for (const r of this.rip) r?.destroy(); }
 
   update(t: number): void {
     const g = this.ground; g.clear();
     this.m.hazards.forEach((h, i) => {
       const X = Math.round(wx(h.x, h.y)), Y = Math.round(sy(h.y)), w = h.rx * 2 * PX, d = h.ry * 2, top = this.tall[i]; top.clear();
       const age = this.m.t - h.pop;
-      if (h.kind === 'charco') this.puddle(g, X, Y, w, d, t, age, i);
+      if (h.kind === 'charco') { this.puddle(g, X, Y, w, d, t, age, i); const r = this.rip[i], rm = this.rm; if (r && rm) r.setFrame(Math.floor(t * rm.fps + i * 7) % rm.frames).setPosition(X, Y).setScale((w * 0.92) / rm.w, (d * 1.25) / rm.h); }
       else if (h.kind === 'barro') this.mud(g, X, Y, w, d, t, i);
       else if (h.kind === 'geiser') this.geyser(g, top, X, Y, w, d, t, h, this.fire[i]);
       else this.cloud(g, top, X, Y, w, d, t, age, i);

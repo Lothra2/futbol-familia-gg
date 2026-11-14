@@ -24,7 +24,7 @@ export const T = Object.freeze({
   // as `beaten` s later; it only jumps when the new one wins by `gain` s
   // (`keep`, `box`: while she steers a defender who is goal side and within `keep` px of the ball, or within `box` px of her own goal
   // line, the control never leaves him)
-  switchCtl: { wait: 0.22, waitEasy: 0.35, margin: 10, beaten: 0.45, gain: 0.12, keep: 170, box: 130 },
+  switchCtl: { wait: 0.4, waitEasy: 0.5, margin: 20, beaten: 0.45, gain: 0.12, keep: 170, box: 130 },
   // orders to the mates (Nintendo World Cup): how long an order waits to be obeyed, how far from the ball the captain must be for Tiro to send
   // a mate at the carrier instead of sliding herself, and how near the mate has to be for the order to make sense
   order: { ttl: 1.2, tackleTtl: 2.2, far: 70, near: 260 },

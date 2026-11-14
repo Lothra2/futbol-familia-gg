@@ -133,3 +133,23 @@ describe('a quién salta el control cuando un rival lleva el balón', () => {
     expect(m.humans[0].id).toBe(cur.id);
   });
 });
+
+import { describe as d2, it as it2, expect as ex2 } from 'vitest';
+import { createMatch as cm2, step as st2 } from '../../src/core/match';
+import { tapPick } from '../../src/core/control';
+d2('el cambio de jugador se avisa', () => {
+  it2('al cambiar sin el balón sale el evento switch con v 1, y tapPick dice a quién daría un toque de Pase', () => {
+    const m = cm2({ seed: 3, humans: [{ team: 0, slot: 4, humanSlot: 0, controls: 'full' }] } as any);
+    m.phase = 'play'; m.restart = null; m.ai = 'none';
+    const fam = m.players.filter((p) => p.team === 0 && p.role !== 'gk'), cur = fam.find((p) => p.control === 'human')!, other = fam.find((p) => p !== cur)!;
+    for (const p of m.players) { p.x = 100; p.y = 60; }
+    cur.x = 200; cur.y = 200; other.x = 470; other.y = 200;
+    Object.assign(m.ball, { x: 500, y: 200, z: 0, vx: 0, vy: 0, vz: 0, state: 'free', owner: null }); m.lastPass = null;
+    ex2(tapPick(m, m.humans[0])?.id).toBe(other.id);
+    const seen: any[] = [];
+    for (let i = 0; i < 60; i++) { st2(m); seen.push(...m.events.filter((e) => e.k === 'switch')); m.events = []; }
+    ex2(m.humans[0].id).toBe(other.id);
+    ex2(seen.length).toBe(1); ex2(seen[0].v).toBe(1); ex2(seen[0].who).toBe(other.id);
+    ex2(tapPick(m, m.humans[0])).toBeNull();
+  });
+});

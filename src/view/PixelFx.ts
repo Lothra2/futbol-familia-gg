@@ -3,7 +3,7 @@ import type { Match, SpecialKind } from '../core/state';
 import { depthAt, wx, sy } from '../core/proj';
 
 /** The names of the effects of public/assets/fx (tools/build_pixelfx.py makes them from pixelfx, MIT). */
-export const PFX = ['carga', 'destello', 'plasma', 'pilar', 'aro_fuego', 'rayo', 'chispa', 'ola', 'chapuzon', 'hojas', 'plumas', 'estrellas', 'confeti', 'cohete', 'pow', 'golpe', 'polvo'] as const;
+export const PFX = ['carga', 'destello', 'plasma', 'pilar', 'aro_fuego', 'rayo', 'chispa', 'ola', 'chapuzon', 'hojas', 'plumas', 'estrellas', 'confeti', 'cohete', 'pow', 'golpe', 'polvo', 'ondas'] as const;
 export type PfxName = (typeof PFX)[number];
 export interface PfxMeta { w: number; h: number; px: number; py: number; frames: number; fps: number; cols: number; loop: boolean }
 

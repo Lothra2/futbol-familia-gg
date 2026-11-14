@@ -80,6 +80,22 @@ function assign(m: Match, h: HumanCtl, p: Player): void {
   p.baseSpeed = p.speedMult = 1;
   p.control = 'human'; p.humanSlot = h.slot; p.controls = h.controls; p.shoot.down = false; p.pass.down = false;
   h.id = p.id; h.since = m.t;
+  // the view shows it (a ring opens at his feet, the arrow drops on him): 0 the ball came to her (she carries it, the pass is for her, she
+  // takes the restart), 1 the control moved to another player without the ball, which is the change that has to be seen
+  if (old && old.id !== p.id && m.phase !== 'goal') emit(m, 'switch', p.x, p.y, p.z, p.id, m.ball.owner === p.id || m.lastPass?.to === p.id || m.restart?.taker === p.id ? 0 : 1);
+}
+
+/** Who a tap of Pase would give her now (full controls, her team without the ball), so the view can mark him before she asks. */
+export function tapPick(m: Match, h: HumanCtl): Player | null {
+  if (m.phase !== 'play' || h.fixed || h.controls !== 'full') return null;
+  const owner = byId(m, m.ball.owner ?? -1);
+  if (owner && owner.team === h.team) return null;
+  const lp = m.lastPass;
+  if (lp && lp.team === h.team && m.ball.state === 'free' && m.t - lp.t < 3.5 && m.ball.lastTouch.player === lp.from) return null;
+  const order = field(m, h.team).filter((p) => p.control !== 'human').map((p) => ({ p, e: etaTo(m, p) })).sort((a, c) => a.e - c.e);
+  const cur = byId(m, h.id);
+  // only when he would get to the ball before the one she moves: otherwise the mark is noise
+  return cur && order[0] && order[0].e < etaTo(m, cur) ? order[0].p : null;
 }
 
 /** Gives every human the right player and writes the human frames into them. Runs first in every step. */

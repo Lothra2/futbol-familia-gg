@@ -11,7 +11,7 @@ export interface SaveV1 {
   version: 1;
   settings: {
     music: number; sfx: number; crowd: number; muted: boolean; halfLength: 60 | 90 | 120; cinematics: 'full' | 'short' | 'off';
-    reducedMotion: boolean; narrator: boolean; replay: boolean; /** The traps of each pitch (puddles, geysers, mud, clouds). */ traps: boolean; /** The captain of Nekketsu: each person always moves the same player and orders the others. */ captain: boolean; mirrorP2: boolean; touchControls: 'auto' | 'on' | 'off'; touchLook: 'normal' | 'suave' | 'minimo'; controls: [ControlsPref, ControlsPref]; difficulty: Difficulty;
+    reducedMotion: boolean; narrator: boolean; replay: boolean; /** The traps of each pitch (puddles, geysers, mud, clouds). */ traps: boolean; /** The captain of Nekketsu: each person always moves the same player and orders the others. */ captain: boolean; /** How fast the match runs against real time: calm (as it was), Nekketsu or turbo (controller.ts, `SPEEDS`). */ speed: 'calma' | 'nekketsu' | 'turbo'; mirrorP2: boolean; touchControls: 'auto' | 'on' | 'off'; touchLook: 'normal' | 'suave' | 'minimo'; controls: [ControlsPref, ControlsPref]; difficulty: Difficulty;
   };
   characters: Record<CharId, CharSave>;
   cup: { active: boolean; stage: 0 | 1 | 2 | 3 | 4; difficulty: Difficulty };
@@ -24,7 +24,7 @@ export interface SaveV1 {
 
 export const defaultSave = (): SaveV1 => ({
   version: 1,
-  settings: { music: 0.7, sfx: 0.8, crowd: 0.7, muted: false, halfLength: 90, cinematics: 'full', reducedMotion: false, narrator: true, replay: true, traps: true, captain: false, mirrorP2: false, touchControls: 'auto', touchLook: 'suave', controls: ['full', 'full'], difficulty: 'normales' },
+  settings: { music: 0.7, sfx: 0.8, crowd: 0.7, muted: false, halfLength: 90, cinematics: 'full', reducedMotion: false, narrator: true, replay: true, traps: true, captain: false, speed: 'nekketsu', mirrorP2: false, touchControls: 'auto', touchLook: 'suave', controls: ['full', 'full'], difficulty: 'normales' },
   characters: Object.fromEntries(CHAR_IDS.map((c) => [c, { xp: 0, level: 1, outfit: 'base' as Outfit }])) as Record<CharId, CharSave>,
   cup: { active: false, stage: 0, difficulty: 'normales' },
   trophies: { bosque: false, arrecife: false, nubes: false, volcan: false, copa: 0 },
@@ -54,7 +54,7 @@ export function sanitize(raw: any): SaveV1 {
   d.settings = {
     music: num(s.music, d.settings.music, 0, 1), sfx: num(s.sfx, d.settings.sfx, 0, 1), crowd: num(s.crowd, d.settings.crowd, 0, 1), muted: s.muted === true,
     halfLength: oneOf(s.halfLength, [60, 90, 120] as const, 90), cinematics: oneOf(s.cinematics, ['full', 'short', 'off'] as const, 'full'),
-    reducedMotion: s.reducedMotion === true, narrator: s.narrator !== false, replay: s.replay !== false, traps: s.traps !== false, captain: s.captain === true, mirrorP2: s.mirrorP2 === true, touchControls: oneOf(s.touchControls, ['auto', 'on', 'off'] as const, 'auto'), touchLook: oneOf(s.touchLook, ['normal', 'suave', 'minimo'] as const, 'suave'),
+    reducedMotion: s.reducedMotion === true, narrator: s.narrator !== false, replay: s.replay !== false, traps: s.traps !== false, captain: s.captain === true, speed: oneOf(s.speed, ['calma', 'nekketsu', 'turbo'] as const, 'nekketsu'), mirrorP2: s.mirrorP2 === true, touchControls: oneOf(s.touchControls, ['auto', 'on', 'off'] as const, 'auto'), touchLook: oneOf(s.touchLook, ['normal', 'suave', 'minimo'] as const, 'suave'),
     controls: [oneOf(ctl[0], ['easy', 'full'] as const, 'full'), oneOf(ctl[1], ['easy', 'full'] as const, 'full')],
     difficulty: oneOf(s.difficulty, DIFFS, 'normales'),
   };

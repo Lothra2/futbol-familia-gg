@@ -57,7 +57,7 @@ export const SFX: Record<string, SfxDef> = {
 /** Which sound a match event asks for. M3 and M8 add the soccer effects. */
 export const FX_TO_SFX: Record<string, string> = {
   whistle: 'whistle', go: 'go', kick: 'kick', pass: 'pass', wall: 'pass', post: 'post', bar: 'post', goal: 'goal', slide: 'slide', slideball: 'kick', slidehit: 'bump', bump: 'bump',
-  steal: 'steal', penstart: 'penstart', golden: 'goldensting', save: 'save', catch: 'catch', bounce: 'bounce', deflect: 'bounce', special: 'special', starfull: 'starfull', zas: 'zas', whiff: 'whiff', dive: 'whiff', superready: 'superready', super: 'supershot', superhit: 'pum', slip: 'slide', geyser: 'pum', boing: 'jump', taunt: 'zas', mash: 'bounce', fury: 'superready', combo: 'starfull', thud: 'bump', smother: 'catch', celemove: 'jump', jump: 'jump', flykick: 'whiff', spinkick: 'supershot', hit: 'pum', chargehit: 'supershot', chargedef: 'supershot', airtop: 'superready', order: 'jump',
+  steal: 'steal', penstart: 'penstart', golden: 'goldensting', save: 'save', catch: 'catch', bounce: 'bounce', deflect: 'bounce', special: 'special', starfull: 'starfull', zas: 'zas', whiff: 'whiff', dive: 'whiff', superready: 'superready', super: 'supershot', superhit: 'pum', slip: 'slide', geyser: 'pum', boing: 'jump', taunt: 'zas', mash: 'bounce', fury: 'superready', combo: 'starfull', thud: 'bump', smother: 'catch', celemove: 'jump', jump: 'jump', flykick: 'whiff', spinkick: 'supershot', hit: 'pum', chargehit: 'supershot', chargedef: 'supershot', airtop: 'superready', order: 'jump', switch: 'click',
 };
 
 const duration = (def: SfxDef): number => def.segs.reduce((m, s) => Math.max(m, (s.at ?? 0) + s.d), 0);
