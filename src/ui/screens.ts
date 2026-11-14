@@ -1,3 +1,4 @@
+import { icon } from './menuicons';
 import type Phaser from 'phaser';
 import type { SaveStore } from '../save/save';
 import { LEVEL_XP, defaultSave } from '../save/save';
@@ -163,15 +164,15 @@ export class Screens {
 
   private main(): string {
     const s = this.d.store.data, cupSub = cupInProgress(s) ? `SIGUE: ${cupKingdom(s).name.normalize('NFD').replace(/[\u0300-\u036f]/g, '').toUpperCase()}` : s.trophies.copa > 0 ? `CAMPEONES X${s.trophies.copa}` : '4 REINOS';
-    const b = (act: string, label: string, sub: string, focus = false): string => `<button class="mbtn" data-act="${act}"${focus ? ' data-focus' : ''}><span class="tx"><b>${label}</b><em>${sub}</em></span></button>`;
+    const b = (act: string, label: string, sub: string, focus = false, ic = ''): string => `<button class="mbtn" data-act="${act}"${focus ? ' data-focus' : ''}><span class="tx"><b>${label}</b><em>${sub}</em></span>${icon(ic)}</button>`;
     return `${this.backdrop()}<div class="tdim"></div>${this.lineupHtml()}<div class="side"><div class="mini-logo"><b>FUTBOL</b><span>FAMILIA GG</span></div>
       <div class="nbox">
-      ${b('quick', 'PARTIDO RAPIDO', '1 O 2 JUGADORES', true)}
-      ${b('cup', 'LA COPA', cupSub)}
-      ${b('training', 'ENTRENAMIENTO', 'CON THOR')}
-      ${b('vitrina', 'VITRINA', `${Object.values(s.trophies).slice(0, 4).filter(Boolean).length}/4 COPAS`)}
-      ${b('settings', 'AJUSTES', 'SONIDO Y CONTROLES')}</div></div>
-      <div class="corner"><div class="cbtns"><button class="chip-o" data-act="guide">CÓMO SE JUEGA</button><button class="chip-o" data-act="fs">PANTALLA COMPLETA</button></div>${this.dailyCard()}</div>`;
+      ${b('quick', 'PARTIDO RAPIDO', '1 O 2 JUGADORES', true, 'play')}
+      ${b('cup', 'LA COPA', cupSub, false, 'copa')}
+      ${b('training', 'ENTRENAMIENTO', 'CON THOR', false, 'entreno')}
+      ${b('vitrina', 'VITRINA', `${Object.values(s.trophies).slice(0, 4).filter(Boolean).length}/4 COPAS`, false, 'vitrina')}
+      ${b('settings', 'AJUSTES', 'SONIDO Y CONTROLES', false, 'ajustes')}</div></div>
+      <div class="corner"><div class="cbtns"><button class="chip-o" data-act="guide">${icon('guia')}CÓMO SE JUEGA</button><button class="chip-o" data-act="fs">${icon('pantalla')}PANTALLA COMPLETA</button></div>${this.dailyCard()}</div>`;
   }
 
   /** The little card of the main menu: today's three challenges as dots. */
@@ -278,18 +279,19 @@ export class Screens {
 
   private settings(): string {
     const st = this.d.store.data.settings, pct = (v: number): number => Math.round(v * 100);
-    const slider = (id: string, label: string, v: number): string => `<div class="grp"><div class="lbl">${label} <b id="${id}v">${pct(v)}%</b></div><input type="range" id="${id}" min="0" max="100" value="${pct(v)}"></div>`;
+    const IC: Record<string, string> = { music: 'musica', sfx: 'efectos', crowd: 'publico' };
+    const slider = (id: string, label: string, v: number): string => `<div class="grp"><div class="lbl">${icon(IC[id])}${label} <b id="${id}v">${pct(v)}%</b></div><input type="range" id="${id}" min="0" max="100" value="${pct(v)}"></div>`;
     return `${this.head('Ajustes')}<div class="sgrid"><div class="qcol">
       ${slider('music', 'Música', st.music)}${slider('sfx', 'Efectos', st.sfx)}${slider('crowd', 'Público', st.crowd)}
-      <div class="grp"><div class="lbl">Sonido</div>${this.chips('muted', [{ v: false, label: 'Con sonido' }, { v: true, label: 'Silencio' }], st.muted)}</div></div>
-      <div class="qcol"><div class="grp"><div class="lbl">Narrador</div>${this.chips('narr', [{ v: true, label: 'Con voz' }, { v: false, label: 'Sin voz' }], st.narrator)}</div>
-      <div class="grp"><div class="lbl">Repetición del gol</div>${this.chips('replay', [{ v: true, label: 'Sí' }, { v: false, label: 'No' }], st.replay)}</div>
-      <div class="grp"><div class="lbl">Velocidad del partido</div>${this.chips('speed', [{ v: 'calma', label: 'Tranquila' }, { v: 'nekketsu', label: 'Nekketsu' }, { v: 'turbo', label: 'Rápida' }], st.speed)}</div>
-      <div class="grp"><div class="lbl">Trampas en la cancha</div>${this.chips('traps', [{ v: true, label: 'Sí' }, { v: false, label: 'No' }], st.traps)}</div>
-      <div class="grp"><div class="lbl">Botones en pantalla</div>${this.chips('touchmode', [{ v: 'auto', label: 'Automático' }, { v: 'on', label: 'Siempre' }, { v: 'off', label: 'Nunca' }], st.touchControls)}</div>
-      <div class="grp"><div class="lbl">Qué tanto tapan los botones</div>${this.chips('look', [{ v: 'suave', label: 'Transparentes' }, { v: 'minimo', label: 'Casi invisibles' }, { v: 'normal', label: 'Sólidos' }], st.touchLook)}</div>
-      <div class="grp"><div class="lbl">Jugador 2 en pantalla</div>${this.chips('mirror', [{ v: false, label: 'Normal' }, { v: true, label: 'Espejo' }], st.mirrorP2)}</div>
-      <div class="grp"><div class="lbl">Ayuda</div><button class="chip-o" data-act="guide">Cómo se juega</button> <button class="chip-o" data-act="credits">Créditos</button></div><div class="grp"><div class="lbl">Tu progreso</div><button class="chip-o danger" data-act="wipe">Borrar todo</button></div></div></div>`;
+      <div class="grp"><div class="lbl">${icon('sonido')}Sonido</div>${this.chips('muted', [{ v: false, label: 'Con sonido' }, { v: true, label: 'Silencio' }], st.muted)}</div></div>
+      <div class="qcol"><div class="grp"><div class="lbl">${icon('narrador')}Narrador</div>${this.chips('narr', [{ v: true, label: 'Con voz' }, { v: false, label: 'Sin voz' }], st.narrator)}</div>
+      <div class="grp"><div class="lbl">${icon('repeticion')}Repetición del gol</div>${this.chips('replay', [{ v: true, label: 'Sí' }, { v: false, label: 'No' }], st.replay)}</div>
+      <div class="grp"><div class="lbl">${icon('velocidad')}Velocidad del partido</div>${this.chips('speed', [{ v: 'calma', label: 'Tranquila' }, { v: 'nekketsu', label: 'Nekketsu' }, { v: 'turbo', label: 'Rápida' }], st.speed)}</div>
+      <div class="grp"><div class="lbl">${icon('trampas')}Trampas en la cancha</div>${this.chips('traps', [{ v: true, label: 'Sí' }, { v: false, label: 'No' }], st.traps)}</div>
+      <div class="grp"><div class="lbl">${icon('botones')}Botones en pantalla</div>${this.chips('touchmode', [{ v: 'auto', label: 'Automático' }, { v: 'on', label: 'Siempre' }, { v: 'off', label: 'Nunca' }], st.touchControls)}</div>
+      <div class="grp"><div class="lbl">${icon('tapan')}Qué tanto tapan los botones</div>${this.chips('look', [{ v: 'suave', label: 'Transparentes' }, { v: 'minimo', label: 'Casi invisibles' }, { v: 'normal', label: 'Sólidos' }], st.touchLook)}</div>
+      <div class="grp"><div class="lbl">${icon('espejo')}Jugador 2 en pantalla</div>${this.chips('mirror', [{ v: false, label: 'Normal' }, { v: true, label: 'Espejo' }], st.mirrorP2)}</div>
+      <div class="grp"><div class="lbl">${icon('ayuda')}Ayuda</div><button class="chip-o" data-act="guide">Cómo se juega</button> <button class="chip-o" data-act="credits">Créditos</button></div><div class="grp"><div class="lbl">${icon('progreso')}Tu progreso</div><button class="chip-o danger" data-act="wipe">Borrar todo</button></div></div></div>`;
   }
 
   private training(): string {
