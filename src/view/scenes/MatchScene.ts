@@ -12,7 +12,7 @@ import { HazardView } from '../HazardView';
 import { Fx } from '../Fx';
 import { WeatherView } from '../WeatherView';
 import { setView, wx, sy } from '../../core/proj';
-import { outfitAtlas } from '../outfit';
+import { outfitAtlas, uniformAtlas } from '../outfit';
 import { ChargeBar } from '../ChargeBar';
 import { Aim } from '../Aim';
 import { PenView } from '../PenView';
@@ -90,7 +90,8 @@ export class MatchScene extends Phaser.Scene {
       const meta = this.cache.json.get(`${key}_meta`) as NesMeta;
       // the outfit won in the Vitrina repaints the shirt of the family member (view/outfit.ts)
       const outfit = p.team === 0 && p.charId ? this.cfg.outfits?.[p.charId] : undefined;
-      const skin = outfit && outfit !== 'base' ? outfitAtlas(this, key, p.art, outfit) : key;
+      // and the rivals wear the kit of their kingdom, so they are told from the family at a glance
+      const skin = outfit && outfit !== 'base' ? outfitAtlas(this, key, p.art, outfit) : p.team === 1 && this.cfg.uniform !== false ? uniformAtlas(this, key, p.art) : key;
       const v = new NesPlayer(this, p, skin, meta, this.fx);
       v.gold = p.team === 0 && !!p.charId && (this.cfg.levels?.[p.charId] ?? 1) >= 3;
       this.views.push(v);
@@ -215,6 +216,7 @@ export class MatchScene extends Phaser.Scene {
       const before = m.tick;
       const evs = this.ctl.advance(delta / 1000, this.cfg.ff);
       this.stepsRun += m.tick - before;
+      this.pfx.clock = this.rec.now;
       this.onEvents(evs);
       this.follow(dt * Math.max(1, Math.min(this.cfg.ff, 4)));
       this.applyCamera();
@@ -284,6 +286,7 @@ export class MatchScene extends Phaser.Scene {
   private startReplay(clip: Snap[]): void {
     this.replay = new ReplayPlayer(clip, 0.5, 0.7, this.scale.width, this.scale.height); this.replaySkip = false;
     this.hud.cinema(true); this.replayUi.show(true); services.audio?.play('whoosh');
+    this.pfx.replayStart(clip[0].rt);
   }
 
   /** One frame of the replay: the match waits, the recorded players and ball are drawn at half speed. */
@@ -293,13 +296,14 @@ export class MatchScene extends Phaser.Scene {
     this.cameras.main.setScroll(Math.round(rp.camX), Math.round(rp.camY)); setView(Math.round(rp.camX) + W / 2, Math.round(rp.camY) + H / 2, H); this.stadium.update(dt);
     this.views.forEach((v, i) => { v.p = f.ps[i]; v.update(dt * rp.speed, null, null, 0); });
     this.ballView.setBall(f.ball); this.ballView.update(f.kind, f.rt);
+    this.pfx.replayStep(f.rt, f.sp ? f.ps.find((p) => p.id === f.sp!.id) : undefined, f.sp?.u ?? 0, dt * rp.speed);
     this.replayUi.draw(W, H, rp.t, rp.speed);
     if (rp.done || this.replaySkip) this.endReplay();
   }
 
   private endReplay(): void {
     const m = this.ctl.m;
-    this.replay = null; this.replaySkip = false;
+    this.replay = null; this.replaySkip = false; this.pfx.replayEnd();
     this.views.forEach((v, i) => { v.p = m.players[i]; });
     this.ballView.setBall(m.ball); this.ballView.update(null, m.t);
     this.replayUi.show(false); this.hud.cinema(false); this.ctl.resetClock();

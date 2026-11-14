@@ -48,6 +48,8 @@ export interface MatchConfig {
   traps?: boolean;
   /** The captain of Nekketsu: every person keeps the player she started with (`chars`) and orders her mates about. */
   captain?: boolean;
+  /** The rivals in the kit of their kingdom (view/outfit.ts). On unless it is false. */
+  uniform?: boolean;
   /** How fast the match runs against real time (`SPEEDS`). Without it, `T.pace`. */
   speed?: keyof typeof SPEEDS;
   /** Tests: fast forward runs without freezes. */

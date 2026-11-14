@@ -42,6 +42,8 @@ export class BootScene extends Phaser.Scene {
       for (const k of PFX) if (meta[k]) this.load.spritesheet(`pfx_${k}`, asset(`assets/fx/${k}.png`), { frameWidth: meta[k].w, frameHeight: meta[k].h });
     });
     this.load.json('pfx_meta', asset('assets/fx/fx.json'));
+    // which colours of each rival are clothes (tools/build_uniformes.py), for the kit of his kingdom
+    this.load.json('uniformes', asset('assets/nes/uniformes.json'));
     for (const k of SHEETS) {
       this.load.spritesheet(k, asset(`assets/sprites/${k}.png`), { frameWidth: 48, frameHeight: 48 });
       this.load.json(`${k}_meta`, asset(`assets/sprites/${k}.json`));

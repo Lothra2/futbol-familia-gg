@@ -3,7 +3,7 @@ import type { Ball, Match, Player, SpecialKind } from '../core/state';
 import { BOUNDS, sx, sy } from '../core/proj';
 
 /** One drawn moment: every player and the ball as they were (copies: the match keeps moving on). */
-export interface Snap { rt: number; ps: Player[]; ball: Ball; kind: SpecialKind | null }
+export interface Snap { rt: number; ps: Player[]; ball: Ball; kind: SpecialKind | null; /** Who was loading his power, and how far (0 to 1). */ sp?: { id: number; u: number } | null }
 
 /** Remembers the last seconds of open play so the goal can be shown again. `rt` only runs while recording, so a cinematic leaves no gap. */
 export class Recorder {
@@ -11,9 +11,11 @@ export class Recorder {
   private rt = 0;
   constructor(private keep = 4) {}
   reset(): void { this.frames = []; this.rt = 0; }
+  /** The clock of the recording (s), for whoever wants to remember when something happened in it. */
+  get now(): number { return this.rt; }
   record(m: Match, dt: number): void {
     this.rt += dt;
-    this.frames.push({ rt: this.rt, ps: m.players.map((p) => ({ ...p, act: p.act ? { ...p.act } : null })), ball: { ...m.ball }, kind: m.flight ? m.flight.kind : null });
+    this.frames.push({ rt: this.rt, ps: m.players.map((p) => ({ ...p, act: p.act ? { ...p.act } : null })), ball: { ...m.ball }, kind: m.flight ? m.flight.kind : null, sp: m.special ? { id: m.special.shooter, u: Math.min(1, m.special.t / m.special.dur) } : null });
     while (this.frames.length > 2 && this.frames[0].rt < this.rt - this.keep) this.frames.shift();
   }
   /** The last `secs` seconds of what was recorded. */
