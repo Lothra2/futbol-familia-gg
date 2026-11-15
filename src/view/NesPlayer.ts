@@ -26,7 +26,7 @@ export function dirOf(dx: number, dy: number, prev: number | null = null): numbe
 /** Seconds of the flight of a knocked down player (the 5 frames of `tumble` at 12 fps) and of getting up (2 frames of `fall_getup` at 8 fps). */
 const TUMBLE_T = 0.42, GETUP_T = 0.25;
 
-const FALLBACK: Record<string, string> = { super: 'shot', spin_kick: 'chilena', chilena: 'shot', air_kick: 'kick_hit', kick_hit: 'shot', jump_rise: 'jump', jump_fall: 'jump', walk: 'run', land: 'idle', trap: 'idle', run_shot: 'shot', pump: 'celebrate', sit: 'idle', laugh: 'celebrate', burla: 'laugh', dive_header: 'header', elbow: 'tackle', slip: 'tumble', guard: 'idle', point: 'idle', taunt: 'laugh', call: 'point', goal_run: 'goal_plane', goal_jump: 'celebrate', banzai: 'celebrate', sprint: 'run', shot_hard: 'shot', goal_plane: 'run', goal_knee: 'slide', skid: 'idle', power: 'land', ready: 'idle', trot: 'run', die: 'hurt', wake: 'lie', jump_wall: 'pounce', sleep: 'lie', scratch: 'sit', dig: 'sit' };
+const FALLBACK: Record<string, string> = { super: 'shot', spin_kick: 'chilena', chilena: 'shot', air_kick: 'kick_hit', kick_hit: 'shot', jump_rise: 'jump', jump_fall: 'jump', walk: 'run', land: 'idle', trap: 'idle', run_shot: 'shot', pump: 'celebrate', sit: 'idle', laugh: 'celebrate', burla: 'laugh', dive_header: 'header', elbow: 'tackle', slip: 'tumble', guard: 'idle', point: 'idle', taunt: 'laugh', call: 'point', goal_run: 'goal_plane', goal_jump: 'celebrate', banzai: 'celebrate', sprint: 'run', shot_hard: 'shot', goal_plane: 'run', goal_knee: 'slide', skid: 'idle', power: 'land', ready: 'idle', nk_dive: 'pounce', nk_banzai: 'celebrate', nk_gallop: 'run', nk_guard: 'bark', nk_flop: 'die', nk_sad: 'howl', trot: 'run', die: 'hurt', wake: 'lie', jump_wall: 'pounce', sleep: 'lie', scratch: 'sit', dig: 'sit' };
 /** What the view knows that the core does not: he has just landed from a jump or taken the ball down (seconds since), and he was running when he shot. */
 /** From this speed of the ball a shot is a hard one (tuning.ts, `shotHard.v`). */
 const HARD_SHOT = T.shotHard.v + T.hardV * 0.45;
@@ -40,29 +40,30 @@ export function nesAnim(p: Player, m: Match | null, isThor: boolean, hint: AnimH
     switch (p.state) {
       // the save: a dog's pounce at the ball; with it in his mouth he wags; he kicks it away with a snap of the jaws
       // the save: a dog's pounce at a low ball, and a leap straight up at a high one
-      case 'dive': return { name: m && m.ball.z > 22 ? 'jump_wall' : 'pounce', loop: false, t };
+      case 'dive': return { name: m && m.ball.z > 22 ? 'jump_wall' : 'nk_dive', loop: false, t };
       case 'hold': return { name: 'wag', loop: true, t };
       case 'kick': return { name: 'bite', loop: false, t };
       // a goal of the family: mad circles in front of his goal
-      case 'celebrate': return cele?.move === 'zoom' ? { name: 'run', loop: true, t } : Math.floor((m?.t ?? 0) / 1.2) % 3 === 2 ? { name: 'jump', loop: false, t: ((m?.t ?? 0) % 1.2) / 2 } : { name: 'celebrate', loop: true, t };
+      case 'celebrate': return cele?.move === 'zoom' ? { name: 'run', loop: true, t } : Math.floor((m?.t ?? 0) / 1.6) % 3 === 2 ? { name: 'celebrate', loop: true, t } : { name: 'nk_banzai', loop: true, t };
       // his power: he barks while it loads and then he is off with the ball
       case 'special': return { name: m?.special?.shooter === p.id ? 'bark' : 'run', loop: true, t };
       // after a dive he is flat on the grass for a moment
       // after a dive he is flat on the grass for a moment, and gets up shaking himself awake
       case 'getup': return { name: 'wake', loop: false, t };
       // a goal against: he howls at the sky
-      case 'sad': return { name: 'howl', loop: true, t };
+      // a goal against: he howls at the sky, and then lies down with his head between his paws
+      case 'sad': return { name: t < 1.2 ? 'howl' : 'nk_sad', loop: true, t };
       // knocked over he goes flat on his side; a shove only makes him yelp
-      case 'tumble': case 'dizzy': return { name: 'die', loop: false, t };
+      case 'tumble': case 'dizzy': return { name: 'nk_flop', loop: false, t };
       case 'stagger': case 'bump': return { name: 'hurt', loop: false, t };
       case 'slide': return { name: 'jump', loop: false, t };
       default: {
         // he walks, trots and runs, each at its speed
-        if (moving) return { name: speed < 42 ? 'walk' : speed < 95 ? 'trot' : 'run', loop: true, t };
+        if (moving) return { name: speed < 42 ? 'walk' : speed < 95 ? 'trot' : 'nk_gallop', loop: true, t };
         if (owns) return { name: 'wag', loop: true, t };
         // on guard: he barks when a rival comes at his goal with the ball
         const foe = m && m.ball.owner !== null ? m.players.find((q) => q.id === m.ball.owner) : undefined;
-        if (foe && foe.team !== p.team && Math.abs(foe.x - p.x) < 220) return { name: 'bark', loop: true, t };
+        if (foe && foe.team !== p.team && Math.abs(foe.x - p.x) < 220) return { name: 'nk_guard', loop: true, t };
         // the ball is at the other end: he sits and waits, wagging; when it comes back he is up
         // (and if it stays away he scratches, digs a little and in the end falls asleep)
         if (m && m.phase === 'play' && Math.abs(m.ball.x - p.x) > 520) return { name: t < 5 ? 'sit' : t < 6.6 ? 'scratch' : t < 11 ? 'sit' : t < 13 ? 'dig' : t < 16 ? 'sit' : 'sleep', loop: true, t };
