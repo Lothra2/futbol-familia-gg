@@ -24,7 +24,7 @@ export function dirOf(dx: number, dy: number, prev: number | null = null): numbe
 }
 
 /** Seconds of the flight of a knocked down player (the 5 frames of `tumble` at 12 fps) and of getting up (2 frames of `fall_getup` at 8 fps). */
-const TUMBLE_T = 0.42, GETUP_T = 0.25;
+const TUMBLE_T = 0.42, GETUP_T = 0.4;   // (the kip-up of Nekketsu needs a moment to be seen)
 
 const FALLBACK: Record<string, string> = { super: 'shot', spin_kick: 'chilena', chilena: 'shot', air_kick: 'kick_hit', kick_hit: 'shot', jump_rise: 'jump', jump_fall: 'jump', walk: 'run', land: 'idle', trap: 'idle', run_shot: 'shot', pump: 'celebrate', sit: 'idle', laugh: 'celebrate', burla: 'laugh', dive_header: 'header', elbow: 'tackle', slip: 'tumble', guard: 'idle', point: 'idle', taunt: 'laugh', call: 'point', goal_run: 'goal_plane', goal_jump: 'celebrate', banzai: 'celebrate', sprint: 'run', shot_hard: 'shot', goal_plane: 'run', goal_knee: 'slide', skid: 'idle', power: 'land', ready: 'idle', nk_dive: 'pounce', nk_banzai: 'celebrate', nk_gallop: 'run', nk_guard: 'bark', nk_flop: 'die', nk_sad: 'howl', trot: 'run', die: 'hurt', wake: 'lie', jump_wall: 'pounce', sleep: 'lie', scratch: 'sit', dig: 'sit' };
 /** What the view knows that the core does not: he has just landed from a jump or taken the ball down (seconds since), and he was running when he shot. */
