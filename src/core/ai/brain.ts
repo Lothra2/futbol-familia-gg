@@ -1,3 +1,4 @@
+import { cornerSpot } from '../corner';
 import { T } from '../tuning';
 import { DT } from '../step';
 import { MID, PITCH, SY, attackDir, goalX, ownGoalX, slotPos } from '../field';
@@ -109,6 +110,12 @@ function brainThink(m: Match, p: Player, humanize: boolean): InputFrame {
   if (m.t < A.sidestepUntil) { f.mx = A.sidestepDx; f.my = A.sidestepDy; return f; }
 
   if (m.phase === 'kickoff' || m.phase === 'restart') {
+    // a corner: the team that takes it goes into the box to wait for the cross and the other one marks, one of them not so close
+    const r = m.restart;
+    if (r && r.kind === 'corner' && p.role !== 'gk' && p.id !== r.taker) {
+      const s = cornerSpot(m, p);
+      if (s) { go(s.x, s.y); return f; }
+    }
     const t = formationTarget(m, p, 'neutral'); go(t.x, t.y); return f;
   }
   const carrier = b.owner === null ? null : m.players.find((q) => q.id === b.owner) ?? null;

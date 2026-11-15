@@ -1,3 +1,4 @@
+import { cornerSpot, cornerTarget } from './corner';
 import { startCelebration, stepCelebration, CELE } from './celebrate';
 import { T } from './tuning';
 import { CENTER, ESCAPE, GOAL, MID, PITCH, SY, attackDir, goalX, ownGoalX, slotPos } from './field';
@@ -164,8 +165,12 @@ function doRestartKick(m: Match, r: Restart): void {
     if (c) { m.lastPass = { from: t.id, to: c.id, t: m.t, team: t.team }; restartKick(m, t, c.x, c.y, true); }
     else restartKick(m, t, b.x + dir * 200, clamp(m.rng.range(MID - 40 * SY, MID + 40 * SY), 8, PITCH.d - 8), true);
   } else {
+    // the corner goes to a mate in the box: the one the stick points at, or the one with the most room
+    const aims = isHuman(t);   // (the stick of the AI is where it walks, not where it wants the cross)
+    const c = cornerTarget(m, t, aims ? inp.mx : 0, aims ? inp.my : 0);
     const gx = goalX(r.team);
-    restartKick(m, t, gx - dir * T.cornerBox, MID + m.rng.range(-21, 21), true);
+    if (c) { m.lastPass = { from: t.id, to: c.id, t: m.t, team: t.team }; restartKick(m, t, c.x, c.y, true); }
+    else restartKick(m, t, gx - dir * T.cornerBox, MID + m.rng.range(-21, 21), true);
   }
   r.kicked = true; m.restart = null; m.phase = 'play'; m.phaseT = 0;
 }
@@ -181,6 +186,14 @@ function stepRestart(m: Match, dt: number): void {
     if (d > T.restart.teleport) emit(m, 'zas', r.x, r.y, 0, t.id);
     t.x = r.x; t.y = r.y; t.vx = t.vy = 0;
     t.facing = attackDir(r.team); t.dirX = t.facing; t.dirY = 0;
+    // a corner cuts to the box, as Nintendo World Cup does: the pitch is too long to walk there before the kick, so whoever waits
+    // for the cross and whoever marks him are already in their places when the whistle blows
+    if (r.kind === 'corner') for (const p of m.players) {
+      const s = cornerSpot(m, p);
+      if (!s || p.role === 'gk' || p.id === r.taker) continue;
+      Object.assign(p, { x: s.x, y: s.y, vx: 0, vy: 0, z: 0, vz: 0, state: 'idle', act: null });
+      p.facing = r.x > p.x ? 1 : -1; p.dirX = p.facing; p.dirY = 0;
+    }
   }
   t.vx = 0; t.vy = 0;
   if (r.t < T.restart.position && r.kind !== 'kickoff') return;

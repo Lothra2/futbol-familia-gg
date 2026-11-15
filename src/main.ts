@@ -83,7 +83,20 @@ window.addEventListener('touchstart', () => touch.setPad(false), { passive: true
 let shell: Shell;
 
 // the whole game is kept in the device (tools/precache.mjs writes the worker): after the first visit it plays with no connection
-if ('serviceWorker' in navigator && location.protocol === 'https:') window.addEventListener('load', () => { navigator.serviceWorker.register('./sw.js').catch(() => {}); });
+if ('serviceWorker' in navigator && location.protocol === 'https:') {
+  window.addEventListener('load', () => { navigator.serviceWorker.register('./sw.js').then((r) => r.update()).catch(() => {}); });
+  // a new version finished downloading while the old one was on screen: it is loaded at once instead of at the next visit,
+  // but never in the middle of a match (it waits for a menu)
+  const had = !!navigator.serviceWorker.controller;
+  let fresh = false;
+  navigator.serviceWorker.addEventListener('controllerchange', () => {
+    if (!had || fresh) return;
+    fresh = true;
+    const inMatch = (): boolean => { const hud = document.getElementById('hud'); return !!hud && !hud.classList.contains('hidden') && !document.querySelector('#pause-menu, #result, #credits-screen'); };
+    const go = (): void => { if (inMatch()) window.setTimeout(go, 2000); else { toast('VERSIÓN NUEVA'); window.setTimeout(() => location.reload(), 600); } };
+    go();
+  });
+}
 
 game.events.once('assets-ready', () => {
   document.getElementById('loading')?.remove();

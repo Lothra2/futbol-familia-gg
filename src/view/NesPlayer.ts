@@ -190,6 +190,17 @@ export class NesPlayer {
   }
   /** A little shake: the person is hammering the buttons to get him up. */
   private impactT = 0; private baseX = 0;
+  private wasWhip = false; private ghosts: Phaser.GameObjects.Image[] = [];
+  private ghostAt = { x: 0, y: 0, flip: false, depth: 0, sx: 1, sy: 1 };
+  /** One silhouette of the frame he just left, where he was: it fades in a fifth of a second. */
+  private ghost(frame: number, at: { x: number; y: number; flip: boolean; depth: number; sx: number; sy: number }): void {
+    const sc = this.sprite.scene;
+    const g = this.ghosts.find((q) => !q.visible) ?? (this.ghosts.length < 5 ? this.ghosts[this.ghosts.push(sc.add.image(0, 0, this.sprite.texture.key, 0).setOrigin(this.sprite.originX, this.sprite.originY).setVisible(false)) - 1] : null);
+    if (!g) return;
+    sc.tweens.killTweensOf(g);
+    g.setTexture(this.sprite.texture.key, frame).setPosition(at.x, at.y).setFlipX(at.flip).setScale(at.sx, at.sy).setDepth(at.depth).setTint(0xcfeaff).setTintMode(Phaser.TintModes.FILL).setAlpha(0.7).setVisible(true);
+    sc.tweens.add({ targets: g, alpha: 0, duration: 200, onComplete: () => g.setVisible(false) });
+  }
   jolt(): void { this.hitT = Math.max(this.hitT, 0.08); }
   /** The blow has landed: he holds the frame of the impact (the arm out, the shout) for a moment, as Nekketsu does. */
   impact(t: number): void { this.impactT = t; }
@@ -197,7 +208,7 @@ export class NesPlayer {
   frozen(t: number): void { if (this.hitT > 0) this.sprite.setAlpha(1).setX(this.baseX + (Math.floor(t * 30) % 2 ? 2 : -2)); }
   /** The picture of his sheet (the scoreboard of a goal draws him from it). */
   sheet(): CanvasImageSource { return this.sprite.texture.getSourceImage() as CanvasImageSource; }
-  destroy(): void { this.sprite.destroy(); this.shadow.destroy(); this.mark.destroy(); this.bar.destroy(); this.ring.destroy(); }
+  destroy(): void { for (const g of this.ghosts) g.destroy(); this.sprite.destroy(); this.shadow.destroy(); this.mark.destroy(); this.bar.destroy(); this.ring.destroy(); }
 
   /** Which way the drawing looks: where he runs, else where he aims, else at the ball (keepers and anybody standing). */
   private face(m: Match | null): number {
@@ -248,6 +259,11 @@ export class NesPlayer {
       const rel = frame - a.start;
       if (rel === 0 || rel === 4) this.fx.puff(x - Math.sign(p.vx || 1) * 5, gy, -p.vx * 0.15, p.state === 'sprint' ? 2 : 1);
     }
+    // la estela of Nekketsu: while he kicks hard or throws a blow, every frame he leaves stays behind for a moment as a pale silhouette,
+    // so the leg (or the fist) is seen sweeping all the way to the ball
+    const whip = !st.loop && (p.state === 'bump' ? p.act?.kind === 'hit' : p.state === 'special' ? m?.special?.shooter !== p.id : p.state === 'kick' && st.name !== 'pass' && st.name !== 'throw_in');
+    if (whip && frame !== this.lastFrame && this.lastFrame >= 0 && this.wasWhip) this.ghost(this.lastFrame, this.ghostAt);
+    this.wasWhip = whip;
     this.lastFrame = frame;
     // the cartoon of Nekketsu: a shake and a white flash when a blow lands, stretched in the air and squashed on landing, hops when
     // celebrating, and Thor bounces when he runs
@@ -271,6 +287,7 @@ export class NesPlayer {
     const loading = !!m && m.special?.shooter === p.id;
     if (loading) { const u = m!.special!.t / m!.special!.dur; ox = Math.floor(m!.special!.t * (24 + 30 * u)) % 2 ? 1 : -1; if (speed < 20) { sxk = 1.06; syk = 0.94 - 0.04 * u; } else { oy = -Math.round(Math.abs(Math.sin(m!.special!.t * 26)) * 2); sxk = 1.04; syk = 0.96; } }
     this.baseX = x;
+    this.ghostAt = { x: x + ox, y: y + oy, flip: !!mirrored, depth: depthAt(p.y) - 0.001, sx: sxk, sy: syk };
     this.sprite.setFrame(frame).setPosition(x + ox, y + oy).setFlipX(!!mirrored).setDepth(depthAt(p.y)).setScale(sxk, syk);
     this.sprite.setAlpha(this.hitT > 0 && Math.floor(this.hitT * 30) % 2 ? 0.35 : 1);   // the blink of a sprite that has just been hit
     // the moment of the súper patada: the carrier flashes white and gold (Nekketsu), shoot now

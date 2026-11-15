@@ -105,6 +105,9 @@ export const T = Object.freeze({
   restart: { position: 0.8, aiMin: 0.8, aiMax: 1.2, humanAuto: 3.0, easyAuto: 1.2, kickoffAuto: 2.0, easyKickoffAuto: 1.2, wipe: 0.3, teleport: 40 },
   goalT: 2.3, goalSkip: 1.0, goldenT: 60, halftimeT: 3.5, endGrace: 1.0,
   throwMax: 160, throwInset: 60, cornerBox: 48,
+  // the corner: where the team waits for the cross (from the goal line and from the middle), how close the defence marks, how far from
+  // the goal a mate still counts, and how far from his marker the cross lands
+  corner: { near: 44, nearY: 16, far: 66, farY: 20, edge: 112, tight: 9, loose: 22, reach: 150, away: 8 },
   // free kick (tiro libre): a slide that hits the leg of the rival who carries the ball in the last `zone` px before the goal of the one who slides. The spot is never nearer than `minDist` to the goal line,
   // the wall of `wall` players stands `wallDist` px in front of the ball. The aim moves `aimV` px/s with the stick, the effect `curveV` per second, the meter swings `meterHz` times a second (sweet over `sweet`)
   free: { zone: 300, minDist: 120, maxDist: 230, ballNear: 40, wall: 2, wallDist: 40, wallGap: 13, zWall: 20, wallReach: 12, zGoal: [14, 22] as readonly number[], zBlock: 8, vMin: 220, vMax: 460, err: 5, spin: 0.9, aimV: 70, curveV: 1.4, sweep: 1.6, sweet: 0.78, ok: 0.25, aiMin: 1.2, aiMax: 2.0, aiErrK: 0.7, aiErrMin: 7, aiSweet: 0.25, aiBad: 0.25, auto: 25, q: [0.3, 0.55, 0.85] as readonly number[], aiQ: 0.6, cd: 35 },
