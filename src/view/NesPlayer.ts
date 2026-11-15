@@ -189,7 +189,12 @@ export class NesPlayer {
     this.dir = p.team === 0 ? 0 : 4;
   }
   /** A little shake: the person is hammering the buttons to get him up. */
+  private impactT = 0; private baseX = 0;
   jolt(): void { this.hitT = Math.max(this.hitT, 0.08); }
+  /** The blow has landed: he holds the frame of the impact (the arm out, the shout) for a moment, as Nekketsu does. */
+  impact(t: number): void { this.impactT = t; }
+  /** The match is frozen on a blow: the one who took it keeps shaking, nobody else moves. */
+  frozen(t: number): void { if (this.hitT > 0) this.sprite.setAlpha(1).setX(this.baseX + (Math.floor(t * 30) % 2 ? 2 : -2)); }
   /** The picture of his sheet (the scoreboard of a goal draws him from it). */
   sheet(): CanvasImageSource { return this.sprite.texture.getSourceImage() as CanvasImageSource; }
   destroy(): void { this.sprite.destroy(); this.shadow.destroy(); this.mark.destroy(); this.bar.destroy(); this.ring.destroy(); }
@@ -234,7 +239,9 @@ export class NesPlayer {
     const speed = Math.hypot(p.vx, p.vy);
     // (loading his power on the move: short, quick steps, not the lazy ones of a jog)
     this.loops.ease(m?.special?.shooter === p.id ? 2.1 : Math.max(0.6, Math.min(1.8, speed / 110)), dt);
-    const frame = st.loop ? this.loops.frame(this.meta.anims, key, dt) : a.start + Math.min(a.frames - 1, Math.floor(Math.max(0, st.t) * a.fps));
+    let frame = st.loop ? this.loops.frame(this.meta.anims, key, dt) : a.start + Math.min(a.frames - 1, Math.floor(Math.max(0, st.t) * a.fps));
+    // the held frame of a blow that landed: the middle of the gesture, where the arm or the leg is all the way out
+    if (this.impactT > 0) { this.impactT -= dt; if (!st.loop && (p.state === 'bump' || p.state === 'slide')) frame = Math.max(frame, a.start + Math.floor((a.frames - 1) * 0.5)); else this.impactT = 0; }
     const x = Math.round(wx(p.x, p.y)), gy = Math.round(sy(p.y)), y = Math.round(sy(p.y, p.z));
     // a puff at the feet when a running stride lands (frames 0 and 4 of the cycle)
     if (st.loop && st.name.startsWith('run') && frame !== this.lastFrame && p.z < 2 && speed > 90 && this.fx) {
@@ -263,6 +270,7 @@ export class NesPlayer {
     // loading his power: he trembles, squashed, faster as the bar fills
     const loading = !!m && m.special?.shooter === p.id;
     if (loading) { const u = m!.special!.t / m!.special!.dur; ox = Math.floor(m!.special!.t * (24 + 30 * u)) % 2 ? 1 : -1; if (speed < 20) { sxk = 1.06; syk = 0.94 - 0.04 * u; } else { oy = -Math.round(Math.abs(Math.sin(m!.special!.t * 26)) * 2); sxk = 1.04; syk = 0.96; } }
+    this.baseX = x;
     this.sprite.setFrame(frame).setPosition(x + ox, y + oy).setFlipX(!!mirrored).setDepth(depthAt(p.y)).setScale(sxk, syk);
     this.sprite.setAlpha(this.hitT > 0 && Math.floor(this.hitT * 30) % 2 ? 0.35 : 1);   // the blink of a sprite that has just been hit
     // the moment of the súper patada: the carrier flashes white and gold (Nekketsu), shoot now

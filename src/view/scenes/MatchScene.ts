@@ -192,7 +192,7 @@ export class MatchScene extends Phaser.Scene {
         case 'starfull': if (e.v === 0) this.hud.hint(T_ES.hints.star, 1500); break;
         case 'super': this.hud.banner(T_ES.specials[KIND_INDEX[e.v ?? 0]] ?? '¡SÚPER PATADA!', 1000); this.hud.flash(120); shakeCamera(this.cam, 0.3); this.stadium.gasp(); break;
         case 'superready': { const p = this.ctl.m.players.find((q) => q.id === e.who); if (p?.control === 'human') this.pow(e.x, e.y, '¡YA!', '#ffe45c'); break; }
-        case 'hit': this.pfx.play('golpe', e.x, e.y, 14, { front: true, scale: 0.8 }); if (e.v === 2) { this.pow(e.x, e.y, '¡CODAZO!', '#ffd447', 30); shakeCamera(this.cam, 0.05); } break;
+        case 'hit': this.views.find((q) => q.p.id === e.who)?.impact(0.12); this.pfx.play('golpe', e.x, e.y, 14, { front: true, scale: 0.8 }); if (e.v === 2) { this.pow(e.x, e.y, '¡CODAZO!', '#ffd447', 30); shakeCamera(this.cam, 0.05); } break;
         case 'superhit': this.pfx.play('golpe', e.x, e.y, 0, { front: true });
         // falls through
         case 'slidehit': this.pow(e.x, e.y, ['¡PUM!', '¡POW!', '¡ZAS!'][Math.floor(Math.random() * 3)], '#ffffff'); break;
@@ -212,6 +212,7 @@ export class MatchScene extends Phaser.Scene {
         // frozen frame: the stadium and the HUD breathe, the match does not move
         this.hitStop -= dt; this.ctl.resetClock();
         this.stadium.update(dt); this.hud.update(m);
+        for (const v of this.views) v.frozen(this.hitStop);
         return;
       }
       const before = m.tick;
@@ -336,7 +337,9 @@ export class MatchScene extends Phaser.Scene {
     else if (e.k === 'bump') t = 0.06;
     else if (e.k === 'super') t = 0.16;
     else if (e.k === 'chargehit') t = v === 2 ? 0.14 : 0.08;
-    else if (e.k === 'superhit' || e.k === 'slidehit') t = 0.08;
+    else if (e.k === 'hit') t = v === 2 ? 0.17 : 0.15;   // the blow of Nekketsu: the fist out and the shout, held long enough to be seen
+    else if (e.k === 'slidehit') t = 0.12;
+    else if (e.k === 'superhit') t = 0.08;
     else if (e.k === 'spinkick') t = 0.09;
     else if (e.k === 'save' && v !== 2 && m.phase === 'play') t = 0.05;
     if (t > this.hitStop) this.hitStop = t;
