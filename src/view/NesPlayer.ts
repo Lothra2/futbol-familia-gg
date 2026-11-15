@@ -28,7 +28,7 @@ export function dirOf(dx: number, dy: number, prev: number | null = null): numbe
 const LEG_GHOST = new Set(['shot', 'shot_hard', 'run_shot', 'chip', 'volley', 'kick_hit']);
 const TUMBLE_T = 0.42, GETUP_T = 0.4;   // (the kip-up of Nekketsu needs a moment to be seen)
 
-const FALLBACK: Record<string, string> = { super: 'shot', spin_kick: 'chilena', chilena: 'shot', air_kick: 'kick_hit', kick_hit: 'shot', jump_rise: 'jump', jump_fall: 'jump', walk: 'run', land: 'idle', trap: 'idle', run_shot: 'shot', pump: 'celebrate', sit: 'idle', laugh: 'celebrate', burla: 'laugh', dive_header: 'header', elbow: 'tackle', slip: 'tumble', guard: 'idle', point: 'idle', taunt: 'laugh', call: 'point', goal_run: 'goal_plane', goal_jump: 'celebrate', banzai: 'celebrate', sprint: 'run', shot_hard: 'shot', goal_plane: 'run', goal_knee: 'slide', skid: 'idle', power: 'land', ready: 'idle', nk_dive: 'pounce', nk_banzai: 'celebrate', nk_gallop: 'run', nk_guard: 'bark', nk_flop: 'die', nk_sad: 'howl', trot: 'run', die: 'hurt', wake: 'lie', jump_wall: 'pounce', sleep: 'lie', scratch: 'sit', dig: 'sit' };
+const FALLBACK: Record<string, string> = { cele_star: 'banzai', super: 'shot', spin_kick: 'chilena', chilena: 'shot', air_kick: 'kick_hit', kick_hit: 'shot', jump_rise: 'jump', jump_fall: 'jump', walk: 'run', land: 'idle', trap: 'idle', run_shot: 'shot', pump: 'celebrate', sit: 'idle', laugh: 'celebrate', burla: 'laugh', dive_header: 'header', elbow: 'tackle', slip: 'tumble', guard: 'idle', point: 'idle', taunt: 'laugh', call: 'point', goal_run: 'goal_plane', goal_jump: 'celebrate', banzai: 'celebrate', sprint: 'run', shot_hard: 'shot', goal_plane: 'run', goal_knee: 'slide', skid: 'idle', power: 'land', ready: 'idle', nk_dive: 'pounce', nk_banzai: 'celebrate', nk_gallop: 'run', nk_guard: 'bark', nk_flop: 'die', nk_sad: 'howl', trot: 'run', die: 'hurt', wake: 'lie', jump_wall: 'pounce', sleep: 'lie', scratch: 'sit', dig: 'sit' };
 /** What the view knows that the core does not: he has just landed from a jump or taken the ball down (seconds since), and he was running when he shot. */
 /** From this speed of the ball a shot is a hard one (tuning.ts, `shotHard.v`). */
 const HARD_SHOT = T.shotHard.v + T.hardV * 0.45;
@@ -116,7 +116,9 @@ export function nesAnim(p: Player, m: Match | null, isThor: boolean, hint: AnimH
       // the celebration of a goal (core/celebrate.ts): the run, the somersault, the slide on the knees, the spinning jump, the fist in the air
       const c = cele?.move, ct = cele?.t ?? 0;
       // Nintendo World Cup: where he stands, facing the camera, both arms up and shouting
-      if (c === 'banzai') return { name: 'banzai', loop: true, t };
+      // (the pose follows the hop: crouched with the fists at the chest on the ground, open like a star in the air, legs and arms out.
+      // The body celebrates, so it reads on the smallest of the family too, whose arms are short)
+      if (c === 'banzai') return p.z > 2 || p.vz > 0 ? { name: 'cele_star', loop: false, t: (p.vz > 45 ? 2.2 : p.vz > -45 ? 3.2 : 5.2) / 12 } : { name: 'cele_star', loop: false, t: 0.01 };
       // the run of the scorer: both arms up, like Nintendo World Cup
       if (c === 'run') return { name: 'goal_run', loop: true, t };
       if (c === 'flip') return { name: 'spin_kick', loop: false, t: ct * 0.62 };
