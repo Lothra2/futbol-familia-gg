@@ -74,7 +74,7 @@ describe('saques', () => {
       expect(m.restart!.kind).toBe(kind);
       if (human) m.players.find((p) => p.id === m.restart!.taker)!.control = 'human';
       const t = until(m, () => m.phase === 'play', 4);
-      expect(t, `${kind} human=${human}`).toBeLessThanOrEqual(human ? 3.05 : 1.25);
+      expect(t, `${kind} human=${human}`).toBeLessThanOrEqual(human ? 3.05 : kind === 'corner' ? 1.75 : 1.25);   // (the corner waits for the camera to show the box)
       expect(m.ball.state).toBe('free'); expect(Math.hypot(m.ball.vx, m.ball.vy)).toBeGreaterThan(30);
     }
     const k = mk({ skipKickoff: false, ai: 'none' }); const t = until(k, () => k.phase === 'play', 4);

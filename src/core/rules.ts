@@ -67,7 +67,7 @@ function nearestTo(m: Match, team: Team, x: number, y: number, field: boolean, e
 
 function startRestart(m: Match, kind: RestartKind, team: Team, x: number, y: number): void {
   const taker = kind === 'goalkick' ? m.players.find((p) => p.team === team && p.role === 'gk')! : nearestTo(m, team, x, y, true);
-  m.restart = { kind, team, x, y, taker: taker.id, t: 0, kicked: false, aiAt: m.rng.range(T.restart.aiMin, T.restart.aiMax) };
+  m.restart = { kind, team, x, y, taker: taker.id, t: 0, kicked: false, aiAt: m.rng.range(T.restart.aiMin, T.restart.aiMax) + (kind === 'corner' ? T.corner.aiWait : 0) };   // (a corner gives the camera time to show the box)
   m.phase = 'restart'; m.phaseT = 0;
   const b = m.ball;
   Object.assign(b, { x, y, z: 0, vx: 0, vy: 0, vz: 0, spin: 0, state: 'dead', owner: null, inNet: false });

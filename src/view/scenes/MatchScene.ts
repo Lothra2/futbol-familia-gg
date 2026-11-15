@@ -54,6 +54,7 @@ export class MatchScene extends Phaser.Scene {
   ceremony = false; private ceremonyT = 0;
   /** Seconds the picture stays frozen after a hard hit (the simulation waits too, so nothing is lost). */
   private hitStop = 0;
+  private cutFrames = 0;
   private narrator = new Narrator();
   /** The replay of the goal: the last seconds of play are recorded and shown again in slow motion before the kick-off. */
   private rec = new Recorder(); private replay: ReplayPlayer | null = null; private replayUi!: ReplayOverlay; private pending: Snap[] | null = null; private prevPhase = ''; private replaySkip = false;
@@ -150,7 +151,9 @@ export class MatchScene extends Phaser.Scene {
         case 'goal': this.goalStar = this.ctl.m.players.find((q) => q.cele?.role === 'star')?.id ?? -1; if (this.ctl.m.phase !== 'penalties') this.pending = this.rec.clip(2.8); if (this.ctl.m.phase !== 'penalties') this.hud.banner(B.goal, this.party() ? 1100 : 2200); this.hud.flash(); shakeCamera(this.cam, 0.35); this.stadium.goal(); this.pfx.play('confeti', e.x + (e.x > 480 ? -40 : 40), e.y + 30, 0, { front: true, at: 0.2 }); this.pfx.play('cohete', e.x + (e.x > 480 ? -70 : 70), e.y - 20, 60, { front: true, at: 0.3 }); break;   // (the banner is short when a person is about to celebrate: it must not cover her)
         case 'throwin': this.hud.banner(B.throwin, 900); break;
         case 'goalkick': this.hud.banner(B.goalkick, 900); break;
-        case 'corner': this.hud.banner(B.corner, 900); break;
+        // the corner cuts to the box as Nintendo World Cup does: the screen goes black for an instant and comes back at the corner, with
+        // everybody already in his place (the players do not walk there: core/rules.ts)
+        case 'corner': this.hud.banner(B.corner, 900); this.cutFrames = 4; if (!this.cfg.fastForward) this.cameras.main.fadeIn(this.cfg.reducedMotion ? 120 : 340, 0, 0, 0); break;
         case 'final': this.hud.banner(B.final, 1800); break;
         case 'whistle': if (e.v === 2) this.hud.banner(B.halftime, 1600); else if (e.v === 1 && this.ctl.m.phase === 'kickoff' && this.cfg.cine !== 'off') this.hud.banner(B.kickoff, 1100); break;
         case 'special': this.stadium.gasp(); this.hud.banner(T_ES.specials[KIND_INDEX[e.v ?? 0]] ?? '', 1100); break;
@@ -220,7 +223,7 @@ export class MatchScene extends Phaser.Scene {
       this.stepsRun += m.tick - before;
       this.pfx.clock = this.rec.now;
       this.onEvents(evs);
-      this.follow(dt * Math.max(1, Math.min(this.cfg.ff, 4)));
+      this.follow(dt * Math.max(1, Math.min(this.cfg.ff, 4)), this.cutFrames-- > 0);
       this.applyCamera();
       for (const v of this.views) {
         const p = v.p;

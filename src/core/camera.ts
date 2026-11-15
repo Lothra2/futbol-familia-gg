@@ -1,4 +1,5 @@
-import { attackDir } from './field';
+import { MID, PITCH, attackDir } from './field';
+import { T } from './tuning';
 import { BOUNDS, sx, sy } from './proj';
 import type { Match } from './state';
 
@@ -15,9 +16,16 @@ export function cameraTarget(m: Match, viewW: number, viewH = 270, bottomInset =
   // a goal (Nintendo World Cup): the camera leaves the ball in the net and goes to the one who scored, shouting with his arms up
   const star = m.phase === 'goal' && m.phaseT > 0.5 ? m.players.find((p) => p.cele?.role === 'star') : undefined;
   let tx = star ? sx(star.x) : sx(b.x + Math.max(-60, Math.min(60, b.vx * 0.25)));
-  const ty = star ? sy(star.y, 10) : sy(b.y + Math.max(-30, Math.min(30, b.vy * 0.15)), Math.min(b.z, 40) * 0.5);
+  let ty = star ? sy(star.y, 10) : sy(b.y + Math.max(-30, Math.min(30, b.vy * 0.15)), Math.min(b.z, 40) * 0.5);
   const o = m.players.find((p) => p.id === b.owner);
   if (o && o.control === 'human' && !star) tx += sx(40) * attackDir(o.team);
+  // a corner: after a look at the flag the camera goes to the box, where the mates wait for the cross and their markers stand, so the
+  // person who takes it sees who is free before she kicks
+  const r = m.restart;
+  if (m.phase === 'restart' && r && r.kind === 'corner' && r.t > T.corner.look) {
+    const dir = attackDir(r.team);
+    tx = sx((r.team === 0 ? PITCH.w : 0) - dir * T.corner.far); ty = sy(MID + (r.y < MID ? -1 : 1) * T.corner.camY, 10);
+  }
   const h = viewH - bottomInset;
   return { x: clampAxis(tx - viewW / 2, BOUNDS.x0, BOUNDS.x1, viewW), y: clampAxis(ty - h / 2, BOUNDS.y0, BOUNDS.y1 + bottomInset, viewH) };
 }

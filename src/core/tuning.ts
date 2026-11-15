@@ -107,7 +107,7 @@ export const T = Object.freeze({
   throwMax: 160, throwInset: 60, cornerBox: 48,
   // the corner: where the team waits for the cross (from the goal line and from the middle), how close the defence marks, how far from
   // the goal a mate still counts, and how far from his marker the cross lands
-  corner: { near: 44, nearY: 16, far: 66, farY: 20, edge: 112, tight: 9, loose: 22, reach: 150, away: 8 },
+  corner: { near: 44, nearY: 16, far: 66, farY: 20, edge: 112, tight: 9, loose: 22, reach: 150, away: 8, look: 0.45, camY: 26, aiWait: 0.5 },
   // free kick (tiro libre): a slide that hits the leg of the rival who carries the ball in the last `zone` px before the goal of the one who slides. The spot is never nearer than `minDist` to the goal line,
   // the wall of `wall` players stands `wallDist` px in front of the ball. The aim moves `aimV` px/s with the stick, the effect `curveV` per second, the meter swings `meterHz` times a second (sweet over `sweet`)
   free: { zone: 300, minDist: 120, maxDist: 230, ballNear: 40, wall: 2, wallDist: 40, wallGap: 13, zWall: 20, wallReach: 12, zGoal: [14, 22] as readonly number[], zBlock: 8, vMin: 220, vMax: 460, err: 5, spin: 0.9, aimV: 70, curveV: 1.4, sweep: 1.6, sweet: 0.78, ok: 0.25, aiMin: 1.2, aiMax: 2.0, aiErrK: 0.7, aiErrMin: 7, aiSweet: 0.25, aiBad: 0.25, auto: 25, q: [0.3, 0.55, 0.85] as readonly number[], aiQ: 0.6, cd: 35 },
@@ -133,7 +133,7 @@ export const T = Object.freeze({
   // ---- keepers (6.7)
   // (`clear`: how far from the goal line the rivals stay while the keeper has the ball in his hands; `clearFor`: s they keep going back after he lets it go)
   // (`thorPower`: what is left of the chance of a power shot or a special of the rivals against Thor)
-  gk: { thorPower: 0.68, clear: 210, clearFor: 0.7, humanHold: 4, humanLock: 0.3, punt: 260, out: 0.12, outMin: 6, outMax: 28, area: 96, moveV: 150, diveV: 330, diveT: 0.6, land: 0.5, holdMin: 1.0, holdMax: 1.5, catchV: 380, looseV: 120,
+  gk: { beatenBy: 6, thorPower: 0.68, clear: 210, clearFor: 0.7, humanHold: 4, humanLock: 0.3, punt: 260, out: 0.12, outMin: 6, outMax: 28, area: 96, moveV: 150, diveV: 330, diveT: 0.6, land: 0.5, holdMin: 1.0, holdMax: 1.5, catchV: 380, looseV: 120,
         contact: 20, zReach: 30, punch: { vx: 160, vy: 230, vz: 120 }, tipOver: 0.25, speedPen: 300, speedPenSpan: 500, highPen: 0.8, farPen: 0.8, farFree: 6, rebound: 42,
         /** He stretches for any shot more than `diveAt` px from him that arrives within `diveIn` s (he no longer stands and watches it). */
         diveAt: 8, diveIn: 0.9,

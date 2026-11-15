@@ -24,6 +24,8 @@ export function dirOf(dx: number, dy: number, prev: number | null = null): numbe
 }
 
 /** Seconds of the flight of a knocked down player (the 5 frames of `tumble` at 12 fps) and of getting up (2 frames of `fall_getup` at 8 fps). */
+/** The kicks whose leg leaves a trail behind. */
+const LEG_GHOST = new Set(['shot', 'shot_hard', 'run_shot', 'chip', 'volley', 'kick_hit']);
 const TUMBLE_T = 0.42, GETUP_T = 0.4;   // (the kip-up of Nekketsu needs a moment to be seen)
 
 const FALLBACK: Record<string, string> = { super: 'shot', spin_kick: 'chilena', chilena: 'shot', air_kick: 'kick_hit', kick_hit: 'shot', jump_rise: 'jump', jump_fall: 'jump', walk: 'run', land: 'idle', trap: 'idle', run_shot: 'shot', pump: 'celebrate', sit: 'idle', laugh: 'celebrate', burla: 'laugh', dive_header: 'header', elbow: 'tackle', slip: 'tumble', guard: 'idle', point: 'idle', taunt: 'laugh', call: 'point', goal_run: 'goal_plane', goal_jump: 'celebrate', banzai: 'celebrate', sprint: 'run', shot_hard: 'shot', goal_plane: 'run', goal_knee: 'slide', skid: 'idle', power: 'land', ready: 'idle', nk_dive: 'pounce', nk_banzai: 'celebrate', nk_gallop: 'run', nk_guard: 'bark', nk_flop: 'die', nk_sad: 'howl', trot: 'run', die: 'hurt', wake: 'lie', jump_wall: 'pounce', sleep: 'lie', scratch: 'sit', dig: 'sit' };
@@ -193,12 +195,14 @@ export class NesPlayer {
   private wasWhip = false; private ghosts: Phaser.GameObjects.Image[] = [];
   private ghostAt = { x: 0, y: 0, flip: false, depth: 0, sx: 1, sy: 1 };
   /** One silhouette of the frame he just left, where he was: it fades in a fifth of a second. */
-  private ghost(frame: number, at: { x: number; y: number; flip: boolean; depth: number; sx: number; sy: number }): void {
+  private ghost(frame: number, at: { x: number; y: number; flip: boolean; depth: number; sx: number; sy: number }, legs = false): void {
     const sc = this.sprite.scene;
     const g = this.ghosts.find((q) => !q.visible) ?? (this.ghosts.length < 5 ? this.ghosts[this.ghosts.push(sc.add.image(0, 0, this.sprite.texture.key, 0).setOrigin(this.sprite.originX, this.sprite.originY).setVisible(false)) - 1] : null);
     if (!g) return;
     sc.tweens.killTweensOf(g);
-    g.setTexture(this.sprite.texture.key, frame).setPosition(at.x, at.y).setFlipX(at.flip).setScale(at.sx, at.sy).setDepth(at.depth).setTint(0xcfeaff).setTintMode(Phaser.TintModes.FILL).setAlpha(0.7).setVisible(true);
+    g.setTexture(this.sprite.texture.key, frame).setPosition(at.x, at.y).setFlipX(at.flip).setScale(at.sx, at.sy).setDepth(at.depth).setTint(0xffffff).setTintMode(Phaser.TintModes.FILL).setAlpha(0.8).setVisible(true);
+    // (the legs are the lower part of the cell, from a little above the hip)
+    if (legs) g.setCrop(0, this.meta.cell[1] * 0.58, this.meta.cell[0], this.meta.cell[1] * 0.42); else g.setCrop();
     sc.tweens.add({ targets: g, alpha: 0, duration: 200, onComplete: () => g.setVisible(false) });
   }
   jolt(): void { this.hitT = Math.max(this.hitT, 0.08); }
@@ -229,7 +233,11 @@ export class NesPlayer {
   update(dt: number, m: Match | null, humanSlot: number | null, jColor: number): void {
     const p = this.p;
     this.dir = this.face(m);
-    const want = DIRS[this.dir], mirrored = this.meta.mirror[want];
+    // a kick or a blow straight at the camera or away from it hides the leg behind the body: there he turns three quarters, to the side he
+    // was facing, and the whole gesture is seen (the sprites of Nekketsu only ever look sideways)
+    const swing = !this.isThor && this.forceDir === null && (p.state === 'kick' ? p.act?.sub !== 'restart' : p.state === 'bump' ? p.act?.kind === 'hit' : p.state === 'special' && m?.special?.shooter !== p.id);
+    const vd = swing && this.dir === 2 ? (p.facing >= 0 ? 1 : 3) : swing && this.dir === 6 ? (p.facing >= 0 ? 7 : 5) : this.dir;
+    const want = DIRS[vd], mirrored = this.meta.mirror[want];
     // what only the view sees: the landing of a jump, the ball taken down, a shot on the run
     const speed0 = Math.hypot(p.vx, p.vy), owns = !!m && m.ball.owner === p.id;
     this.landAge += dt; this.trapAge += dt; this.pointAge += dt; this.skidAge += dt;
@@ -259,10 +267,10 @@ export class NesPlayer {
       const rel = frame - a.start;
       if (rel === 0 || rel === 4) this.fx.puff(x - Math.sign(p.vx || 1) * 5, gy, -p.vx * 0.15, p.state === 'sprint' ? 2 : 1);
     }
-    // la estela of Nekketsu: while he kicks hard or throws a blow, every frame he leaves stays behind for a moment as a pale silhouette,
-    // so the leg (or the fist) is seen sweeping all the way to the ball
-    const whip = !st.loop && (p.state === 'bump' ? p.act?.kind === 'hit' : p.state === 'special' ? m?.special?.shooter !== p.id : p.state === 'kick' && st.name !== 'pass' && st.name !== 'throw_in');
-    if (whip && frame !== this.lastFrame && this.lastFrame >= 0 && this.wasWhip) this.ghost(this.lastFrame, this.ghostAt);
+    // la estela of Nekketsu: while he shoots, the leg of every frame he leaves stays behind for a moment as a pale silhouette, so it is
+    // seen sweeping all the way to the ball (only the legs: the whole body was a blur). His power leaves the whole figure behind
+    const whip = !st.loop && (p.state === 'special' ? m?.special?.shooter !== p.id : p.state === 'kick' && LEG_GHOST.has(st.name));
+    if (whip && frame !== this.lastFrame && this.lastFrame >= 0 && this.wasWhip) this.ghost(this.lastFrame, this.ghostAt, LEG_GHOST.has(st.name));
     this.wasWhip = whip;
     this.lastFrame = frame;
     // the cartoon of Nekketsu: a shake and a white flash when a blow lands, stretched in the air and squashed on landing, hops when

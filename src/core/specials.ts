@@ -233,7 +233,9 @@ export function stepFlight(m: Match, dt: number): void {
   const keeper = playerById(m, f.keeper);
   if (keeper && !f.dived && f.dur - f.t < T.gk.diveT * 0.8) {
     f.dived = true;
-    startDive(m, keeper, f.outcome === 'save' ? f.y1 : f.y1 + (f.y1 > MID ? -66 : 66));   // a goal means he guessed the wrong side
+    // he always goes at the ball. When it is a goal he does not get out of its way (he used to dive to the other side, and Thor looked as
+    // if he left his goal): he is a little short of it and the power takes him into the net (endFlight)
+    startDive(m, keeper, f.outcome === 'save' ? f.y1 : f.y1 + (keeper.y > f.y1 ? T.gk.beatenBy : -T.gk.beatenBy));
   }
   const foes = m.players.filter((q) => q.team !== f.team && q.role !== 'gk');
   // a power shot goes through people: whoever it meets on its way (low enough to hit him) is sent flying
